@@ -90,7 +90,14 @@ Diese benutzerspezifischen Dateien gehören nicht zum GitHub-Repository.
 
 ## HACS
 
-Die Repository-Struktur ist für eine benutzerdefinierte HACS-Integration vorbereitet. HACS kann ausschließlich öffentliche GitHub-Repositorys verwenden. Solange das Repository privat ist, erfolgt die Installation manuell.
+Theme Studio kann als benutzerdefiniertes Repository über HACS installiert werden:
+
+1. In HACS den Bereich **Integrationen** öffnen.
+2. Oben rechts das Drei-Punkte-Menü öffnen und **Benutzerdefinierte Repositorys** auswählen.
+3. Als Repository-URL `https://github.com/CjonesLAB/ha-theme-studio` eintragen.
+4. Als Kategorie **Integration** auswählen und das Repository hinzufügen.
+5. **Theme Studio** in HACS öffnen und herunterladen.
+6. Home Assistant neu starten und anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen.
 
 ## Datenschutz
 
