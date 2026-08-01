@@ -96,6 +96,10 @@ Die Repository-Struktur ist für eine benutzerdefinierte HACS-Integration vorber
 
 Theme Studio arbeitet lokal in Home Assistant und benötigt keinen externen Cloud-Dienst. Eigene Hintergrundbilder bleiben im lokalen Home-Assistant-Konfigurationsverzeichnis.
 
+## Lizenz
+
+Theme Studio wird unter der [MIT-Lizenz](LICENSE) veröffentlicht.
+
 ## Fehler melden
 
 Fehler können später über den GitHub-Issue-Tracker gemeldet werden:
