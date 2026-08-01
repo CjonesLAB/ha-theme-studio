@@ -23,6 +23,24 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - Erzeugung und direkte Aktivierung eines echten Home-Assistant-Themes
 - responsive Bedienung auf Desktop, Tablet und Smartphone
 
+## Screenshots
+
+### Theme Studio und Dashboard
+
+![Theme Studio mit Startdesigns, Feineinstellungen und Vorschau](docs/images/theme-studio-overview.png)
+
+![Home-Assistant-Dashboard mit Aurora-Hintergrund und Karteneffekten](docs/images/dashboard-aurora.png)
+
+### Feineinstellungen
+
+| Farben und Karten | Kartendesign |
+| --- | --- |
+| ![Farben und Karteneinstellungen](docs/images/fine-settings-overview.png) | ![Geöffnete Karteneinstellungen](docs/images/fine-settings-cards.png) |
+
+| Hintergrund | Dashboard-Effekte |
+| --- | --- |
+| ![Hintergrundauswahl und eigener Bild-Upload](docs/images/fine-settings-background.png) | ![Dashboard- und Karteneffekte mit Sensorauswahl](docs/images/dashboard-effects.png) |
+
 ## Manuelle Installation
 
 1. Den Ordner `custom_components/theme_studio` in das Home-Assistant-Konfigurationsverzeichnis kopieren:
@@ -83,4 +101,3 @@ Theme Studio arbeitet lokal in Home Assistant und benötigt keinen externen Clou
 Fehler können später über den GitHub-Issue-Tracker gemeldet werden:
 
 <https://github.com/CjonesLAB/ha-theme-studio/issues>
-
