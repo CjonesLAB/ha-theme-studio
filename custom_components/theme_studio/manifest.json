@@ -1,7 +1,7 @@
 {
   "domain": "theme_studio",
   "name": "Theme Studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "documentation": "https://github.com/CjonesLAB/ha-theme-studio",
   "issue_tracker": "https://github.com/CjonesLAB/ha-theme-studio/issues",
   "config_flow": true,
