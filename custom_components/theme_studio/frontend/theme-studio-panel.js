@@ -51,6 +51,7 @@ class ThemeStudioPanel extends HTMLElement {
         glow: 35,
         cardEffects: [],
         cardIntensity: 55,
+        pulseEntities: [],
         energyEntities: [],
         energyWarning: 500,
         energyCritical: 2000,
@@ -508,6 +509,39 @@ class ThemeStudioPanel extends HTMLElement {
           border: 1px solid var(--divider-color);
           border-radius: 9px;
           background: var(--secondary-background-color);
+        }
+
+        .entity-picker-tools {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 7px;
+        }
+
+        .entity-search {
+          width: 100%;
+          min-height: 36px;
+          padding: 0 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          outline: none;
+          color: var(--primary-text-color);
+          background: var(--secondary-background-color);
+          font-size: 11px;
+        }
+
+        .entity-search:focus {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 1px var(--primary-color);
+        }
+
+        .entity-selection-count {
+          min-width: 62px;
+          color: var(--secondary-text-color);
+          font-size: 10px;
+          text-align: right;
+          white-space: nowrap;
         }
 
         .energy-entity-choice {
@@ -1621,16 +1655,48 @@ class ThemeStudioPanel extends HTMLElement {
                   )}
                 </div>
 
+                <div id="status-pulse-controls">
+                  <div class="effect-field">
+                    <label>
+                      Entitäten für Status Pulse
+                    </label>
+                    ${this._entitySearchField(
+                      "pulse-entity-search",
+                      "pulse-entity-list",
+                      "pulse-entity-count",
+                      "Entität suchen …"
+                    )}
+                    <div
+                      id="pulse-entity-list"
+                      class="energy-entity-list"
+                    >
+                      ${this._pulseEntityChoices()}
+                      <p class="energy-empty entity-filter-empty" hidden>
+                        Keine passende Entität gefunden.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div id="energy-flow-controls">
                   <div class="effect-field">
                     <label>
                       Leistungssensoren
                     </label>
+                    ${this._entitySearchField(
+                      "energy-entity-search",
+                      "energy-entity-list",
+                      "energy-entity-count",
+                      "Leistungssensor suchen …"
+                    )}
                     <div
                       id="energy-entity-list"
                       class="energy-entity-list"
                     >
                       ${this._energyEntityChoices()}
+                      <p class="energy-empty entity-filter-empty" hidden>
+                        Kein passender Leistungssensor gefunden.
+                      </p>
                     </div>
                   </div>
 
@@ -1668,8 +1734,20 @@ class ThemeStudioPanel extends HTMLElement {
                     <label>
                       Klimasensoren
                     </label>
-                    <div class="energy-entity-list">
+                    ${this._entitySearchField(
+                      "climate-entity-search",
+                      "climate-entity-list",
+                      "climate-entity-count",
+                      "Klimasensor suchen …"
+                    )}
+                    <div
+                      id="climate-entity-list"
+                      class="energy-entity-list"
+                    >
                       ${this._climateEntityChoices()}
+                      <p class="energy-empty entity-filter-empty" hidden>
+                        Kein passender Klimasensor gefunden.
+                      </p>
                     </div>
                   </div>
 
@@ -1720,8 +1798,20 @@ class ThemeStudioPanel extends HTMLElement {
                     <label>
                       Alarm- und Statussensoren
                     </label>
-                    <div class="energy-entity-list">
+                    ${this._entitySearchField(
+                      "alert-entity-search",
+                      "alert-entity-list",
+                      "alert-entity-count",
+                      "Alarm- oder Statussensor suchen …"
+                    )}
+                    <div
+                      id="alert-entity-list"
+                      class="energy-entity-list"
+                    >
                       ${this._alertEntityChoices()}
+                      <p class="energy-empty entity-filter-empty" hidden>
+                        Keine passende Entität gefunden.
+                      </p>
                     </div>
                   </div>
 
@@ -1942,6 +2032,74 @@ class ThemeStudioPanel extends HTMLElement {
     `;
   }
 
+  _entitySearchField(searchId, listId, countId, placeholder) {
+    return `
+      <div class="entity-picker-tools">
+        <input
+          id="${searchId}"
+          class="entity-search"
+          type="search"
+          placeholder="${placeholder}"
+          aria-label="${placeholder}"
+          aria-controls="${listId}"
+          autocomplete="off"
+        >
+        <span
+          id="${countId}"
+          class="entity-selection-count"
+          aria-live="polite"
+        ></span>
+      </div>
+    `;
+  }
+
+  _pulseEntityChoices() {
+    const states = this._hass?.states || {};
+    const entities = Object.entries(states)
+      .filter(([entityId]) =>
+        /^[a-z0-9_]+\.[a-z0-9_]+$/.test(entityId)
+      )
+      .map(([entityId, stateObject]) => ({
+        entityId,
+        name:
+          stateObject.attributes?.friendly_name
+          || entityId,
+        domain: entityId.split(".")[0],
+      }))
+      .sort((first, second) =>
+        first.name.localeCompare(second.name, "de")
+      );
+
+    if (entities.length === 0) {
+      return `
+        <p class="energy-empty">
+          Keine Entitäten gefunden.
+        </p>
+      `;
+    }
+
+    return entities.map((entity) => `
+      <label
+        class="energy-entity-choice"
+        data-entity-search="${this._entitySearchValue(
+          entity.name,
+          entity.entityId,
+          entity.domain
+        )}"
+      >
+        <input
+          type="checkbox"
+          class="pulse-entity-checkbox"
+          value="${this._escapeHtml(entity.entityId)}"
+        >
+        <span class="energy-entity-name">
+          ${this._escapeHtml(entity.name)}
+          (${this._escapeHtml(entity.entityId)})
+        </span>
+      </label>
+    `).join("");
+  }
+
   _energyEntityChoices() {
     const states = this._hass?.states || {};
 
@@ -1989,7 +2147,14 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     return sensors.map((sensor) => `
-      <label class="energy-entity-choice">
+      <label
+        class="energy-entity-choice"
+        data-entity-search="${this._entitySearchValue(
+          sensor.name,
+          sensor.entityId,
+          sensor.unit
+        )}"
+      >
         <input
           type="checkbox"
           class="energy-entity-checkbox"
@@ -2045,7 +2210,14 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     return sensors.map((sensor) => `
-      <label class="energy-entity-choice">
+      <label
+        class="energy-entity-choice"
+        data-entity-search="${this._entitySearchValue(
+          sensor.name,
+          sensor.entityId,
+          sensor.unit
+        )}"
+      >
         <input
           type="checkbox"
           class="climate-entity-checkbox"
@@ -2115,7 +2287,14 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     return entities.map((entity) => `
-      <label class="energy-entity-choice">
+      <label
+        class="energy-entity-choice"
+        data-entity-search="${this._entitySearchValue(
+          entity.name,
+          entity.entityId,
+          entity.deviceClass
+        )}"
+      >
         <input
           type="checkbox"
           class="alert-entity-checkbox"
@@ -2138,6 +2317,14 @@ class ThemeStudioPanel extends HTMLElement {
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  _entitySearchValue(...values) {
+    return this._escapeHtml(
+      values
+        .join(" ")
+        .toLocaleLowerCase("de")
+    );
   }
 
   _previewCard(title, content) {
@@ -2277,32 +2464,27 @@ class ThemeStudioPanel extends HTMLElement {
       "%"
     );
 
-    this.shadowRoot
-      .querySelectorAll(".energy-entity-checkbox")
-      .forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-          const selected = Array.from(
-            this.shadowRoot.querySelectorAll(
-              ".energy-entity-checkbox:checked"
-            )
-          );
+    this._bindEntityPicker({
+      searchId: "pulse-entity-search",
+      listId: "pulse-entity-list",
+      countId: "pulse-entity-count",
+      checkboxClass: "pulse-entity-checkbox",
+      settingName: "pulseEntities",
+      maximum: 64,
+      maximumMessage:
+        "Es können höchstens 64 Pulse-Entitäten gewählt werden.",
+    });
 
-          if (selected.length > 32) {
-            checkbox.checked = false;
-            this._setStatus(
-              "Es können höchstens 32 Sensoren gewählt werden.",
-              "error"
-            );
-            return;
-          }
-
-          this.settings.effects.energyEntities =
-            selected.map((item) => item.value);
-
-          this._clearStatus();
-          this._updatePreview();
-        });
-      });
+    this._bindEntityPicker({
+      searchId: "energy-entity-search",
+      listId: "energy-entity-list",
+      countId: "energy-entity-count",
+      checkboxClass: "energy-entity-checkbox",
+      settingName: "energyEntities",
+      maximum: 32,
+      maximumMessage:
+        "Es können höchstens 32 Sensoren gewählt werden.",
+    });
 
     this._bindEnergyNumber(
       "energy-warning",
@@ -2314,32 +2496,16 @@ class ThemeStudioPanel extends HTMLElement {
       "energyCritical"
     );
 
-    this.shadowRoot
-      .querySelectorAll(".climate-entity-checkbox")
-      .forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-          const selected = Array.from(
-            this.shadowRoot.querySelectorAll(
-              ".climate-entity-checkbox:checked"
-            )
-          );
-
-          if (selected.length > 32) {
-            checkbox.checked = false;
-            this._setStatus(
-              "Es können höchstens 32 Klimasensoren gewählt werden.",
-              "error"
-            );
-            return;
-          }
-
-          this.settings.effects.climateEntities =
-            selected.map((item) => item.value);
-
-          this._clearStatus();
-          this._updatePreview();
-        });
-      });
+    this._bindEntityPicker({
+      searchId: "climate-entity-search",
+      listId: "climate-entity-list",
+      countId: "climate-entity-count",
+      checkboxClass: "climate-entity-checkbox",
+      settingName: "climateEntities",
+      maximum: 32,
+      maximumMessage:
+        "Es können höchstens 32 Klimasensoren gewählt werden.",
+    });
 
     this._bindClimateNumber(
       "climate-comfort-min",
@@ -2356,32 +2522,16 @@ class ThemeStudioPanel extends HTMLElement {
       "climateHot"
     );
 
-    this.shadowRoot
-      .querySelectorAll(".alert-entity-checkbox")
-      .forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-          const selected = Array.from(
-            this.shadowRoot.querySelectorAll(
-              ".alert-entity-checkbox:checked"
-            )
-          );
-
-          if (selected.length > 64) {
-            checkbox.checked = false;
-            this._setStatus(
-              "Es können höchstens 64 Alarm- und Statussensoren gewählt werden.",
-              "error"
-            );
-            return;
-          }
-
-          this.settings.effects.alertEntities =
-            selected.map((item) => item.value);
-
-          this._clearStatus();
-          this._updatePreview();
-        });
-      });
+    this._bindEntityPicker({
+      searchId: "alert-entity-search",
+      listId: "alert-entity-list",
+      countId: "alert-entity-count",
+      checkboxClass: "alert-entity-checkbox",
+      settingName: "alertEntities",
+      maximum: 64,
+      maximumMessage:
+        "Es können höchstens 64 Alarm- und Statussensoren gewählt werden.",
+    });
 
     this._bindSimpleNumber(
       "alert-battery-low",
@@ -2558,6 +2708,90 @@ class ThemeStudioPanel extends HTMLElement {
       this._clearStatus();
       this._updatePreview();
     });
+  }
+
+  _bindEntityPicker({
+    searchId,
+    listId,
+    countId,
+    checkboxClass,
+    settingName,
+    maximum,
+    maximumMessage,
+  }) {
+    const searchInput =
+      this.shadowRoot.getElementById(searchId);
+    const list = this.shadowRoot.getElementById(listId);
+    const selector = `.${checkboxClass}`;
+
+    const updateCount = () => {
+      const selected = this.shadowRoot.querySelectorAll(
+        `${selector}:checked`
+      ).length;
+      this.shadowRoot.getElementById(countId).textContent =
+        `${selected} gewählt`;
+    };
+
+    const filterChoices = () => {
+      const query = searchInput.value
+        .trim()
+        .toLocaleLowerCase("de");
+      let visibleChoices = 0;
+
+      list
+        .querySelectorAll(".energy-entity-choice")
+        .forEach((choice) => {
+          const visible =
+            !query
+            || choice.dataset.entitySearch.includes(query);
+          choice.hidden = !visible;
+
+          if (visible) {
+            visibleChoices += 1;
+          }
+        });
+
+      const emptyMessage =
+        list.querySelector(".entity-filter-empty");
+
+      if (emptyMessage) {
+        const hasChoices = list.querySelector(
+          ".energy-entity-choice"
+        ) !== null;
+        emptyMessage.hidden =
+          !hasChoices || visibleChoices > 0;
+      }
+    };
+
+    searchInput.addEventListener("input", filterChoices);
+
+    this.shadowRoot
+      .querySelectorAll(selector)
+      .forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const selected = Array.from(
+            this.shadowRoot.querySelectorAll(
+              `${selector}:checked`
+            )
+          );
+
+          if (selected.length > maximum) {
+            checkbox.checked = false;
+            this._setStatus(maximumMessage, "error");
+            updateCount();
+            return;
+          }
+
+          this.settings.effects[settingName] =
+            selected.map((item) => item.value);
+
+          updateCount();
+          this._clearStatus();
+          this._updatePreview();
+        });
+      });
+
+    updateCount();
   }
 
   _bindEnergyNumber(elementId, settingName) {
@@ -2790,6 +3024,17 @@ class ThemeStudioPanel extends HTMLElement {
 
   async _saveAndApplySettings() {
     if (
+      this.settings.effects.cardEffects.includes("status-pulse")
+      && this.settings.effects.pulseEntities.length === 0
+    ) {
+      this._setStatus(
+        "Bitte mindestens eine Entität für Status Pulse auswählen.",
+        "error"
+      );
+      return;
+    }
+
+    if (
       this.settings.effects.cardEffects.includes("energy-flow")
       && this.settings.effects.energyEntities.length === 0
     ) {
@@ -3004,6 +3249,28 @@ class ThemeStudioPanel extends HTMLElement {
       .hidden =
         this.settings.effects.cardEffects.length === 0;
 
+    const pulseEntities = new Set(
+      this.settings.effects.pulseEntities
+    );
+
+    this.shadowRoot
+      .querySelectorAll(".pulse-entity-checkbox")
+      .forEach((checkbox) => {
+        checkbox.checked =
+          pulseEntities.has(checkbox.value);
+      });
+
+    this._syncEntitySelectionCount(
+      "pulse-entity-checkbox",
+      "pulse-entity-count"
+    );
+
+    this.shadowRoot
+      .getElementById("status-pulse-controls")
+      .hidden =
+        !this.settings.effects.cardEffects
+          .includes("status-pulse");
+
     const energyEntities = new Set(
       this.settings.effects.energyEntities
     );
@@ -3014,6 +3281,11 @@ class ThemeStudioPanel extends HTMLElement {
         checkbox.checked =
           energyEntities.has(checkbox.value);
       });
+
+    this._syncEntitySelectionCount(
+      "energy-entity-checkbox",
+      "energy-entity-count"
+    );
 
     this.shadowRoot
       .getElementById("energy-warning")
@@ -3039,6 +3311,11 @@ class ThemeStudioPanel extends HTMLElement {
         checkbox.checked =
           climateEntities.has(checkbox.value);
       });
+
+    this._syncEntitySelectionCount(
+      "climate-entity-checkbox",
+      "climate-entity-count"
+    );
 
     this.shadowRoot
       .getElementById("climate-comfort-min")
@@ -3069,6 +3346,11 @@ class ThemeStudioPanel extends HTMLElement {
           alertEntities.has(checkbox.value);
       });
 
+    this._syncEntitySelectionCount(
+      "alert-entity-checkbox",
+      "alert-entity-count"
+    );
+
     this.shadowRoot
       .getElementById("alert-battery-low")
       .value = this.settings.effects.alertBatteryLow;
@@ -3078,6 +3360,17 @@ class ThemeStudioPanel extends HTMLElement {
       .hidden =
         !this.settings.effects.cardEffects
           .includes("alert-focus");
+  }
+
+  _syncEntitySelectionCount(checkboxClass, countId) {
+    const count = this.shadowRoot.querySelectorAll(
+      `.${checkboxClass}:checked`
+    ).length;
+    const output = this.shadowRoot.getElementById(countId);
+
+    if (output) {
+      output.textContent = `${count} gewählt`;
+    }
   }
 
   _syncColorPresets() {
