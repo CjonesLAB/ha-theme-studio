@@ -72,6 +72,7 @@ DEFAULT_EFFECT_SETTINGS: dict[str, Any] = {
     "glow": 35,
     "cardEffects": [],
     "cardIntensity": 55,
+    "pulseEntities": [],
     "energyEntities": [],
     "energyWarning": 500,
     "energyCritical": 2000,
@@ -161,6 +162,10 @@ EFFECT_SCHEMA = vol.Schema(
         vol.Required("cardIntensity"): vol.All(
             vol.Coerce(int),
             vol.Range(min=0, max=100),
+        ),
+        vol.Required("pulseEntities"): vol.All(
+            [vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$")],
+            vol.Length(max=64),
         ),
         vol.Required("energyEntities"): vol.All(
             [vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$")],
@@ -277,6 +282,10 @@ def normalize_effects(
 
     normalized["energyEntities"] = list(
         dict.fromkeys(normalized["energyEntities"])
+    )
+
+    normalized["pulseEntities"] = list(
+        dict.fromkeys(normalized["pulseEntities"])
     )
 
     normalized["climateEntities"] = list(
@@ -577,6 +586,9 @@ def build_theme_file(
         ),
         "theme-studio-card-intensity": str(
             effects["cardIntensity"]
+        ),
+        "theme-studio-pulse-entities": ",".join(
+            effects["pulseEntities"]
         ),
         "theme-studio-energy-entities": ",".join(
             effects["energyEntities"]
