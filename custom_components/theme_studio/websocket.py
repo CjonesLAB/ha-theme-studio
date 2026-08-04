@@ -52,6 +52,12 @@ DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
     "cardTextColor": "#1c1c1c",
     "cardIconColor": "#2f6fa3",
     "cardBorderColor": "#d5dde5",
+    "headerBackgroundColor": "#eef2f5",
+    "headerTextColor": "#1c1c1c",
+    "sidebarBackgroundColor": "#eef2f5",
+    "sidebarTextColor": "#1c1c1c",
+    "sidebarIconColor": "#5f6b72",
+    "sidebarSelectedColor": "#2f6fa3",
     "cardOpacity": 96,
     "cardBorderWidth": 1,
     "cardShadow": 16,
@@ -68,6 +74,12 @@ DEFAULT_DARK_PROFILE: dict[str, Any] = {
     "cardTextColor": "#ffffff",
     "cardIconColor": "#26b2b3",
     "cardBorderColor": "#26b2b3",
+    "headerBackgroundColor": "#101719",
+    "headerTextColor": "#ffffff",
+    "sidebarBackgroundColor": "#101719",
+    "sidebarTextColor": "#ffffff",
+    "sidebarIconColor": "#b8c4c7",
+    "sidebarSelectedColor": "#26b2b3",
     "cardOpacity": 92,
     "cardBorderWidth": 0,
     "cardShadow": 28,
@@ -119,6 +131,12 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Required("cardTextColor"): COLOR_VALIDATOR,
         vol.Required("cardIconColor"): COLOR_VALIDATOR,
         vol.Required("cardBorderColor"): COLOR_VALIDATOR,
+        vol.Required("headerBackgroundColor"): COLOR_VALIDATOR,
+        vol.Required("headerTextColor"): COLOR_VALIDATOR,
+        vol.Required("sidebarBackgroundColor"): COLOR_VALIDATOR,
+        vol.Required("sidebarTextColor"): COLOR_VALIDATOR,
+        vol.Required("sidebarIconColor"): COLOR_VALIDATOR,
+        vol.Required("sidebarSelectedColor"): COLOR_VALIDATOR,
         vol.Required("cardOpacity"): vol.All(
             vol.Coerce(int),
             vol.Range(min=30, max=100),
@@ -893,16 +911,10 @@ def build_mode_values(
         secondary_text = "rgba(0, 0, 0, 0.68)"
         disabled_text = "rgba(0, 0, 0, 0.38)"
         divider = "rgba(0, 0, 0, 0.12)"
-        sidebar_text = "rgba(0, 0, 0, 0.78)"
-        sidebar_icon = "rgba(0, 0, 0, 0.62)"
-        header_text = "#1c1c1c"
     else:
         secondary_text = "rgba(255, 255, 255, 0.72)"
         disabled_text = "rgba(255, 255, 255, 0.38)"
         divider = "rgba(255, 255, 255, 0.12)"
-        sidebar_text = "rgba(255, 255, 255, 0.78)"
-        sidebar_icon = "rgba(255, 255, 255, 0.72)"
-        header_text = "#ffffff"
 
     return {
         "primary-color": primary,
@@ -931,16 +943,24 @@ def build_mode_values(
         "text-primary-color": "#ffffff",
         "disabled-text-color": disabled_text,
         "divider-color": divider,
-        "app-header-background-color": background,
-        "app-header-text-color": header_text,
-        "sidebar-background-color": background,
-        "sidebar-text-color": sidebar_text,
-        "sidebar-icon-color": sidebar_icon,
-        "sidebar-selected-background-color": (
-            card_background
+        "app-header-background-color": (
+            profile["headerBackgroundColor"]
         ),
-        "sidebar-selected-text-color": primary,
-        "sidebar-selected-icon-color": primary,
+        "app-header-edit-background-color": (
+            profile["headerBackgroundColor"]
+        ),
+        "app-header-text-color": profile["headerTextColor"],
+        "sidebar-background-color": (
+            profile["sidebarBackgroundColor"]
+        ),
+        "sidebar-text-color": profile["sidebarTextColor"],
+        "sidebar-icon-color": profile["sidebarIconColor"],
+        "sidebar-selected-text-color": (
+            profile["sidebarSelectedColor"]
+        ),
+        "sidebar-selected-icon-color": (
+            profile["sidebarSelectedColor"]
+        ),
         "state-icon-color": (
             profile["cardIconColor"]
         ),

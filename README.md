@@ -2,7 +2,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Version: **0.2.0**
+> Aktuelle Version: **0.3.0**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -13,6 +13,8 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
 - Designprofile als JSON-Datei exportieren und importieren
 - anpassbare Haupt-, Hintergrund-, Karten-, Text-, Symbol- und Rahmenfarben
+- Kopfzeile und Seitenleiste pro Farbmodus separat gestalten
+- eigene Farben für Navigationshintergrund, Text, Symbole und den aktiven Menüpunkt
 - Kartenradius, Deckkraft, Rahmenstärke und Schatten
 - Farbverläufe sowie eine Bibliothek für mehrere eigene Hintergrundbilder
 - Hintergrundbilder auswählen, umbenennen und sicher löschen
@@ -93,7 +95,7 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 
 1. In der Seitenleiste **Theme Studio** öffnen.
 2. Ein Startdesign wählen und oben zwischen hellem und dunklem Modus wechseln.
-3. Farben, Karten und Hintergrund in den Feineinstellungen anpassen.
+3. Farben, Karten, Navigation und Hintergrund in den Feineinstellungen anpassen.
 4. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
 5. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
 6. Optional unter **Eigene Designprofile** einen Namen eingeben und das komplette Design als wiederverwendbares Profil speichern.

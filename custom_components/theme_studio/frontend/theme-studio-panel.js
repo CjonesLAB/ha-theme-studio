@@ -27,6 +27,12 @@ class ThemeStudioPanel extends HTMLElement {
         cardTextColor: "#1c1c1c",
         cardIconColor: "#2f6fa3",
         cardBorderColor: "#d5dde5",
+        headerBackgroundColor: "#eef2f5",
+        headerTextColor: "#1c1c1c",
+        sidebarBackgroundColor: "#eef2f5",
+        sidebarTextColor: "#1c1c1c",
+        sidebarIconColor: "#5f6b72",
+        sidebarSelectedColor: "#2f6fa3",
         cardOpacity: 96,
         cardBorderWidth: 1,
         cardShadow: 16,
@@ -42,6 +48,12 @@ class ThemeStudioPanel extends HTMLElement {
         cardTextColor: "#ffffff",
         cardIconColor: "#26b2b3",
         cardBorderColor: "#26b2b3",
+        headerBackgroundColor: "#101719",
+        headerTextColor: "#ffffff",
+        sidebarBackgroundColor: "#101719",
+        sidebarTextColor: "#ffffff",
+        sidebarIconColor: "#b8c4c7",
+        sidebarSelectedColor: "#26b2b3",
         cardOpacity: 92,
         cardBorderWidth: 0,
         cardShadow: 28,
@@ -1080,9 +1092,97 @@ class ThemeStudioPanel extends HTMLElement {
         .preview {
           position: relative;
           min-height: 480px;
-          padding: 21px;
           overflow: hidden;
           border-radius: 13px;
+          background: var(--preview-background);
+        }
+
+        .preview-app-header {
+          position: relative;
+          z-index: 4;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          min-height: 48px;
+          padding: 0 17px;
+          color: var(--preview-header-text);
+          background: var(--preview-header-background);
+          box-shadow: 0 1px 0 rgba(0, 0, 0, 0.16);
+        }
+
+        .preview-app-header-left,
+        .preview-app-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .preview-menu-icon,
+        .preview-header-action {
+          font-size: 17px;
+          line-height: 1;
+        }
+
+        .preview-app-title {
+          font-size: 14px;
+          font-weight: 700;
+        }
+
+        .preview-app-body {
+          display: grid;
+          grid-template-columns: 145px minmax(0, 1fr);
+          min-height: 432px;
+        }
+
+        .preview-sidebar {
+          position: relative;
+          z-index: 3;
+          padding: 13px 9px;
+          color: var(--preview-sidebar-text);
+          background: var(--preview-sidebar-background);
+        }
+
+        .preview-sidebar-brand {
+          margin: 2px 8px 12px;
+          font-size: 11px;
+          font-weight: 700;
+          opacity: 0.84;
+        }
+
+        .preview-sidebar-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 34px;
+          padding: 0 9px;
+          border-radius: 8px;
+          color: var(--preview-sidebar-text);
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .preview-sidebar-item.active {
+          color: var(--preview-sidebar-selected);
+          background: var(--preview-sidebar-active-background);
+        }
+
+        .preview-sidebar-icon {
+          width: 18px;
+          color: var(--preview-sidebar-icon);
+          font-size: 14px;
+          text-align: center;
+        }
+
+        .preview-sidebar-item.active
+        .preview-sidebar-icon {
+          color: var(--preview-sidebar-selected);
+        }
+
+        .preview-dashboard {
+          position: relative;
+          min-width: 0;
+          padding: 21px;
+          overflow: hidden;
           color: var(--preview-top-text);
           background-color: var(--preview-background);
           background-image: var(--preview-image);
@@ -1090,7 +1190,7 @@ class ThemeStudioPanel extends HTMLElement {
           background-size: cover;
         }
 
-        .preview::before {
+        .preview-dashboard::before {
           content: "";
           position: absolute;
           inset: 0;
@@ -1489,6 +1589,24 @@ class ThemeStudioPanel extends HTMLElement {
             grid-template-columns: 1fr;
           }
 
+          .preview-app-body {
+            grid-template-columns: 58px minmax(0, 1fr);
+          }
+
+          .preview-sidebar {
+            padding-inline: 7px;
+          }
+
+          .preview-sidebar-brand,
+          .preview-sidebar-label {
+            display: none;
+          }
+
+          .preview-sidebar-item {
+            justify-content: center;
+            padding: 0;
+          }
+
           .editor-actions {
             grid-template-columns: 1fr;
           }
@@ -1761,6 +1879,54 @@ class ThemeStudioPanel extends HTMLElement {
                   0,
                   36
                 )}
+              </div>
+            </details>
+
+            <details>
+              <summary>Navigation</summary>
+              <div class="details-content">
+                <div class="effect-subheading">
+                  Kopfzeile
+                </div>
+
+                ${this._colorField(
+                  "header-background-color",
+                  "Hintergrundfarbe"
+                )}
+
+                ${this._colorField(
+                  "header-text-color",
+                  "Text- und Symbolfarbe"
+                )}
+
+                <div class="effect-subheading">
+                  Seitenleiste
+                </div>
+
+                ${this._colorField(
+                  "sidebar-background-color",
+                  "Hintergrundfarbe"
+                )}
+
+                ${this._colorField(
+                  "sidebar-text-color",
+                  "Textfarbe"
+                )}
+
+                ${this._colorField(
+                  "sidebar-icon-color",
+                  "Symbolfarbe"
+                )}
+
+                ${this._colorField(
+                  "sidebar-selected-color",
+                  "Aktive Navigation"
+                )}
+
+                <p class="effect-hint">
+                  Die Einstellungen gelten getrennt für den
+                  oben ausgewählten hellen oder dunklen Modus.
+                </p>
               </div>
             </details>
 
@@ -2183,71 +2349,119 @@ class ThemeStudioPanel extends HTMLElement {
 
         <section class="preview-panel">
           <div id="preview" class="preview">
-            <div
-              id="preview-effect"
-              class="preview-effect"
-              aria-hidden="true"
-            ></div>
-
-            <div class="preview-content">
-              <div class="preview-header">
-                <h2>Mein Zuhause</h2>
-                <div class="preview-time">17:36</div>
+            <div class="preview-app-header">
+              <div class="preview-app-header-left">
+                <span class="preview-menu-icon">☰</span>
+                <span class="preview-app-title">Übersicht</span>
               </div>
 
-              <div
-                id="preview-mode"
-                class="preview-mode"
-              ></div>
+              <div class="preview-app-header-actions">
+                <span class="preview-header-action">＋</span>
+                <span class="preview-header-action">⌕</span>
+                <span class="preview-header-action">⋮</span>
+              </div>
+            </div>
 
-              <div class="preview-grid">
-                ${this._previewCard(
-                  "Stromverbrauch",
-                  `
-                    <div class="large-value">846 W</div>
-                    <div class="secondary-text">
-                      Heute 8,4 kWh
-                    </div>
-                  `
-                )}
+            <div class="preview-app-body">
+              <aside class="preview-sidebar">
+                <div class="preview-sidebar-brand">
+                  Home Assistant
+                </div>
 
-                ${this._previewCard(
-                  "Wohnzimmer",
-                  `
-                    <div class="switch-row">
-                      <span>Deckenlicht</span>
-                      <div class="fake-switch"></div>
-                    </div>
-                    <div class="switch-row">
-                      <span>Stehlampe</span>
-                      <div class="fake-switch"></div>
-                    </div>
-                  `
-                )}
+                <div class="preview-sidebar-item active">
+                  <span class="preview-sidebar-icon">⌂</span>
+                  <span class="preview-sidebar-label">Übersicht</span>
+                </div>
 
-                ${this._previewCard(
-                  "Temperatur",
-                  `
-                    <div class="large-value">22,4 °C</div>
-                    <div class="secondary-text">
-                      Luftfeuchtigkeit 48 %
-                    </div>
-                  `
-                )}
+                <div class="preview-sidebar-item">
+                  <span class="preview-sidebar-icon">◇</span>
+                  <span class="preview-sidebar-label">Karte</span>
+                </div>
 
-                ${this._previewCard(
-                  "Verlauf",
-                  `
-                    <div class="chart">
-                      <div class="bar" style="height:38%"></div>
-                      <div class="bar" style="height:52%"></div>
-                      <div class="bar" style="height:47%"></div>
-                      <div class="bar" style="height:73%"></div>
-                      <div class="bar" style="height:59%"></div>
-                      <div class="bar" style="height:86%"></div>
-                    </div>
-                  `
-                )}
+                <div class="preview-sidebar-item">
+                  <span class="preview-sidebar-icon">⚡</span>
+                  <span class="preview-sidebar-label">Energie</span>
+                </div>
+
+                <div class="preview-sidebar-item">
+                  <span class="preview-sidebar-icon">◷</span>
+                  <span class="preview-sidebar-label">Verlauf</span>
+                </div>
+
+                <div class="preview-sidebar-item">
+                  <span class="preview-sidebar-icon">⚙</span>
+                  <span class="preview-sidebar-label">Einstellungen</span>
+                </div>
+              </aside>
+
+              <div class="preview-dashboard">
+                <div
+                  id="preview-effect"
+                  class="preview-effect"
+                  aria-hidden="true"
+                ></div>
+
+                <div class="preview-content">
+                  <div class="preview-header">
+                    <h2>Mein Zuhause</h2>
+                    <div class="preview-time">17:36</div>
+                  </div>
+
+                  <div
+                    id="preview-mode"
+                    class="preview-mode"
+                  ></div>
+
+                  <div class="preview-grid">
+                    ${this._previewCard(
+                      "Stromverbrauch",
+                      `
+                        <div class="large-value">846 W</div>
+                        <div class="secondary-text">
+                          Heute 8,4 kWh
+                        </div>
+                      `
+                    )}
+
+                    ${this._previewCard(
+                      "Wohnzimmer",
+                      `
+                        <div class="switch-row">
+                          <span>Deckenlicht</span>
+                          <div class="fake-switch"></div>
+                        </div>
+                        <div class="switch-row">
+                          <span>Stehlampe</span>
+                          <div class="fake-switch"></div>
+                        </div>
+                      `
+                    )}
+
+                    ${this._previewCard(
+                      "Temperatur",
+                      `
+                        <div class="large-value">22,4 °C</div>
+                        <div class="secondary-text">
+                          Luftfeuchtigkeit 48 %
+                        </div>
+                      `
+                    )}
+
+                    ${this._previewCard(
+                      "Verlauf",
+                      `
+                        <div class="chart">
+                          <div class="bar" style="height:38%"></div>
+                          <div class="bar" style="height:52%"></div>
+                          <div class="bar" style="height:47%"></div>
+                          <div class="bar" style="height:73%"></div>
+                          <div class="bar" style="height:59%"></div>
+                          <div class="bar" style="height:86%"></div>
+                        </div>
+                      `
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2758,6 +2972,30 @@ class ThemeStudioPanel extends HTMLElement {
     this._bindColor(
       "card-border-color",
       "cardBorderColor"
+    );
+    this._bindColor(
+      "header-background-color",
+      "headerBackgroundColor"
+    );
+    this._bindColor(
+      "header-text-color",
+      "headerTextColor"
+    );
+    this._bindColor(
+      "sidebar-background-color",
+      "sidebarBackgroundColor"
+    );
+    this._bindColor(
+      "sidebar-text-color",
+      "sidebarTextColor"
+    );
+    this._bindColor(
+      "sidebar-icon-color",
+      "sidebarIconColor"
+    );
+    this._bindColor(
+      "sidebar-selected-color",
+      "sidebarSelectedColor"
     );
 
     this._bindRange("card-opacity", "cardOpacity", "%");
@@ -4105,6 +4343,12 @@ class ThemeStudioPanel extends HTMLElement {
       "card-text-color": "cardTextColor",
       "card-icon-color": "cardIconColor",
       "card-border-color": "cardBorderColor",
+      "header-background-color": "headerBackgroundColor",
+      "header-text-color": "headerTextColor",
+      "sidebar-background-color": "sidebarBackgroundColor",
+      "sidebar-text-color": "sidebarTextColor",
+      "sidebar-icon-color": "sidebarIconColor",
+      "sidebar-selected-color": "sidebarSelectedColor",
     };
 
     Object.entries(colors).forEach(
@@ -4598,6 +4842,41 @@ class ThemeStudioPanel extends HTMLElement {
     preview.style.setProperty(
       "--preview-primary",
       this.profile.primaryColor
+    );
+
+    preview.style.setProperty(
+      "--preview-header-background",
+      this.profile.headerBackgroundColor
+    );
+
+    preview.style.setProperty(
+      "--preview-header-text",
+      this.profile.headerTextColor
+    );
+
+    preview.style.setProperty(
+      "--preview-sidebar-background",
+      this.profile.sidebarBackgroundColor
+    );
+
+    preview.style.setProperty(
+      "--preview-sidebar-text",
+      this.profile.sidebarTextColor
+    );
+
+    preview.style.setProperty(
+      "--preview-sidebar-icon",
+      this.profile.sidebarIconColor
+    );
+
+    preview.style.setProperty(
+      "--preview-sidebar-selected",
+      this.profile.sidebarSelectedColor
+    );
+
+    preview.style.setProperty(
+      "--preview-sidebar-active-background",
+      this._rgba(this.profile.sidebarSelectedColor, 0.14)
     );
 
     preview.style.setProperty(
