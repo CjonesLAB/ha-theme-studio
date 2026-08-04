@@ -2,24 +2,27 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Entwicklungsstand: **0.1.0**  
-> Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor Updates sollte ein Home-Assistant-Backup erstellt werden.
+> Aktuelle Version: **0.1.1**
+>
+> Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
 ## Funktionen
 
 - getrennte Einstellungen für hellen und dunklen Modus
 - vier Startdesigns als Ausgangspunkt
 - anpassbare Haupt-, Hintergrund-, Karten-, Text-, Symbol- und Rahmenfarben
-- Kartenradius, Deckkraft, Rahmen und Schatten
+- Kartenradius, Deckkraft, Rahmenstärke und Schatten
 - Farbverläufe sowie eigene Hintergrundbilder
-- Dashboard-Hintergrundeffekt „Space Command“
-- kombinierbare Karteneffekte:
-  - Status Pulse
-  - Energy Flow
-  - Climate Aura
-  - Alarm-Fokus
-- Mehrfachauswahl geeigneter Leistungs-, Klima-, Alarm- und Statussensoren
-- Speicherung der Einstellungen in Home Assistant
+- Dashboard-Hintergrundeffekt **Space Command**
+- frei kombinierbare Karteneffekte:
+  - **Status Pulse** für gezielt ausgewählte Entitäten
+  - **Energy Flow** für Leistungssensoren mit Warn- und Kritisch-Schwellenwerten
+  - **Climate Aura** für Temperatur- und Luftfeuchtigkeitssensoren
+  - **Alarm-Fokus** für Alarm-, Problem- und Batteriesensoren
+- Suche und Mehrfachauswahl in allen Entitätslisten
+- Anzeige der Anzahl gewählter Entitäten
+- dauerhafte Speicherung der ausgewählten Effekt-Entitäten
+- Speicherung aller Einstellungen in Home Assistant
 - Erzeugung und direkte Aktivierung eines echten Home-Assistant-Themes
 - responsive Bedienung auf Desktop, Tablet und Smartphone
 
@@ -39,11 +42,25 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 | Hintergrund | Dashboard-Effekte |
 | --- | --- |
-| ![Hintergrundauswahl und eigener Bild-Upload](docs/images/fine-settings-background.png) | ![Dashboard- und Karteneffekte mit Sensorauswahl](docs/images/dashboard-effects.png) |
+| ![Hintergrundauswahl und eigener Bild-Upload](docs/images/fine-settings-background.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Entitätsauswahl](docs/images/dashboard-effects.png) |
+
+## Installation über HACS
+
+Theme Studio kann als benutzerdefiniertes Repository über HACS installiert werden:
+
+1. In HACS den Bereich **Integrationen** öffnen.
+2. Oben rechts das Drei-Punkte-Menü öffnen und **Benutzerdefinierte Repositorys** auswählen.
+3. Als Repository-URL `https://github.com/CjonesLAB/ha-theme-studio` eintragen.
+4. Als Kategorie **Integration** auswählen und das Repository hinzufügen.
+5. **Theme Studio** in HACS öffnen und die aktuelle Version herunterladen.
+6. Home Assistant neu starten.
+7. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen und die Integration hinzufügen.
+
+Danach erscheint **Theme Studio** in der Seitenleiste.
 
 ## Manuelle Installation
 
-1. Den Ordner `custom_components/theme_studio` in das Home-Assistant-Konfigurationsverzeichnis kopieren:
+1. Den Ordner `custom_components/theme_studio` aus dem aktuellen Release nach Home Assistant kopieren:
 
    ```text
    /config/custom_components/theme_studio
@@ -69,12 +86,33 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 5. Danach erscheint **Theme Studio** in der Seitenleiste.
 
+## Bedienung
+
+1. In der Seitenleiste **Theme Studio** öffnen.
+2. Ein Startdesign wählen und oben zwischen hellem und dunklem Modus wechseln.
+3. Farben, Karten und Hintergrund in den Feineinstellungen anpassen.
+4. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
+5. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
+6. Mit **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+
+Karteneffekte werden nur auf die jeweils ausgewählten Entitäten angewendet. Dadurch bleiben auch große Dashboards übersichtlich und unnötige Effekte werden vermieden.
+
 ## Aktualisierung
 
-Bei einer manuellen Aktualisierung den vollständigen Ordner `custom_components/theme_studio` ersetzen, Home Assistant neu starten und den Browsercache leeren.
+### Über HACS
+
+Das Update in HACS installieren und Home Assistant anschließend neu starten.
+
+### Manuell
+
+Den vollständigen Ordner `custom_components/theme_studio` durch die Dateien des neuen Releases ersetzen und Home Assistant neu starten.
+
+Nach jeder Aktualisierung die Home-Assistant-Oberfläche vollständig neu laden:
 
 - Desktop: `Strg + F5`
 - Companion App: App vollständig schließen und erneut öffnen
+
+Die aktuelle Version ist auf der [Releases-Seite](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) verfügbar.
 
 ## Erzeugte Daten
 
@@ -86,29 +124,18 @@ Theme Studio erzeugt beziehungsweise verwaltet folgende lokale Dateien:
 /config/.storage/theme_studio.settings
 ```
 
-Diese benutzerspezifischen Dateien gehören nicht zum GitHub-Repository.
-
-## HACS
-
-Theme Studio kann als benutzerdefiniertes Repository über HACS installiert werden:
-
-1. In HACS den Bereich **Integrationen** öffnen.
-2. Oben rechts das Drei-Punkte-Menü öffnen und **Benutzerdefinierte Repositorys** auswählen.
-3. Als Repository-URL `https://github.com/CjonesLAB/ha-theme-studio` eintragen.
-4. Als Kategorie **Integration** auswählen und das Repository hinzufügen.
-5. **Theme Studio** in HACS öffnen und herunterladen.
-6. Home Assistant neu starten und anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen.
+Diese benutzerspezifischen Dateien gehören nicht zum GitHub-Repository und werden bei einem Update nicht überschrieben.
 
 ## Datenschutz
 
 Theme Studio arbeitet lokal in Home Assistant und benötigt keinen externen Cloud-Dienst. Eigene Hintergrundbilder bleiben im lokalen Home-Assistant-Konfigurationsverzeichnis.
 
+## Fehler melden
+
+Fehler und Verbesserungsvorschläge können über den [GitHub-Issue-Tracker](https://github.com/CjonesLAB/ha-theme-studio/issues) gemeldet werden.
+
+Bitte dabei nach Möglichkeit die Home-Assistant-Version, die Theme-Studio-Version, die verwendete Plattform und relevante Protokollmeldungen angeben.
+
 ## Lizenz
 
 Theme Studio wird unter der [MIT-Lizenz](LICENSE) veröffentlicht.
-
-## Fehler melden
-
-Fehler können später über den GitHub-Issue-Tracker gemeldet werden:
-
-<https://github.com/CjonesLAB/ha-theme-studio/issues>
