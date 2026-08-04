@@ -5,6 +5,7 @@ const DEFAULT_MOTION = 35;
 const DEFAULT_GLOW = 35;
 const DEFAULT_CARD_EFFECTS = [];
 const DEFAULT_CARD_INTENSITY = 55;
+const DEFAULT_PULSE_ENTITIES = [];
 const DEFAULT_ENERGY_ENTITIES = [];
 const DEFAULT_ENERGY_WARNING = 500;
 const DEFAULT_ENERGY_CRITICAL = 2000;
@@ -26,6 +27,7 @@ class ThemeStudioEffects {
     this.glow = DEFAULT_GLOW;
     this.cardEffects = [...DEFAULT_CARD_EFFECTS];
     this.cardIntensity = DEFAULT_CARD_INTENSITY;
+    this.pulseEntities = [...DEFAULT_PULSE_ENTITIES];
     this.energyEntities = [...DEFAULT_ENERGY_ENTITIES];
     this.energyWarning = DEFAULT_ENERGY_WARNING;
     this.energyCritical = DEFAULT_ENERGY_CRITICAL;
@@ -240,6 +242,11 @@ class ThemeStudioEffects {
         100
       );
 
+    const requestedPulseEntities =
+      this._readEntityListVariable(
+        "--theme-studio-pulse-entities"
+      );
+
     const requestedEnergyEntities =
       this._readEntityListVariable(
         "--theme-studio-energy-entities"
@@ -322,6 +329,8 @@ class ThemeStudioEffects {
         this.cardEffects.join(",")
       || requestedCardIntensity !==
         this.cardIntensity
+      || requestedPulseEntities.join(",") !==
+        this.pulseEntities.join(",")
       || requestedEnergyEntities.join(",") !==
         this.energyEntities.join(",")
       || requestedEnergyWarning !== this.energyWarning
@@ -352,6 +361,7 @@ class ThemeStudioEffects {
     this.glow = requestedGlow;
     this.cardEffects = nextCardEffects;
     this.cardIntensity = requestedCardIntensity;
+    this.pulseEntities = requestedPulseEntities;
     this.energyEntities = requestedEnergyEntities;
     this.energyWarning = requestedEnergyWarning;
     this.energyCritical = Math.max(
@@ -456,7 +466,16 @@ class ThemeStudioEffects {
       return;
     }
 
+    const pulseEntities = new Set(this.pulseEntities);
+
     for (const [entityId, stateObject] of changedEntities) {
+      if (
+        pulseEntities.size > 0
+        && !pulseEntities.has(entityId)
+      ) {
+        continue;
+      }
+
       this._pulseEntityCards(
         entityId,
         stateObject
