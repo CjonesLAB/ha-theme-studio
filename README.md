@@ -2,7 +2,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Version: **0.1.1**
+> Aktuelle Version: **0.2.0**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -10,9 +10,12 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 - getrennte Einstellungen für hellen und dunklen Modus
 - vier Startdesigns als Ausgangspunkt
+- eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
+- Designprofile als JSON-Datei exportieren und importieren
 - anpassbare Haupt-, Hintergrund-, Karten-, Text-, Symbol- und Rahmenfarben
 - Kartenradius, Deckkraft, Rahmenstärke und Schatten
-- Farbverläufe sowie eigene Hintergrundbilder
+- Farbverläufe sowie eine Bibliothek für mehrere eigene Hintergrundbilder
+- Hintergrundbilder auswählen, umbenennen und sicher löschen
 - Dashboard-Hintergrundeffekt **Space Command**
 - frei kombinierbare Karteneffekte:
   - **Status Pulse** für gezielt ausgewählte Entitäten
@@ -93,7 +96,12 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 3. Farben, Karten und Hintergrund in den Feineinstellungen anpassen.
 4. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
 5. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
-6. Mit **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+6. Optional unter **Eigene Designprofile** einen Namen eingeben und das komplette Design als wiederverwendbares Profil speichern.
+7. Mit **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+
+Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Über **JSON exportieren** lassen sie sich sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Eigene Hintergrundbilder werden dabei nur als lokaler Pfad referenziert; die Bilddatei selbst muss auf dem Zielsystem separat vorhanden sein.
+
+Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-Dateien verwaltet werden. Bereits vorhandene Theme-Studio-Bilder werden automatisch übernommen. Ein Bild, das vom aktiven Design oder von einem gespeicherten Profil verwendet wird, ist vor versehentlichem Löschen geschützt.
 
 Karteneffekte werden nur auf die jeweils ausgewählten Entitäten angewendet. Dadurch bleiben auch große Dashboards übersichtlich und unnötige Effekte werden vermieden.
 
@@ -122,6 +130,8 @@ Theme Studio erzeugt beziehungsweise verwaltet folgende lokale Dateien:
 /config/themes/theme_studio.yaml
 /config/www/theme_studio/
 /config/.storage/theme_studio.settings
+/config/.storage/theme_studio.profiles
+/config/.storage/theme_studio.backgrounds
 ```
 
 Diese benutzerspezifischen Dateien gehören nicht zum GitHub-Repository und werden bei einem Update nicht überschrieben.

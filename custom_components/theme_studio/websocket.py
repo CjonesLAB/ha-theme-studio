@@ -6,8 +6,10 @@ import base64
 import binascii
 import json
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import voluptuous as vol
 
@@ -20,6 +22,15 @@ from .const import DOMAIN
 
 STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}.settings"
+PROFILE_STORAGE_VERSION = 1
+PROFILE_STORAGE_KEY = f"{DOMAIN}.profiles"
+BACKGROUND_STORAGE_VERSION = 1
+BACKGROUND_STORAGE_KEY = f"{DOMAIN}.backgrounds"
+
+MAX_PROFILES = 32
+MAX_PROFILE_NAME_LENGTH = 48
+MAX_BACKGROUNDS = 24
+MAX_BACKGROUND_NAME_LENGTH = 48
 
 THEME_NAME = "Theme Studio"
 THEME_FILENAME = "theme_studio.yaml"
@@ -90,9 +101,14 @@ BACKGROUND_URL_VALIDATOR = vol.Any(
     "",
     vol.Match(
         r"^/local/theme_studio/"
-        r"(background|background_light|background_dark)"
+        r"(background|background_light|background_dark|image_[a-f0-9]{32})"
         r"\.(jpg|png|webp)(\?v=[0-9]+)?$"
     ),
+)
+
+BACKGROUND_FILENAME_VALIDATOR = vol.Match(
+    r"^(background|background_light|background_dark|image_[a-f0-9]{32})"
+    r"\.(jpg|png|webp)$"
 )
 
 PROFILE_SCHEMA = vol.Schema(
@@ -216,6 +232,14 @@ SETTINGS_SCHEMA = vol.Schema(
     extra=vol.PREVENT_EXTRA,
 )
 
+PROFILE_NAME_VALIDATOR = vol.All(
+    str,
+    vol.Length(min=1, max=MAX_PROFILE_NAME_LENGTH),
+)
+
+PROFILE_ID_VALIDATOR = vol.Match(r"^[a-f0-9]{32}$")
+BACKGROUND_ID_VALIDATOR = PROFILE_ID_VALIDATOR
+
 
 def get_store(
     hass: HomeAssistant,
@@ -226,6 +250,30 @@ def get_store(
         hass,
         STORAGE_VERSION,
         STORAGE_KEY,
+    )
+
+
+def get_profile_store(
+    hass: HomeAssistant,
+) -> Store[dict[str, Any]]:
+    """Return the Theme Studio profile storage helper."""
+
+    return Store(
+        hass,
+        PROFILE_STORAGE_VERSION,
+        PROFILE_STORAGE_KEY,
+    )
+
+
+def get_background_store(
+    hass: HomeAssistant,
+) -> Store[dict[str, Any]]:
+    """Return the Theme Studio background storage helper."""
+
+    return Store(
+        hass,
+        BACKGROUND_STORAGE_VERSION,
+        BACKGROUND_STORAGE_KEY,
     )
 
 
@@ -375,6 +423,342 @@ def default_settings() -> dict[str, Any]:
         "dark": DEFAULT_DARK_PROFILE.copy(),
         "effects": DEFAULT_EFFECT_SETTINGS.copy(),
     }
+
+
+def normalize_profile_name(name: Any) -> str:
+    """Normalize and validate a user-facing profile name."""
+
+    if not isinstance(name, str):
+        raise vol.Invalid("Der Profilname muss Text sein.")
+
+    normalized = " ".join(name.split())
+    return PROFILE_NAME_VALIDATOR(normalized)
+
+
+def normalize_saved_profiles(
+    saved: Any,
+) -> list[dict[str, Any]]:
+    """Return valid stored profiles and ignore invalid records."""
+
+    if not isinstance(saved, dict):
+        return []
+
+    raw_profiles = saved.get("profiles")
+    if not isinstance(raw_profiles, list):
+        return []
+
+    profiles: list[dict[str, Any]] = []
+    known_ids: set[str] = set()
+
+    for raw_profile in raw_profiles:
+        if not isinstance(raw_profile, dict):
+            continue
+
+        try:
+            profile_id = PROFILE_ID_VALIDATOR(
+                raw_profile.get("id", "")
+            )
+            name = normalize_profile_name(
+                raw_profile.get("name")
+            )
+            settings = normalize_settings(
+                raw_profile.get("settings", {})
+            )
+        except (vol.Invalid, TypeError, ValueError):
+            continue
+
+        if profile_id in known_ids:
+            continue
+
+        created_at = raw_profile.get("created_at")
+        updated_at = raw_profile.get("updated_at")
+
+        if not isinstance(created_at, str):
+            created_at = ""
+
+        if not isinstance(updated_at, str):
+            updated_at = created_at
+
+        known_ids.add(profile_id)
+        profiles.append(
+            {
+                "id": profile_id,
+                "name": name,
+                "created_at": created_at,
+                "updated_at": updated_at,
+                "settings": settings,
+            }
+        )
+
+        if len(profiles) >= MAX_PROFILES:
+            break
+
+    profiles.sort(
+        key=lambda profile: profile["name"].casefold()
+    )
+    return profiles
+
+
+async def async_load_profiles(
+    hass: HomeAssistant,
+) -> list[dict[str, Any]]:
+    """Load and normalize all saved profiles."""
+
+    store = get_profile_store(hass)
+    saved = await store.async_load()
+    return normalize_saved_profiles(saved)
+
+
+async def async_save_profiles(
+    hass: HomeAssistant,
+    profiles: list[dict[str, Any]],
+) -> None:
+    """Persist all normalized profiles."""
+
+    store = get_profile_store(hass)
+    await store.async_save({"profiles": profiles})
+
+
+def normalize_background_name(name: Any) -> str:
+    """Normalize and validate a background display name."""
+
+    if not isinstance(name, str):
+        raise vol.Invalid("Der Bildname muss Text sein.")
+
+    normalized = " ".join(name.split())
+
+    if not 1 <= len(normalized) <= MAX_BACKGROUND_NAME_LENGTH:
+        raise vol.Invalid(
+            "Der Bildname muss zwischen 1 und "
+            f"{MAX_BACKGROUND_NAME_LENGTH} Zeichen lang sein."
+        )
+
+    return normalized
+
+
+def normalize_saved_backgrounds(
+    saved: Any,
+) -> list[dict[str, Any]]:
+    """Return valid stored background metadata."""
+
+    if not isinstance(saved, dict):
+        return []
+
+    raw_backgrounds = saved.get("backgrounds")
+    if not isinstance(raw_backgrounds, list):
+        return []
+
+    backgrounds: list[dict[str, Any]] = []
+    known_ids: set[str] = set()
+    known_filenames: set[str] = set()
+
+    for raw_background in raw_backgrounds:
+        if not isinstance(raw_background, dict):
+            continue
+
+        try:
+            background_id = BACKGROUND_ID_VALIDATOR(
+                raw_background.get("id", "")
+            )
+            filename = BACKGROUND_FILENAME_VALIDATOR(
+                raw_background.get("filename", "")
+            )
+            name = normalize_background_name(
+                raw_background.get("name")
+            )
+        except (vol.Invalid, TypeError, ValueError):
+            continue
+
+        if (
+            background_id in known_ids
+            or filename in known_filenames
+        ):
+            continue
+
+        created_at = raw_background.get("created_at")
+        if not isinstance(created_at, str):
+            created_at = ""
+
+        known_ids.add(background_id)
+        known_filenames.add(filename)
+        backgrounds.append(
+            {
+                "id": background_id,
+                "name": name,
+                "filename": filename,
+                "created_at": created_at,
+            }
+        )
+
+        if len(backgrounds) >= MAX_BACKGROUNDS:
+            break
+
+    return backgrounds
+
+
+def default_background_name(filename: str) -> str:
+    """Return a readable name for an existing image file."""
+
+    stem = Path(filename).stem
+    names = {
+        "background": "Hintergrund",
+        "background_light": "Hintergrund hell",
+        "background_dark": "Hintergrund dunkel",
+    }
+    return names.get(stem, "Eigenes Hintergrundbild")
+
+
+def sync_background_library(
+    directory: Path,
+    stored_backgrounds: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], bool]:
+    """Discover valid files and remove missing library records."""
+
+    directory.mkdir(parents=True, exist_ok=True)
+    files: dict[str, Path] = {}
+
+    for path in directory.iterdir():
+        if not path.is_file():
+            continue
+
+        try:
+            filename = BACKGROUND_FILENAME_VALIDATOR(path.name)
+        except vol.Invalid:
+            continue
+
+        files[filename] = path
+
+    backgrounds = [
+        background
+        for background in stored_backgrounds
+        if background["filename"] in files
+    ]
+    known_filenames = {
+        background["filename"]
+        for background in backgrounds
+    }
+
+    for filename in sorted(files):
+        if (
+            filename in known_filenames
+            or len(backgrounds) >= MAX_BACKGROUNDS
+        ):
+            continue
+
+        backgrounds.append(
+            {
+                "id": uuid4().hex,
+                "name": default_background_name(filename),
+                "filename": filename,
+                "created_at": datetime.fromtimestamp(
+                    files[filename].stat().st_mtime,
+                    UTC,
+                ).isoformat(),
+            }
+        )
+
+    backgrounds.sort(
+        key=lambda background: background["name"].casefold()
+    )
+    changed = backgrounds != stored_backgrounds
+    return backgrounds, changed
+
+
+def background_results(
+    directory: Path,
+    backgrounds: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Add public URLs and file sizes to background metadata."""
+
+    results: list[dict[str, Any]] = []
+
+    for background in backgrounds:
+        path = directory / background["filename"]
+
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+
+        results.append(
+            {
+                **background,
+                "url": (
+                    f"/local/{BACKGROUND_DIRECTORY}/"
+                    f'{background["filename"]}?v={stat.st_mtime_ns}'
+                ),
+                "size": stat.st_size,
+            }
+        )
+
+    return results
+
+
+async def async_load_backgrounds(
+    hass: HomeAssistant,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Load metadata, discover legacy images and build responses."""
+
+    store = get_background_store(hass)
+    saved = await store.async_load()
+    stored_backgrounds = normalize_saved_backgrounds(saved)
+    directory = Path(
+        hass.config.path("www", BACKGROUND_DIRECTORY)
+    )
+    backgrounds, changed = await hass.async_add_executor_job(
+        sync_background_library,
+        directory,
+        stored_backgrounds,
+    )
+
+    if changed or saved is None:
+        await store.async_save({"backgrounds": backgrounds})
+
+    results = await hass.async_add_executor_job(
+        background_results,
+        directory,
+        backgrounds,
+    )
+    return backgrounds, results
+
+
+async def async_save_backgrounds(
+    hass: HomeAssistant,
+    backgrounds: list[dict[str, Any]],
+) -> None:
+    """Persist normalized background metadata."""
+
+    store = get_background_store(hass)
+    await store.async_save({"backgrounds": backgrounds})
+
+
+def background_is_referenced(
+    filename: str,
+    settings: dict[str, Any],
+    profiles: list[dict[str, Any]],
+) -> bool:
+    """Return whether current settings or a profile uses a file."""
+
+    expected_path = f"/local/{BACKGROUND_DIRECTORY}/{filename}"
+
+    def settings_use_file(candidate: dict[str, Any]) -> bool:
+        return any(
+            str(candidate[mode].get("backgroundImage", ""))
+            .split("?", 1)[0]
+            == expected_path
+            for mode in ("light", "dark")
+        )
+
+    return settings_use_file(settings) or any(
+        settings_use_file(profile["settings"])
+        for profile in profiles
+    )
+
+
+def delete_background_file(path: Path) -> None:
+    """Delete one validated background file."""
+
+    path.unlink(missing_ok=True)
 
 
 def hex_to_rgb(
@@ -901,10 +1285,369 @@ async def websocket_save_settings(
     {
         vol.Required(
             "type"
+        ): "theme_studio/get_profiles",
+    }
+)
+@websocket_api.async_response
+async def websocket_get_profiles(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return all saved design profiles."""
+
+    profiles = await async_load_profiles(hass)
+
+    connection.send_result(
+        msg["id"],
+        {
+            "profiles": profiles,
+            "maximum": MAX_PROFILES,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/save_profile",
+        vol.Optional("profile_id"): PROFILE_ID_VALIDATOR,
+        vol.Required("name"): str,
+        vol.Required("settings"): dict,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_save_profile(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Create or update one design profile."""
+
+    try:
+        name = normalize_profile_name(msg["name"])
+        settings = normalize_settings(msg["settings"])
+    except (vol.Invalid, TypeError, ValueError) as error:
+        connection.send_error(
+            msg["id"],
+            "invalid_profile",
+            f"Das Profil ist ungültig: {error}",
+        )
+        return
+
+    profiles = await async_load_profiles(hass)
+    profile_id = msg.get("profile_id")
+    existing_profile = next(
+        (
+            profile
+            for profile in profiles
+            if profile["id"] == profile_id
+        ),
+        None,
+    )
+
+    if profile_id and existing_profile is None:
+        connection.send_error(
+            msg["id"],
+            "profile_not_found",
+            "Das gewählte Profil wurde nicht gefunden.",
+        )
+        return
+
+    if existing_profile is None and len(profiles) >= MAX_PROFILES:
+        connection.send_error(
+            msg["id"],
+            "profile_limit_reached",
+            (
+                "Es können höchstens "
+                f"{MAX_PROFILES} Profile gespeichert werden."
+            ),
+        )
+        return
+
+    now = datetime.now(UTC).isoformat()
+
+    if existing_profile is None:
+        saved_profile = {
+            "id": uuid4().hex,
+            "name": name,
+            "created_at": now,
+            "updated_at": now,
+            "settings": settings,
+        }
+        profiles.append(saved_profile)
+    else:
+        existing_profile["name"] = name
+        existing_profile["settings"] = settings
+        existing_profile["updated_at"] = now
+        saved_profile = existing_profile
+
+    profiles.sort(
+        key=lambda profile: profile["name"].casefold()
+    )
+    await async_save_profiles(hass, profiles)
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "profile": saved_profile,
+            "profiles": profiles,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/delete_profile",
+        vol.Required("profile_id"): PROFILE_ID_VALIDATOR,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_delete_profile(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Delete one saved design profile."""
+
+    profiles = await async_load_profiles(hass)
+    remaining_profiles = [
+        profile
+        for profile in profiles
+        if profile["id"] != msg["profile_id"]
+    ]
+
+    if len(remaining_profiles) == len(profiles):
+        connection.send_error(
+            msg["id"],
+            "profile_not_found",
+            "Das gewählte Profil wurde nicht gefunden.",
+        )
+        return
+
+    await async_save_profiles(
+        hass,
+        remaining_profiles,
+    )
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "profiles": remaining_profiles,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/get_backgrounds",
+    }
+)
+@websocket_api.async_response
+async def websocket_get_backgrounds(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return all managed and discovered background images."""
+
+    _, results = await async_load_backgrounds(hass)
+
+    connection.send_result(
+        msg["id"],
+        {
+            "backgrounds": results,
+            "maximum": MAX_BACKGROUNDS,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/rename_background",
+        vol.Required("background_id"): BACKGROUND_ID_VALIDATOR,
+        vol.Required("name"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_rename_background(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Rename one background without changing its URL."""
+
+    try:
+        name = normalize_background_name(msg["name"])
+    except (vol.Invalid, TypeError, ValueError) as error:
+        connection.send_error(
+            msg["id"],
+            "invalid_background_name",
+            str(error),
+        )
+        return
+
+    backgrounds, _ = await async_load_backgrounds(hass)
+    background = next(
+        (
+            item
+            for item in backgrounds
+            if item["id"] == msg["background_id"]
+        ),
+        None,
+    )
+
+    if background is None:
+        connection.send_error(
+            msg["id"],
+            "background_not_found",
+            "Das Hintergrundbild wurde nicht gefunden.",
+        )
+        return
+
+    background["name"] = name
+    backgrounds.sort(
+        key=lambda item: item["name"].casefold()
+    )
+    await async_save_backgrounds(hass, backgrounds)
+    directory = Path(
+        hass.config.path("www", BACKGROUND_DIRECTORY)
+    )
+    results = await hass.async_add_executor_job(
+        background_results,
+        directory,
+        backgrounds,
+    )
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "backgrounds": results,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/delete_background",
+        vol.Required("background_id"): BACKGROUND_ID_VALIDATOR,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_delete_background(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Delete an unused background image and its metadata."""
+
+    backgrounds, _ = await async_load_backgrounds(hass)
+    background = next(
+        (
+            item
+            for item in backgrounds
+            if item["id"] == msg["background_id"]
+        ),
+        None,
+    )
+
+    if background is None:
+        connection.send_error(
+            msg["id"],
+            "background_not_found",
+            "Das Hintergrundbild wurde nicht gefunden.",
+        )
+        return
+
+    settings_store = get_store(hass)
+    raw_settings = await settings_store.async_load()
+
+    try:
+        settings = normalize_settings(raw_settings or {})
+    except (vol.Invalid, TypeError, ValueError):
+        settings = default_settings()
+
+    profiles = await async_load_profiles(hass)
+
+    if background_is_referenced(
+        background["filename"],
+        settings,
+        profiles,
+    ):
+        connection.send_error(
+            msg["id"],
+            "background_in_use",
+            (
+                "Das Bild wird vom aktiven Design oder von einem "
+                "gespeicherten Profil verwendet und kann nicht "
+                "gelöscht werden."
+            ),
+        )
+        return
+
+    directory = Path(
+        hass.config.path("www", BACKGROUND_DIRECTORY)
+    )
+
+    try:
+        await hass.async_add_executor_job(
+            delete_background_file,
+            directory / background["filename"],
+        )
+    except OSError as error:
+        connection.send_error(
+            msg["id"],
+            "background_delete_failed",
+            f"Das Bild konnte nicht gelöscht werden: {error}",
+        )
+        return
+
+    remaining = [
+        item
+        for item in backgrounds
+        if item["id"] != background["id"]
+    ]
+    await async_save_backgrounds(hass, remaining)
+    results = await hass.async_add_executor_job(
+        background_results,
+        directory,
+        remaining,
+    )
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "backgrounds": results,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
         ): "theme_studio/upload_background",
-        vol.Required("mode"): vol.In(
+        vol.Optional("mode"): vol.In(
             ("light", "dark")
         ),
+        vol.Optional("name"): str,
         vol.Required(
             "mime_type"
         ): vol.In(tuple(MIME_EXTENSIONS)),
@@ -920,13 +1663,35 @@ async def websocket_upload_background(
 ) -> None:
     """Upload a background for one color mode."""
 
-    mode = msg["mode"]
     mime_type = msg["mime_type"]
     extension = MIME_EXTENSIONS[mime_type]
+    backgrounds, _ = await async_load_backgrounds(hass)
 
-    filename = (
-        f"background_{mode}.{extension}"
-    )
+    if len(backgrounds) >= MAX_BACKGROUNDS:
+        connection.send_error(
+            msg["id"],
+            "background_limit_reached",
+            (
+                "Es können höchstens "
+                f"{MAX_BACKGROUNDS} Hintergrundbilder gespeichert werden."
+            ),
+        )
+        return
+
+    background_id = uuid4().hex
+    filename = f"image_{background_id}.{extension}"
+
+    try:
+        name = normalize_background_name(
+            msg.get("name") or "Eigenes Hintergrundbild"
+        )
+    except (vol.Invalid, TypeError, ValueError) as error:
+        connection.send_error(
+            msg["id"],
+            "invalid_background_name",
+            str(error),
+        )
+        return
 
     target_path = Path(
         hass.config.path(
@@ -968,13 +1733,36 @@ async def websocket_upload_background(
         f"{filename}?v={version}"
     )
 
+    background = {
+        "id": background_id,
+        "name": name,
+        "filename": filename,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    backgrounds.append(background)
+    backgrounds.sort(
+        key=lambda item: item["name"].casefold()
+    )
+    await async_save_backgrounds(hass, backgrounds)
+    results = await hass.async_add_executor_job(
+        background_results,
+        target_path.parent,
+        backgrounds,
+    )
+
     connection.send_result(
         msg["id"],
         {
             "success": True,
-            "mode": mode,
+            "mode": msg.get("mode"),
             "url": image_url,
             "mime_type": mime_type,
+            "background": next(
+                item
+                for item in results
+                if item["id"] == background_id
+            ),
+            "backgrounds": results,
         },
     )
 
@@ -993,6 +1781,36 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_save_settings,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_get_profiles,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_save_profile,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_delete_profile,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_get_backgrounds,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_rename_background,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_delete_background,
     )
 
     websocket_api.async_register_command(

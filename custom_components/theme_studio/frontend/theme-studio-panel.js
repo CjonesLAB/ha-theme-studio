@@ -13,6 +13,11 @@ class ThemeStudioPanel extends HTMLElement {
     this.activeMode = "dark";
     this.selectedDesign = null;
     this.galleryOpen = true;
+    this.profiles = [];
+    this.profileLimit = 32;
+    this.activeProfileId = "";
+    this.backgrounds = [];
+    this.backgroundLimit = 24;
 
     this.settings = {
       light: {
@@ -213,6 +218,87 @@ class ThemeStudioPanel extends HTMLElement {
           margin: 0;
           color: var(--secondary-text-color);
           font-size: 12px;
+        }
+
+        .profile-panel {
+          margin-bottom: 18px;
+        }
+
+        .profile-content {
+          display: grid;
+          grid-template-columns: minmax(170px, 0.8fr) minmax(190px, 1fr);
+          gap: 10px;
+          padding: 0 17px 16px;
+        }
+
+        .profile-field {
+          display: grid;
+          gap: 5px;
+        }
+
+        .profile-field label {
+          color: var(--secondary-text-color);
+          font-size: 11px;
+          font-weight: 600;
+        }
+
+        .profile-field input,
+        .profile-field select {
+          min-height: 39px;
+          padding: 0 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+        }
+
+        .profile-actions {
+          grid-column: 1 / -1;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+
+        .profile-button,
+        .profile-import-label {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 35px;
+          padding: 0 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          background: transparent;
+          color: var(--primary-text-color);
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .profile-button.primary {
+          border-color: transparent;
+          background: var(--primary-color);
+          color: var(--text-primary-color, white);
+        }
+
+        .profile-button.danger {
+          color: var(--error-color, #db4437);
+        }
+
+        .profile-button:disabled {
+          opacity: 0.42;
+          cursor: not-allowed;
+        }
+
+        .profile-import-label input {
+          display: none;
+        }
+
+        .profile-hint {
+          grid-column: 1 / -1;
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 10px;
         }
 
         .preset-gallery {
@@ -833,6 +919,123 @@ class ThemeStudioPanel extends HTMLElement {
           font-size: 9px;
         }
 
+        .background-upload-name {
+          width: 100%;
+          min-height: 34px;
+          margin-bottom: 8px;
+          padding: 0 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          font-size: 11px;
+        }
+
+        .background-library-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin: 15px 0 8px;
+        }
+
+        .background-library-heading h4 {
+          margin: 0;
+          font-size: 11px;
+        }
+
+        .background-library-count {
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .background-library {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+
+        .background-library-empty {
+          grid-column: 1 / -1;
+          margin: 0;
+          padding: 14px 9px;
+          border: 1px dashed var(--divider-color);
+          border-radius: 9px;
+          color: var(--secondary-text-color);
+          font-size: 10px;
+          text-align: center;
+        }
+
+        .background-library-card {
+          min-width: 0;
+          overflow: hidden;
+          border: 2px solid transparent;
+          border-radius: 10px;
+          background: var(--secondary-background-color);
+        }
+
+        .background-library-card.active {
+          border-color: var(--primary-color);
+        }
+
+        .background-select-button {
+          display: block;
+          width: 100%;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: var(--primary-text-color);
+          text-align: left;
+        }
+
+        .background-library-preview {
+          display: block;
+          min-height: 72px;
+          background-color: #101719;
+          background-position: center;
+          background-size: cover;
+        }
+
+        .background-library-name {
+          display: block;
+          overflow: hidden;
+          padding: 7px 8px 3px;
+          font-size: 10px;
+          font-weight: 700;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .background-library-size {
+          display: block;
+          padding: 0 8px 7px;
+          color: var(--secondary-text-color);
+          font-size: 8px;
+        }
+
+        .background-library-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          border-top: 1px solid var(--divider-color);
+        }
+
+        .background-library-action {
+          min-height: 29px;
+          border: 0;
+          background: transparent;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .background-library-action +
+        .background-library-action {
+          border-left: 1px solid var(--divider-color);
+        }
+
+        .background-library-action.danger {
+          color: var(--error-color, #db4437);
+        }
+
         .editor-actions {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -1289,6 +1492,14 @@ class ThemeStudioPanel extends HTMLElement {
           .editor-actions {
             grid-template-columns: 1fr;
           }
+
+          .profile-content {
+            grid-template-columns: 1fr;
+          }
+
+          .profile-actions > * {
+            flex: 1 1 calc(50% - 7px);
+          }
         }
       </style>
 
@@ -1326,6 +1537,97 @@ class ThemeStudioPanel extends HTMLElement {
         </header>
 
         <p id="status" class="status"></p>
+
+        <section class="panel profile-panel">
+          <div class="panel-heading">
+            <h2>Eigene Designprofile</h2>
+            <p>
+              Komplette Designs speichern, laden oder weitergeben.
+            </p>
+          </div>
+
+          <div class="profile-content">
+            <div class="profile-field">
+              <label for="profile-select">
+                Gespeichertes Profil
+              </label>
+              <select id="profile-select">
+                <option value="">
+                  Neues Profil anlegen
+                </option>
+              </select>
+            </div>
+
+            <div class="profile-field">
+              <label for="profile-name">
+                Profilname
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                maxlength="48"
+                placeholder="Zum Beispiel: Abend"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="profile-actions">
+              <button
+                id="profile-save-button"
+                class="profile-button primary"
+              >
+                Profil speichern
+              </button>
+
+              <button
+                id="profile-rename-button"
+                class="profile-button"
+                disabled
+              >
+                Umbenennen
+              </button>
+
+              <button
+                id="profile-duplicate-button"
+                class="profile-button"
+                disabled
+              >
+                Duplizieren
+              </button>
+
+              <button
+                id="profile-export-button"
+                class="profile-button"
+                disabled
+              >
+                JSON exportieren
+              </button>
+
+              <label class="profile-import-label">
+                JSON importieren
+                <input
+                  id="profile-import-file"
+                  type="file"
+                  accept="application/json,.json"
+                >
+              </label>
+
+              <button
+                id="profile-delete-button"
+                class="profile-button danger"
+                disabled
+              >
+                Löschen
+              </button>
+            </div>
+
+            <p class="profile-hint">
+              Es können bis zu 32 Profile gespeichert werden.
+              Eigene Hintergrundbilder werden als lokaler Pfad,
+              nicht als Bilddatei exportiert.
+            </p>
+          </div>
+        </section>
 
         <section class="builder-grid">
           <div class="panel">
@@ -1501,6 +1803,15 @@ class ThemeStudioPanel extends HTMLElement {
                     JPG, PNG oder WebP bis 5 MB.
                   </p>
 
+                  <input
+                    id="background-upload-name"
+                    class="background-upload-name"
+                    type="text"
+                    maxlength="48"
+                    placeholder="Bildname (optional)"
+                    autocomplete="off"
+                  >
+
                   <label
                     id="upload-label"
                     class="upload-button"
@@ -1520,6 +1831,21 @@ class ThemeStudioPanel extends HTMLElement {
                     class="file-name"
                   ></div>
                 </div>
+
+                <div class="background-library-heading">
+                  <h4>Bildbibliothek</h4>
+                  <span
+                    id="background-library-count"
+                    class="background-library-count"
+                  >
+                    0 von 24 Bildern
+                  </span>
+                </div>
+
+                <div
+                  id="background-library"
+                  class="background-library"
+                ></div>
 
                 ${this._rangeField(
                   "darkening",
@@ -1933,6 +2259,8 @@ class ThemeStudioPanel extends HTMLElement {
     this._syncControls();
     this._updatePreview();
     this._syncPresetArea();
+    this._renderProfileOptions();
+    this._renderBackgroundLibrary();
   }
 
   _presetGalleryMarkup() {
@@ -2341,6 +2669,48 @@ class ThemeStudioPanel extends HTMLElement {
 
   _bindEvents() {
     this.shadowRoot
+      .getElementById("profile-select")
+      .addEventListener("change", (event) => {
+        this._loadProfileSelection(event.target.value);
+      });
+
+    this.shadowRoot
+      .getElementById("profile-save-button")
+      .addEventListener("click", () => {
+        this._saveProfile();
+      });
+
+    this.shadowRoot
+      .getElementById("profile-rename-button")
+      .addEventListener("click", () => {
+        this._renameProfile();
+      });
+
+    this.shadowRoot
+      .getElementById("profile-duplicate-button")
+      .addEventListener("click", () => {
+        this._duplicateProfile();
+      });
+
+    this.shadowRoot
+      .getElementById("profile-export-button")
+      .addEventListener("click", () => {
+        this._exportProfile();
+      });
+
+    this.shadowRoot
+      .getElementById("profile-import-file")
+      .addEventListener("change", (event) => {
+        this._importProfile(event);
+      });
+
+    this.shadowRoot
+      .getElementById("profile-delete-button")
+      .addEventListener("click", () => {
+        this._deleteProfile();
+      });
+
+    this.shadowRoot
       .querySelectorAll(".preset-card")
       .forEach((button) => {
         button.addEventListener("click", () => {
@@ -2570,6 +2940,26 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
+      .getElementById("background-library")
+      .addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+
+        if (!button) {
+          return;
+        }
+
+        const backgroundId = button.dataset.backgroundId;
+
+        if (button.classList.contains("background-select-button")) {
+          this._selectLibraryBackground(backgroundId);
+        } else if (button.dataset.action === "rename") {
+          this._renameBackground(backgroundId);
+        } else if (button.dataset.action === "delete") {
+          this._deleteBackground(backgroundId);
+        }
+      });
+
+    this.shadowRoot
       .getElementById("reset-button")
       .addEventListener("click", () => {
         this._resetActiveMode();
@@ -2586,6 +2976,374 @@ class ThemeStudioPanel extends HTMLElement {
       .addEventListener("click", () => {
         this._saveAndApplySettings();
       });
+  }
+
+  _cloneSettings(settings) {
+    return JSON.parse(JSON.stringify(settings));
+  }
+
+  _currentProfile() {
+    return this.profiles.find(
+      (profile) => profile.id === this.activeProfileId
+    ) || null;
+  }
+
+  _profileName() {
+    return this.shadowRoot
+      .getElementById("profile-name")
+      .value
+      .trim()
+      .replace(/\s+/g, " ");
+  }
+
+  _renderProfileOptions() {
+    const select =
+      this.shadowRoot.getElementById("profile-select");
+    const nameInput =
+      this.shadowRoot.getElementById("profile-name");
+    const currentProfile = this._currentProfile();
+
+    select.innerHTML = `
+      <option value="">Neues Profil anlegen</option>
+      ${this.profiles.map((profile) => `
+        <option value="${this._escapeHtml(profile.id)}">
+          ${this._escapeHtml(profile.name)}
+        </option>
+      `).join("")}
+    `;
+
+    if (currentProfile) {
+      select.value = currentProfile.id;
+      nameInput.value = currentProfile.name;
+    } else {
+      this.activeProfileId = "";
+      select.value = "";
+    }
+
+    this._syncProfileControls();
+  }
+
+  _syncProfileControls(busy = false) {
+    const hasProfile = Boolean(this._currentProfile());
+    const saveButton =
+      this.shadowRoot.getElementById("profile-save-button");
+
+    saveButton.textContent = hasProfile
+      ? "Profil aktualisieren"
+      : "Profil speichern";
+
+    [
+      "profile-rename-button",
+      "profile-duplicate-button",
+      "profile-export-button",
+      "profile-delete-button",
+    ].forEach((id) => {
+      this.shadowRoot.getElementById(id).disabled =
+        busy || !hasProfile;
+    });
+
+    saveButton.disabled = busy;
+    this.shadowRoot.getElementById("profile-select").disabled =
+      busy;
+    this.shadowRoot.getElementById("profile-name").disabled =
+      busy;
+    this.shadowRoot.getElementById("profile-import-file").disabled =
+      busy;
+  }
+
+  _loadProfileSelection(profileId) {
+    this.activeProfileId = profileId;
+    const profile = this._currentProfile();
+    const nameInput =
+      this.shadowRoot.getElementById("profile-name");
+
+    if (!profile) {
+      this.activeProfileId = "";
+      nameInput.value = "";
+      this._syncProfileControls();
+      this._setStatus(
+        "Name eingeben und das aktuelle Design als neues Profil speichern.",
+        ""
+      );
+      return;
+    }
+
+    this.settings = this._cloneSettings(profile.settings);
+    this.selectedDesign = null;
+    this.galleryOpen = true;
+    nameInput.value = profile.name;
+
+    this._syncPresetArea();
+    this._syncControls();
+    this._updatePreview();
+    this._syncProfileControls();
+    this._setStatus(
+      `${profile.name} geladen. Zum Aktivieren „Beide Modi anwenden“ drücken.`,
+      "success"
+    );
+  }
+
+  async _loadProfiles() {
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/get_profiles",
+      });
+
+      this.profiles = Array.isArray(result.profiles)
+        ? result.profiles
+        : [];
+      this.profileLimit = Number(result.maximum) || 32;
+      this._renderProfileOptions();
+    } catch (error) {
+      this._setStatus(
+        `Designprofile konnten nicht geladen werden: ${this._errorMessage(error)}`,
+        "error"
+      );
+    }
+  }
+
+  async _saveProfile() {
+    const name = this._profileName();
+
+    if (!name) {
+      this._setStatus("Bitte einen Profilnamen eingeben.", "error");
+      return;
+    }
+
+    const currentProfile = this._currentProfile();
+    const message = {
+      type: "theme_studio/save_profile",
+      name,
+      settings: this._cloneSettings(this.settings),
+    };
+
+    if (currentProfile) {
+      message.profile_id = currentProfile.id;
+    }
+
+    this._syncProfileControls(true);
+
+    try {
+      const result = await this._hass.callWS(message);
+      this.profiles = result.profiles;
+      this.activeProfileId = result.profile.id;
+      this._renderProfileOptions();
+      this._setStatus(
+        currentProfile
+          ? `${result.profile.name} wurde aktualisiert.`
+          : `${result.profile.name} wurde gespeichert.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      this._syncProfileControls();
+    }
+  }
+
+  async _renameProfile() {
+    const currentProfile = this._currentProfile();
+    const name = this._profileName();
+
+    if (!currentProfile || !name) {
+      this._setStatus(
+        "Bitte ein Profil wählen und einen Namen eingeben.",
+        "error"
+      );
+      return;
+    }
+
+    this._syncProfileControls(true);
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/save_profile",
+        profile_id: currentProfile.id,
+        name,
+        settings: this._cloneSettings(currentProfile.settings),
+      });
+
+      this.profiles = result.profiles;
+      this.activeProfileId = result.profile.id;
+      this._renderProfileOptions();
+      this._setStatus(
+        `Profil wurde in ${result.profile.name} umbenannt.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      this._syncProfileControls();
+    }
+  }
+
+  async _duplicateProfile() {
+    const currentProfile = this._currentProfile();
+
+    if (!currentProfile) {
+      return;
+    }
+
+    const copyName = `${currentProfile.name} Kopie`.slice(0, 48);
+    this._syncProfileControls(true);
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/save_profile",
+        name: copyName,
+        settings: this._cloneSettings(currentProfile.settings),
+      });
+
+      this.profiles = result.profiles;
+      this.activeProfileId = result.profile.id;
+      this.settings = this._cloneSettings(result.profile.settings);
+      this.selectedDesign = null;
+      this.galleryOpen = true;
+      this._renderProfileOptions();
+      this._syncPresetArea();
+      this._syncControls();
+      this._updatePreview();
+      this._setStatus(
+        `${result.profile.name} wurde angelegt.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      this._syncProfileControls();
+    }
+  }
+
+  _exportProfile() {
+    const profile = this._currentProfile();
+
+    if (!profile) {
+      return;
+    }
+
+    const exportData = {
+      format: "theme-studio-profile",
+      version: 1,
+      name: profile.name,
+      exported_at: new Date().toISOString(),
+      settings: this._cloneSettings(profile.settings),
+    };
+    const blob = new Blob(
+      [JSON.stringify(exportData, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const filename = profile.name
+      .toLocaleLowerCase("de")
+      .replace(/[^a-z0-9äöüß]+/gi, "-")
+      .replace(/^-|-$/g, "") || "theme-studio-profil";
+
+    link.href = url;
+    link.download = `${filename}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    this._setStatus(
+      `${profile.name} wurde als JSON exportiert.`,
+      "success"
+    );
+  }
+
+  async _importProfile(event) {
+    const input = event.target;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      input.value = "";
+      this._setStatus(
+        "Die Profildatei darf höchstens 1 MB groß sein.",
+        "error"
+      );
+      return;
+    }
+
+    this._syncProfileControls(true);
+
+    try {
+      const imported = JSON.parse(await file.text());
+
+      if (
+        imported?.format !== "theme-studio-profile"
+        || imported?.version !== 1
+        || typeof imported?.name !== "string"
+        || !imported?.settings
+        || typeof imported.settings !== "object"
+      ) {
+        throw new Error(
+          "Die Datei ist kein gültiges Theme-Studio-Profil."
+        );
+      }
+
+      const result = await this._hass.callWS({
+        type: "theme_studio/save_profile",
+        name: imported.name,
+        settings: imported.settings,
+      });
+
+      this.profiles = result.profiles;
+      this.activeProfileId = result.profile.id;
+      this.settings = this._cloneSettings(result.profile.settings);
+      this.selectedDesign = null;
+      this.galleryOpen = true;
+      this._renderProfileOptions();
+      this._syncPresetArea();
+      this._syncControls();
+      this._updatePreview();
+      this._setStatus(
+        `${result.profile.name} wurde importiert.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      input.value = "";
+      this._syncProfileControls();
+    }
+  }
+
+  async _deleteProfile() {
+    const profile = this._currentProfile();
+
+    if (
+      !profile
+      || !window.confirm(
+        `Profil „${profile.name}“ wirklich löschen?`
+      )
+    ) {
+      return;
+    }
+
+    this._syncProfileControls(true);
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/delete_profile",
+        profile_id: profile.id,
+      });
+
+      this.profiles = result.profiles;
+      this.activeProfileId = "";
+      this.shadowRoot.getElementById("profile-name").value = "";
+      this._renderProfileOptions();
+      this._setStatus(
+        `${profile.name} wurde gelöscht. Das aktuelle Design bleibt erhalten.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      this._syncProfileControls();
+    }
   }
 
   _applyDesign(designId) {
@@ -2927,6 +3685,210 @@ class ThemeStudioPanel extends HTMLElement {
         "error"
       );
     }
+
+    await this._loadBackgrounds();
+    await this._loadProfiles();
+  }
+
+  _backgroundById(backgroundId) {
+    return this.backgrounds.find(
+      (background) => background.id === backgroundId
+    ) || null;
+  }
+
+  _backgroundPath(url) {
+    return String(url || "").split("?", 1)[0];
+  }
+
+  _formatFileSize(size) {
+    const bytes = Number(size) || 0;
+
+    if (bytes < 1024 * 1024) {
+      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  _renderBackgroundLibrary() {
+    const library =
+      this.shadowRoot.getElementById("background-library");
+    const count = this.shadowRoot.getElementById(
+      "background-library-count"
+    );
+
+    count.textContent =
+      `${this.backgrounds.length} von ${this.backgroundLimit} Bildern`;
+
+    if (this.backgrounds.length === 0) {
+      library.innerHTML = `
+        <p class="background-library-empty">
+          Noch keine eigenen Bilder gespeichert.
+        </p>
+      `;
+      return;
+    }
+
+    const selectedPath = this._backgroundPath(
+      this.profile.backgroundImage
+    );
+
+    library.innerHTML = this.backgrounds.map((background) => {
+      const active = selectedPath === this._backgroundPath(background.url);
+
+      return `
+        <article class="background-library-card${active ? " active" : ""}">
+          <button
+            class="background-select-button"
+            data-background-id="${this._escapeHtml(background.id)}"
+            title="${this._escapeHtml(background.name)} auswählen"
+          >
+            <span
+              class="background-library-preview"
+              style="background-image:url('${background.url}')"
+            ></span>
+            <span class="background-library-name">
+              ${this._escapeHtml(background.name)}
+            </span>
+            <span class="background-library-size">
+              ${this._formatFileSize(background.size)}
+            </span>
+          </button>
+          <div class="background-library-actions">
+            <button
+              class="background-library-action"
+              data-action="rename"
+              data-background-id="${this._escapeHtml(background.id)}"
+            >
+              Umbenennen
+            </button>
+            <button
+              class="background-library-action danger"
+              data-action="delete"
+              data-background-id="${this._escapeHtml(background.id)}"
+            >
+              Löschen
+            </button>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  async _loadBackgrounds() {
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/get_backgrounds",
+      });
+
+      this.backgrounds = Array.isArray(result.backgrounds)
+        ? result.backgrounds
+        : [];
+      this.backgroundLimit = Number(result.maximum) || 24;
+      this._renderBackgroundLibrary();
+    } catch (error) {
+      this._setStatus(
+        `Bildbibliothek konnte nicht geladen werden: ${this._errorMessage(error)}`,
+        "error"
+      );
+    }
+  }
+
+  _selectLibraryBackground(backgroundId) {
+    const background = this._backgroundById(backgroundId);
+
+    if (!background) {
+      return;
+    }
+
+    this.profile.backgroundImage = background.url;
+    this.profile.background = "image";
+    this.selectedDesign = null;
+    this._syncControls();
+    this._updatePreview();
+    this._setStatus(
+      `${background.name} ausgewählt. Bitte beide Modi anwenden.`,
+      "success"
+    );
+  }
+
+  async _renameBackground(backgroundId) {
+    const background = this._backgroundById(backgroundId);
+
+    if (!background) {
+      return;
+    }
+
+    const name = window.prompt(
+      "Neuer Name des Hintergrundbildes:",
+      background.name
+    )?.trim().replace(/\s+/g, " ");
+
+    if (!name || name === background.name) {
+      return;
+    }
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/rename_background",
+        background_id: background.id,
+        name,
+      });
+
+      this.backgrounds = result.backgrounds;
+      this._renderBackgroundLibrary();
+      this._setStatus(
+        `Bild wurde in ${name} umbenannt.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    }
+  }
+
+  async _deleteBackground(backgroundId) {
+    const background = this._backgroundById(backgroundId);
+
+    if (!background) {
+      return;
+    }
+
+    const backgroundPath = this._backgroundPath(background.url);
+    const usedInEditor = ["light", "dark"].some(
+      (mode) => this._backgroundPath(
+        this.settings[mode].backgroundImage
+      ) === backgroundPath
+    );
+
+    if (usedInEditor) {
+      this._setStatus(
+        "Dieses Bild ist im aktuellen Editor ausgewählt. "
+          + "Bitte zuerst für beide Modi ein anderes Bild "
+          + "oder eine Farbe wählen.",
+        "error"
+      );
+      return;
+    }
+
+    if (!window.confirm(`Bild „${background.name}“ wirklich löschen?`)) {
+      return;
+    }
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/delete_background",
+        background_id: background.id,
+      });
+
+      this.backgrounds = result.backgrounds;
+      this._renderBackgroundLibrary();
+      this._setStatus(
+        `${background.name} wurde dauerhaft gelöscht.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    }
   }
 
   async _uploadBackground(event) {
@@ -2963,6 +3925,9 @@ class ThemeStudioPanel extends HTMLElement {
 
     const label =
       this.shadowRoot.getElementById("upload-label");
+    const nameInput = this.shadowRoot.getElementById(
+      "background-upload-name"
+    );
 
     label.classList.add("disabled");
     label.textContent = "Wird hochgeladen …";
@@ -2975,6 +3940,11 @@ class ThemeStudioPanel extends HTMLElement {
         await this._hass.callWS({
           type: "theme_studio/upload_background",
           mode: this.activeMode,
+          name: (
+            nameInput.value.trim()
+            || file.name.replace(/\.[^.]+$/, "")
+            || "Eigenes Hintergrundbild"
+          ).slice(0, 48),
           mime_type: file.type,
           content: dataUrl.split(",", 2)[1],
         });
@@ -2982,6 +3952,8 @@ class ThemeStudioPanel extends HTMLElement {
       this.profile.backgroundImage = result.url;
       this.profile.background = "image";
       this.selectedDesign = null;
+      this.backgrounds = result.backgrounds;
+      nameInput.value = "";
 
       this._syncControls();
       this._updatePreview();
@@ -2997,7 +3969,7 @@ class ThemeStudioPanel extends HTMLElement {
       );
     } finally {
       label.classList.remove("disabled");
-      label.textContent = "Anderes Bild";
+      label.textContent = "Bild hinzufügen";
       input.value = "";
     }
   }
@@ -3165,11 +4137,18 @@ class ThemeStudioPanel extends HTMLElement {
       }
     );
 
+    const selectedBackground = this.backgrounds.find(
+      (background) => this._backgroundPath(background.url)
+        === this._backgroundPath(this.profile.backgroundImage)
+    );
+
     this.shadowRoot
       .getElementById("file-name")
-      .textContent = this.profile.backgroundImage
-        ? "Hintergrundbild gespeichert"
-        : "";
+      .textContent = selectedBackground
+        ? `Ausgewählt: ${selectedBackground.name}`
+        : this.profile.backgroundImage
+          ? "Hintergrundbild ausgewählt"
+          : "";
 
     this.shadowRoot
       .getElementById("preview-mode")
@@ -3181,6 +4160,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._syncColorPresets();
     this._syncBackgroundSelection();
     this._syncImageOption();
+    this._renderBackgroundLibrary();
     this._syncEffectControls();
   }
 
