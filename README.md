@@ -42,9 +42,9 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ### Feineinstellungen
 
-| Farben und Karten | Kartendesign |
+| Farben und Navigation | Kartendesign |
 | --- | --- |
-| ![Farben und Karteneinstellungen](docs/images/fine-settings-overview.png) | ![Geöffnete Karteneinstellungen](docs/images/fine-settings-cards.png) |
+| ![Farben und Navigationseinstellungen](docs/images/fine-settings-overview.png) | ![Geöffnete Karteneinstellungen](docs/images/fine-settings-cards.png) |
 
 | Hintergrund | Dashboard-Effekte |
 | --- | --- |
