@@ -1075,6 +1075,13 @@ class ThemeStudioPanel extends HTMLElement {
           color: var(--text-primary-color, white);
         }
 
+        .editor-action.restore-default {
+          grid-column: 1 / -1;
+          border: 1px solid var(--warning-color, #ff9800);
+          background: transparent;
+          color: var(--warning-color, #ff9800);
+        }
+
         .editor-action:disabled {
           opacity: 0.65;
           cursor: wait;
@@ -2334,7 +2341,7 @@ class ThemeStudioPanel extends HTMLElement {
                 id="reset-button"
                 class="editor-action secondary"
               >
-                Modus zurücksetzen
+                Modus auf Design 1 zurücksetzen
               </button>
 
               <button
@@ -2342,6 +2349,13 @@ class ThemeStudioPanel extends HTMLElement {
                 class="editor-action primary"
               >
                 Beide Modi anwenden
+              </button>
+
+              <button
+                id="restore-default-button"
+                class="editor-action restore-default"
+              >
+                Home-Assistant-Standard wiederherstellen
               </button>
             </div>
           </div>
@@ -3213,6 +3227,12 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("quick-apply-button")
       .addEventListener("click", () => {
         this._saveAndApplySettings();
+      });
+
+    this.shadowRoot
+      .getElementById("restore-default-button")
+      .addEventListener("click", () => {
+        this._restoreHomeAssistantDefault();
       });
   }
 
@@ -4324,6 +4344,53 @@ class ThemeStudioPanel extends HTMLElement {
       buttons[1].disabled = false;
       buttons[1].textContent = "Aktivieren";
     }, 2200);
+  }
+
+  async _restoreHomeAssistantDefault() {
+    const confirmed = window.confirm(
+      "Das originale Home-Assistant-Standarddesign wird für "
+      + "den hellen und dunklen Modus aktiviert.\n\n"
+      + "Deine Theme-Studio-Profile und Hintergrundbilder "
+      + "bleiben erhalten. Fortfahren?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const button = this.shadowRoot.getElementById(
+      "restore-default-button"
+    );
+
+    button.disabled = true;
+    button.textContent = "Standarddesign wird aktiviert …";
+
+    try {
+      await this._hass.callWS({
+        type: "theme_studio/restore_default_theme",
+      });
+
+      this._setStatus(
+        "Das originale Home-Assistant-Standarddesign ist aktiv. "
+        + "Deine Theme-Studio-Daten wurden beibehalten.",
+        "success"
+      );
+
+      button.textContent = "Home-Assistant-Standard aktiv ✓";
+    } catch (error) {
+      this._setStatus(
+        this._errorMessage(error),
+        "error"
+      );
+
+      button.textContent = "Wiederherstellung fehlgeschlagen";
+    }
+
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent =
+        "Home-Assistant-Standard wiederherstellen";
+    }, 2600);
   }
 
   _syncControls() {

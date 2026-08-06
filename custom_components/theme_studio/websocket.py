@@ -1305,6 +1305,53 @@ async def websocket_save_settings(
     {
         vol.Required(
             "type"
+        ): "theme_studio/restore_default_theme",
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_restore_default_theme(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Restore the backend-preferred Home Assistant themes."""
+
+    try:
+        await hass.services.async_call(
+            "frontend",
+            "set_theme",
+            {
+                "name": "default",
+                "name_dark": "default",
+            },
+            blocking=True,
+            context=connection.context(msg),
+        )
+    except Exception as error:
+        connection.send_error(
+            msg["id"],
+            "theme_restore_failed",
+            (
+                "Das Home-Assistant-Standarddesign konnte "
+                f"nicht wiederhergestellt werden: {error}"
+            ),
+        )
+        return
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "theme": "default",
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
         ): "theme_studio/get_profiles",
     }
 )
@@ -1801,6 +1848,11 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_save_settings,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_restore_default_theme,
     )
 
     websocket_api.async_register_command(

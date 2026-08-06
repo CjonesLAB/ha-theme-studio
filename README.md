@@ -2,7 +2,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Version: **0.3.0**
+> Aktuelle Version: **0.3.1**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -29,6 +29,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - dauerhafte Speicherung der ausgewählten Effekt-Entitäten
 - Speicherung aller Einstellungen in Home Assistant
 - Erzeugung und direkte Aktivierung eines echten Home-Assistant-Themes
+- sichere Rückkehr zum originalen Home-Assistant-Standarddesign
 - responsive Bedienung auf Desktop, Tablet und Smartphone
 
 ## Screenshots
@@ -100,6 +101,8 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 5. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
 6. Optional unter **Eigene Designprofile** einen Namen eingeben und das komplette Design als wiederverwendbares Profil speichern.
 7. Mit **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+
+Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für den hellen und dunklen Modus deaktiviert und das originale Home-Assistant-Design wieder aktiviert. Gespeicherte Designprofile und Hintergrundbilder bleiben dabei erhalten. **Modus auf Design 1 zurücksetzen** verändert dagegen nur die Einstellungen des gerade geöffneten Farbmodus.
 
 Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Über **JSON exportieren** lassen sie sich sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Eigene Hintergrundbilder werden dabei nur als lokaler Pfad referenziert; die Bilddatei selbst muss auf dem Zielsystem separat vorhanden sein.
 
