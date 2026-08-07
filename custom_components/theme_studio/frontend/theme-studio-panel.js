@@ -204,10 +204,16 @@ class ThemeStudioPanel extends HTMLElement {
         .builder-grid {
           display: grid;
           grid-template-columns:
-            minmax(0, 1fr)
-            minmax(340px, 0.82fr);
+            minmax(360px, 0.78fr)
+            minmax(520px, 1.35fr);
           gap: 18px;
           align-items: start;
+        }
+
+        .builder-controls {
+          display: grid;
+          min-width: 0;
+          gap: 18px;
         }
 
         .panel {
@@ -602,11 +608,13 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .energy-entity-list {
-          max-height: 180px;
+          max-height: 148px;
           overflow-y: auto;
+          overscroll-behavior: contain;
           border: 1px solid var(--divider-color);
           border-radius: 9px;
           background: var(--secondary-background-color);
+          scrollbar-gutter: stable;
         }
 
         .entity-picker-tools {
@@ -1088,8 +1096,10 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .preview-panel {
-          grid-column: 1 / -1;
-          margin-top: 18px;
+          position: sticky;
+          top: 18px;
+          min-width: 0;
+          align-self: start;
           padding: 12px;
           border-radius: 17px;
           background: var(--card-background-color);
@@ -1098,7 +1108,10 @@ class ThemeStudioPanel extends HTMLElement {
 
         .preview {
           position: relative;
+          display: flex;
+          height: min(620px, calc(100vh - 36px));
           min-height: 480px;
+          flex-direction: column;
           overflow: hidden;
           border-radius: 13px;
           background: var(--preview-background);
@@ -1108,6 +1121,7 @@ class ThemeStudioPanel extends HTMLElement {
           position: relative;
           z-index: 4;
           display: flex;
+          flex: 0 0 auto;
           align-items: center;
           justify-content: space-between;
           min-height: 48px;
@@ -1138,7 +1152,8 @@ class ThemeStudioPanel extends HTMLElement {
         .preview-app-body {
           display: grid;
           grid-template-columns: 145px minmax(0, 1fr);
-          min-height: 432px;
+          min-height: 0;
+          flex: 1 1 auto;
         }
 
         .preview-sidebar {
@@ -1188,6 +1203,7 @@ class ThemeStudioPanel extends HTMLElement {
         .preview-dashboard {
           position: relative;
           min-width: 0;
+          min-height: 0;
           padding: 21px;
           overflow: hidden;
           color: var(--preview-top-text);
@@ -1317,7 +1333,7 @@ class ThemeStudioPanel extends HTMLElement {
 
         .preview-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
         }
 
@@ -1557,7 +1573,15 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .preview-panel {
-            grid-column: auto;
+            top: 68px;
+            z-index: 90;
+            order: -1;
+            padding: 8px;
+          }
+
+          .preview {
+            height: 360px;
+            min-height: 0;
           }
 
           .preview-grid {
@@ -1592,26 +1616,117 @@ class ThemeStudioPanel extends HTMLElement {
             height: 60px;
           }
 
-          .preview-grid {
-            grid-template-columns: 1fr;
+          .preview-panel {
+            top: 56px;
+            padding: 5px;
+            border-radius: 12px;
           }
 
-          .preview-app-body {
-            grid-template-columns: 58px minmax(0, 1fr);
+          .preview {
+            height: 210px;
+            border-radius: 9px;
           }
 
-          .preview-sidebar {
-            padding-inline: 7px;
+          .preview-app-header {
+            min-height: 31px;
+            padding: 0 9px;
           }
 
-          .preview-sidebar-brand,
-          .preview-sidebar-label {
+          .preview-app-header-actions {
             display: none;
           }
 
-          .preview-sidebar-item {
-            justify-content: center;
-            padding: 0;
+          .preview-menu-icon {
+            font-size: 13px;
+          }
+
+          .preview-app-title {
+            font-size: 10px;
+          }
+
+          .preview-app-body {
+            grid-template-columns: 1fr;
+          }
+
+          .preview-sidebar {
+            display: none;
+          }
+
+          .preview-dashboard {
+            padding: 6px 8px;
+          }
+
+          .preview-header {
+            margin-bottom: 4px;
+          }
+
+          .preview-header h2 {
+            font-size: 12px;
+          }
+
+          .preview-time {
+            font-size: 10px;
+          }
+
+          .preview-mode {
+            display: none;
+          }
+
+          .preview-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+          }
+
+          .preview-card {
+            min-height: 62px;
+            padding: 5px 6px;
+            border-radius: min(var(--preview-radius), 9px);
+            backdrop-filter: blur(7px);
+          }
+
+          .preview-card h3 {
+            gap: 4px;
+            margin-bottom: 3px;
+            font-size: 8px;
+          }
+
+          .preview-icon {
+            width: 7px;
+            height: 7px;
+            flex-basis: 7px;
+            border-radius: 2px;
+          }
+
+          .large-value {
+            font-size: 14px;
+          }
+
+          .secondary-text {
+            margin-top: 1px;
+            font-size: 7px;
+          }
+
+          .switch-row {
+            margin-top: 2px;
+            font-size: 7px;
+          }
+
+          .fake-switch {
+            width: 22px;
+            height: 12px;
+          }
+
+          .fake-switch::after {
+            top: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+          }
+
+          .chart {
+            gap: 2px;
+            height: 26px;
+            margin-top: 2px;
           }
 
           .editor-actions {
@@ -1755,7 +1870,8 @@ class ThemeStudioPanel extends HTMLElement {
         </section>
 
         <section class="builder-grid">
-          <div class="panel">
+          <div class="builder-controls">
+            <div class="panel">
             <div class="panel-heading">
               <h2>Startdesign</h2>
               <p>
@@ -1805,7 +1921,7 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
           </div>
 
-          <div class="panel">
+            <div class="panel">
             <div class="panel-heading">
               <h2>Feineinstellungen</h2>
               <p>
@@ -2358,10 +2474,10 @@ class ThemeStudioPanel extends HTMLElement {
                 Home-Assistant-Standard wiederherstellen
               </button>
             </div>
+            </div>
           </div>
-        </section>
 
-        <section class="preview-panel">
+          <aside class="preview-panel">
           <div id="preview" class="preview">
             <div class="preview-app-header">
               <div class="preview-app-header-left">
@@ -2479,6 +2595,7 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </div>
           </div>
+          </aside>
         </section>
       </main>
     `;
