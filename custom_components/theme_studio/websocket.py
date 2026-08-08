@@ -18,6 +18,11 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
+from .gallery import (
+    GalleryError,
+    async_download_gallery_profile,
+    async_get_gallery_designs,
+)
 
 
 STORAGE_VERSION = 1
@@ -1516,6 +1521,189 @@ async def websocket_delete_profile(
     {
         vol.Required(
             "type"
+        ): "theme_studio/get_gallery_designs",
+        vol.Optional("refresh", default=False): bool,
+    }
+)
+@websocket_api.async_response
+async def websocket_get_gallery_designs(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return published designs from the Theme Studio Gallery."""
+
+    try:
+        designs = await async_get_gallery_designs(
+            hass,
+            force_refresh=msg["refresh"],
+        )
+    except GalleryError as error:
+        connection.send_error(
+            msg["id"],
+            "gallery_unavailable",
+            str(error),
+        )
+        return
+
+    connection.send_result(
+        msg["id"],
+        {
+            "designs": designs,
+            "gallery_url": "https://ha-theme-studio.com",
+        },
+    )
+
+
+def gallery_profile_name(
+    requested_name: Any,
+    fallback_name: Any,
+    profiles: list[dict[str, Any]],
+) -> str:
+    """Create a valid and unique local name for a gallery profile."""
+
+    raw_name = (
+        requested_name
+        if isinstance(requested_name, str) and requested_name.strip()
+        else fallback_name
+    )
+    compact_name = (
+        " ".join(raw_name.split())
+        if isinstance(raw_name, str)
+        else "Galerie-Design"
+    )
+    base_name = normalize_profile_name(
+        compact_name[:MAX_PROFILE_NAME_LENGTH]
+        or "Galerie-Design"
+    )
+
+    known_names = {
+        profile["name"].casefold()
+        for profile in profiles
+    }
+
+    if base_name.casefold() not in known_names:
+        return base_name
+
+    for number in range(2, MAX_PROFILES + 2):
+        suffix = f" ({number})"
+        candidate = (
+            base_name[: MAX_PROFILE_NAME_LENGTH - len(suffix)]
+            + suffix
+        )
+        if candidate.casefold() not in known_names:
+            return candidate
+
+    return uuid4().hex[:MAX_PROFILE_NAME_LENGTH]
+
+
+def sanitize_gallery_settings(
+    settings: dict[str, Any],
+) -> dict[str, Any]:
+    """Remove local background paths that cannot exist on another system."""
+
+    sanitized = json.loads(json.dumps(settings))
+
+    for mode in ("light", "dark"):
+        profile = sanitized.get(mode)
+        if not isinstance(profile, dict):
+            continue
+
+        if profile.get("background") == "image":
+            profile["background"] = "color"
+
+        profile["backgroundImage"] = ""
+
+    return sanitized
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/import_gallery_design",
+        vol.Required("design_id"): str,
+        vol.Optional("name"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_import_gallery_design(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Import one approved gallery design as a local profile."""
+
+    profiles = await async_load_profiles(hass)
+
+    if len(profiles) >= MAX_PROFILES:
+        connection.send_error(
+            msg["id"],
+            "profile_limit_reached",
+            (
+                "Es können höchstens "
+                f"{MAX_PROFILES} Profile gespeichert werden."
+            ),
+        )
+        return
+
+    try:
+        downloaded = await async_download_gallery_profile(
+            hass,
+            msg["design_id"],
+        )
+        settings = normalize_settings(
+            sanitize_gallery_settings(downloaded["settings"])
+        )
+        name = gallery_profile_name(
+            msg.get("name"),
+            downloaded["name"],
+            profiles,
+        )
+    except GalleryError as error:
+        connection.send_error(
+            msg["id"],
+            "gallery_import_failed",
+            str(error),
+        )
+        return
+    except (vol.Invalid, TypeError, ValueError) as error:
+        connection.send_error(
+            msg["id"],
+            "invalid_gallery_profile",
+            f"Das Galerieprofil ist ungültig: {error}",
+        )
+        return
+
+    now = datetime.now(UTC).isoformat()
+    saved_profile = {
+        "id": uuid4().hex,
+        "name": name,
+        "created_at": now,
+        "updated_at": now,
+        "settings": settings,
+    }
+    profiles.append(saved_profile)
+    profiles.sort(
+        key=lambda profile: profile["name"].casefold()
+    )
+    await async_save_profiles(hass, profiles)
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "profile": saved_profile,
+            "profiles": profiles,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
         ): "theme_studio/get_backgrounds",
     }
 )
@@ -1868,6 +2056,16 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_delete_profile,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_get_gallery_designs,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_import_gallery_design,
     )
 
     websocket_api.async_register_command(

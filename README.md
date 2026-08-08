@@ -2,16 +2,18 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Version: **0.3.3**
+> Aktuelle Version: **0.4.4**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
 ## Funktionen
 
 - getrennte Einstellungen für hellen und dunklen Modus
-- vier Startdesigns als Ausgangspunkt
+- farblich passenden Hell- oder Dunkelmodus aus dem aktuell gestalteten Modus erzeugen
 - eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
 - Designprofile als JSON-Datei exportieren und importieren
+- geprüfte Community-Designs in einer vollständigen Mini-Dashboard-Vorschau für Hell und Dunkel ansehen und mit einem Klick als lokales Profil importieren
+- einzeilige Community-Galerie mit drei sichtbaren Designs auf dem Desktop sowie Pfeilsteuerung und Wischbedienung für weitere Designs
 - anpassbare Haupt-, Hintergrund-, Karten-, Text-, Symbol- und Rahmenfarben
 - Kopfzeile und Seitenleiste pro Farbmodus separat gestalten
 - eigene Farben für Navigationshintergrund, Text, Symbole und den aktiven Menüpunkt
@@ -36,7 +38,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ### Theme Studio und Dashboard
 
-![Theme Studio mit Startdesigns, Feineinstellungen und Vorschau](docs/images/theme-studio-overview.png)
+![Theme Studio mit Community-Galerie, Feineinstellungen und Vorschau](docs/images/theme-studio-overview.png)
 
 ![Home-Assistant-Dashboard mit Aurora-Hintergrund und Karteneffekten](docs/images/dashboard-aurora.png)
 
@@ -95,16 +97,19 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 ## Bedienung
 
 1. In der Seitenleiste **Theme Studio** öffnen.
-2. Ein Startdesign wählen und oben zwischen hellem und dunklem Modus wechseln.
-3. Farben, Karten, Navigation und Hintergrund in den Feineinstellungen anpassen.
-4. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
-5. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
-6. Optional unter **Eigene Designprofile** einen Namen eingeben und das komplette Design als wiederverwendbares Profil speichern.
-7. Mit **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+2. In der **Community-Galerie** ein geprüftes Design auswählen und mit **Mit einem Klick importieren** als lokales Profil übernehmen oder ein vorhandenes eigenes Profil laden.
+3. Oben zwischen hellem und dunklem Modus wechseln.
+4. Farben, Karten, Navigation und Hintergrund in den Feineinstellungen anpassen.
+5. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
+6. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
+7. Optional unter **Eigene Designprofile** einen Namen eingeben und das komplette Design als wiederverwendbares Profil speichern.
+8. Mit dem jederzeit oben sichtbaren Button **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
 
-Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für den hellen und dunklen Modus deaktiviert und das originale Home-Assistant-Design wieder aktiviert. Gespeicherte Designprofile und Hintergrundbilder bleiben dabei erhalten. **Modus auf Design 1 zurücksetzen** verändert dagegen nur die Einstellungen des gerade geöffneten Farbmodus.
+Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für den hellen und dunklen Modus deaktiviert und das originale Home-Assistant-Design wieder aktiviert. Gespeicherte Designprofile und Hintergrundbilder bleiben dabei erhalten.
 
 Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Über **JSON exportieren** lassen sie sich sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Eigene Hintergrundbilder werden dabei nur als lokaler Pfad referenziert; die Bilddatei selbst muss auf dem Zielsystem separat vorhanden sein.
+
+Die integrierte Community-Galerie zeigt ausschließlich zuvor geprüfte und veröffentlichte Designs von [ha-theme-studio.com](https://ha-theme-studio.com). Jede Vorschau bildet ein vollständiges kleines Home-Assistant-Dashboard mit Kopfzeile, Seitenleiste, Karten, Navigation, Hintergrund und aktivierten Karteneffekten ab. Die Vorschaukarten wechseln zusammen mit der oberen Auswahl zwischen hellem und dunklem Modus. Beim Import wird das Profil erneut durch Home Assistant validiert und anschließend in den lokalen Designprofilen gespeichert. Hintergrundbild-Pfade des Erstellers werden nicht übernommen, da die zugehörige lokale Bilddatei auf dem eigenen System nicht vorhanden ist.
 
 Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-Dateien verwaltet werden. Bereits vorhandene Theme-Studio-Bilder werden automatisch übernommen. Ein Bild, das vom aktiven Design oder von einem gespeicherten Profil verwendet wird, ist vor versehentlichem Löschen geschützt.
 
@@ -143,7 +148,7 @@ Diese benutzerspezifischen Dateien gehören nicht zum GitHub-Repository und werd
 
 ## Datenschutz
 
-Theme Studio arbeitet lokal in Home Assistant und benötigt keinen externen Cloud-Dienst. Eigene Hintergrundbilder bleiben im lokalen Home-Assistant-Konfigurationsverzeichnis.
+Die Designbearbeitung, Theme-Erzeugung, Profile und eigenen Hintergrundbilder bleiben lokal in Home Assistant. Zum Anzeigen und Importieren der optionalen Community-Galerie stellt Home Assistant eine HTTPS-Verbindung zu `ha-theme-studio.com` her. Dabei können technisch notwendige Verbindungsdaten wie die IP-Adresse in den Serverprotokollen anfallen; Home-Assistant-Zugangsdaten, Entitätszustände und lokale Hintergrundbilder werden nicht übertragen.
 
 ## Fehler melden
 

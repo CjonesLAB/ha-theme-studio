@@ -1,9 +1,3 @@
-import {
-  THEME_STUDIO_PRESETS,
-  cloneThemeStudioPreset,
-} from "./theme-studio-presets.js";
-
-
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
     super();
@@ -11,11 +5,12 @@ class ThemeStudioPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
 
     this.activeMode = "dark";
-    this.selectedDesign = null;
-    this.galleryOpen = true;
     this.profiles = [];
     this.profileLimit = 32;
     this.activeProfileId = "";
+    this.communityDesigns = [];
+    this.communityGalleryLoaded = false;
+    this.communityGalleryLoading = false;
     this.backgrounds = [];
     this.backgroundLimit = 24;
 
@@ -106,7 +101,7 @@ class ThemeStudioPanel extends HTMLElement {
         :host {
           display: block;
           min-height: 100%;
-          color: var(--primary-text-color);
+          color: var(--primary-text-color, #1c1c1c);
           background: var(--primary-background-color);
           font-family:
             var(--paper-font-body1_-_font-family, sans-serif);
@@ -166,8 +161,46 @@ class ThemeStudioPanel extends HTMLElement {
           min-width: 210px;
           padding: 4px;
           border-radius: 12px;
-          background: var(--card-background-color);
+          background: var(--card-background-color, #ffffff);
           box-shadow: var(--ha-card-box-shadow);
+        }
+
+        .topbar-actions {
+          display: flex;
+          flex: 0 0 auto;
+          align-items: stretch;
+          gap: 9px;
+        }
+
+        .top-apply-button {
+          min-height: 46px;
+          padding: 0 18px;
+          border: 0;
+          border-radius: 12px;
+          background: var(--primary-color, #03a9f4);
+          color: var(--text-primary-color, white);
+          font-size: 13px;
+          font-weight: 700;
+          white-space: nowrap;
+          box-shadow: var(--ha-card-box-shadow);
+        }
+
+        .top-pair-button {
+          min-height: 46px;
+          padding: 0 16px;
+          border: 1px solid var(--divider-color);
+          border-radius: 12px;
+          background: var(--card-background-color, #ffffff);
+          color: var(--primary-text-color, #1c1c1c);
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          box-shadow: var(--ha-card-box-shadow);
+        }
+
+        .top-apply-button:disabled {
+          opacity: 0.65;
+          cursor: wait;
         }
 
         .mode-button {
@@ -176,13 +209,13 @@ class ThemeStudioPanel extends HTMLElement {
           border: 0;
           border-radius: 9px;
           background: transparent;
-          color: var(--primary-text-color);
+          color: var(--primary-text-color, #1c1c1c);
           font-size: 13px;
           font-weight: 600;
         }
 
         .mode-button.active {
-          background: var(--primary-color);
+          background: var(--primary-color, #03a9f4);
           color: var(--text-primary-color, white);
         }
 
@@ -319,180 +352,391 @@ class ThemeStudioPanel extends HTMLElement {
           font-size: 10px;
         }
 
-        .preset-gallery {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          padding: 0 14px 14px;
+        .community-panel {
+          margin-bottom: 18px;
         }
 
-        .preset-card {
-          min-width: 0;
-          padding: 7px;
-          overflow: hidden;
-          border: 2px solid var(--divider-color);
-          border-radius: 14px;
-          background: var(--secondary-background-color);
-          color: var(--primary-text-color);
-          text-align: left;
-          transition:
-            transform 0.15s ease,
-            border-color 0.15s ease,
-            box-shadow 0.15s ease;
-        }
-
-        .preset-card:hover {
-          transform: translateY(-2px);
-          border-color: var(--primary-color);
-          box-shadow: 0 9px 22px rgba(0, 0, 0, 0.17);
-        }
-
-        .preset-preview {
-          display: block;
-          min-height: 105px;
-          padding: 10px;
-          overflow: hidden;
-          border-radius: 10px;
-          color: var(--design-text);
-          background: var(--design-background);
-        }
-
-        .preset-preview-header {
+        .community-heading {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          margin-bottom: 8px;
-          font-size: 9px;
-          font-weight: 700;
+          justify-content: space-between;
+          gap: 14px;
         }
 
-        .preset-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--design-accent);
-          box-shadow: 0 0 8px var(--design-accent);
+        .community-heading-actions {
+          display: flex;
+          flex: 0 0 auto;
+          gap: 7px;
         }
 
-        .preset-mini-grid {
+        .community-link {
+          text-decoration: none;
+        }
+
+        .community-state {
+          padding: 4px 17px 17px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .community-state.error {
+          color: var(--error-color, #db4437);
+        }
+
+        .community-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 6px;
+          overflow: auto hidden;
+          grid-auto-columns: calc((100% - 22px) / 3);
+          grid-auto-flow: column;
+          gap: 11px;
+          margin: 0 17px;
+          padding: 0 0 17px;
+          overscroll-behavior-inline: contain;
+          scroll-behavior: smooth;
+          scroll-snap-type: inline mandatory;
+          scrollbar-width: none;
+          touch-action: pan-x pan-y;
         }
 
-        .preset-mini-card {
-          display: block;
-          min-height: 34px;
-          padding: 6px;
-          border: 1px solid var(--design-border);
-          border-radius: var(--design-radius);
-          background: var(--design-card);
-          box-shadow: 0 4px 9px rgba(0, 0, 0, 0.12);
+        .community-grid::-webkit-scrollbar {
+          display: none;
         }
 
-        .preset-mini-line {
-          display: block;
-          width: 68%;
-          height: 4px;
-          margin-bottom: 5px;
-          border-radius: 4px;
-          background: var(--design-text);
-          opacity: 0.65;
+        .community-slider-controls {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          padding: 0 17px 10px;
         }
 
-        .preset-mini-value {
-          display: block;
-          width: 45%;
-          height: 6px;
-          border-radius: 4px;
-          background: var(--design-accent);
+        .community-slider-button {
+          display: inline-flex;
+          width: 32px;
+          height: 32px;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 1px solid var(--divider-color);
+          border-radius: 50%;
+          background: transparent;
+          color: var(--primary-text-color);
+          font-size: 19px;
+          line-height: 1;
         }
 
-        .preset-info {
-          display: block;
-          padding: 8px 3px 2px;
+        .community-slider-button:disabled {
+          opacity: 0.35;
+          cursor: default;
         }
 
-        .preset-name {
-          display: block;
-          margin-bottom: 2px;
-          font-size: 13px;
-          font-weight: 700;
-        }
-
-        .preset-description {
-          display: block;
-          overflow: hidden;
+        .community-slider-position {
+          min-width: 72px;
           color: var(--secondary-text-color);
           font-size: 10px;
+          text-align: center;
+        }
+
+        .community-card {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid var(--divider-color);
+          border-radius: 14px;
+          background: var(--secondary-background-color);
+          scroll-snap-align: start;
+          scroll-snap-stop: always;
+        }
+
+        .community-preview {
+          position: relative;
+          min-height: 180px;
+          overflow: hidden;
+          background: var(--community-background);
+          color: var(--community-text);
+        }
+
+        .community-mini-header {
+          display: flex;
+          height: 24px;
+          align-items: center;
+          gap: 6px;
+          padding: 0 8px;
+          background: var(--community-header-background);
+          color: var(--community-header-text);
+          font-size: 7px;
+        }
+
+        .community-mini-header strong {
+          flex: 1;
+          font-size: 8px;
+        }
+
+        .community-mini-shell {
+          display: grid;
+          min-height: 156px;
+          grid-template-columns: 57px minmax(0, 1fr);
+        }
+
+        .community-mini-sidebar {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          padding: 7px 5px;
+          background: var(--community-sidebar-background);
+          color: var(--community-sidebar-text);
+          font-size: 6px;
+        }
+
+        .community-mini-sidebar strong {
+          overflow: hidden;
+          margin: 0 2px 3px;
+          font-size: 6px;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .selected-design {
-          padding: 0 14px 14px;
-        }
-
-        .selected-card {
-          display: grid;
-          grid-template-columns: 108px 1fr;
-          gap: 13px;
-          align-items: center;
-          padding: 11px;
-          border: 1px solid var(--divider-color);
-          border-radius: 13px;
-          background: var(--secondary-background-color);
-        }
-
-        .selected-thumbnail {
-          height: 72px;
-          border-radius: 10px;
-          background: var(--selected-background);
-          box-shadow: 0 5px 13px rgba(0, 0, 0, 0.15);
-        }
-
-        .selected-content {
-          min-width: 0;
-        }
-
-        .selected-content h3 {
-          margin: 0 0 3px;
-          font-size: 16px;
-        }
-
-        .selected-content p {
-          margin: 0 0 10px;
-          color: var(--secondary-text-color);
-          font-size: 11px;
-        }
-
-        .selected-actions {
+        .community-mini-nav {
           display: flex;
-          flex-wrap: wrap;
-          gap: 7px;
+          align-items: center;
+          gap: 3px;
+          padding: 4px;
+          border-radius: 4px;
         }
 
-        .small-button {
-          min-height: 35px;
-          padding: 0 12px;
-          border-radius: 9px;
-          font-size: 11px;
+        .community-mini-nav span {
+          color: var(--community-sidebar-icon);
+          font-size: 7px;
+        }
+
+        .community-mini-nav.active {
+          background: var(--community-sidebar-selected-soft);
+          color: var(--community-sidebar-selected);
+        }
+
+        .community-mini-nav.active span {
+          color: var(--community-sidebar-selected);
+        }
+
+        .community-mini-dashboard {
+          position: relative;
+          min-width: 0;
+          padding: 7px;
+          background: var(--community-dashboard-background);
+          background-position: center;
+          background-size: cover;
+        }
+
+        .community-mini-dashboard::after {
+          position: absolute;
+          z-index: 0;
+          inset: 0;
+          background: rgba(0, 0, 0, var(--community-darkening));
+          content: "";
+          pointer-events: none;
+        }
+
+        .community-mini-dashboard.space-command::before {
+          position: absolute;
+          z-index: 1;
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(80, 225, 255, 0.09) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(80, 225, 255, 0.09) 1px, transparent 1px);
+          background-size: 16px 16px;
+          content: "";
+          pointer-events: none;
+        }
+
+        .community-mini-title,
+        .community-mini-cards {
+          position: relative;
+          z-index: 2;
+        }
+
+        .community-mini-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 6px;
+          font-size: 8px;
+          font-weight: 700;
+        }
+
+        .community-mini-title small {
+          font-size: 6px;
           font-weight: 600;
         }
 
-        .small-button.secondary {
-          border: 1px solid var(--divider-color);
-          background: transparent;
-          color: var(--primary-text-color);
+        .community-mini-cards {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 5px;
         }
 
-        .small-button.primary {
-          border: 0;
-          background: var(--primary-color);
-          color: var(--text-primary-color, white);
+        .community-mini-card {
+          min-width: 0;
+          min-height: 52px;
+          padding: 6px;
+          border:
+            var(--community-border-width)
+            solid
+            var(--community-border);
+          border-radius: var(--community-radius);
+          background: var(--community-card);
+          box-shadow:
+            0 2px var(--community-shadow-blur)
+            rgba(0, 0, 0, 0.34);
+          color: var(--community-text);
         }
 
-        .small-button:disabled {
+        .community-mini-card-title {
+          display: flex;
+          overflow: hidden;
+          align-items: center;
+          gap: 3px;
+          font-size: 6px;
+          font-weight: 700;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .community-mini-icon {
+          color: var(--community-icon);
+          font-size: 7px;
+        }
+
+        .community-mini-value {
+          margin-top: 6px;
+          color: var(--community-primary);
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1;
+        }
+
+        .community-mini-detail {
+          margin-top: 4px;
+          font-size: 5px;
+          opacity: 0.72;
+        }
+
+        .community-mini-switch-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 6px;
+          font-size: 5px;
+        }
+
+        .community-mini-switch {
+          width: 17px;
+          height: 8px;
+          padding: 1px;
+          border-radius: 999px;
+          background: var(--community-primary);
+        }
+
+        .community-mini-switch::after {
+          display: block;
+          width: 6px;
+          height: 6px;
+          margin-left: auto;
+          border-radius: 50%;
+          background: #ffffff;
+          content: "";
+        }
+
+        .community-mini-bars {
+          display: flex;
+          height: 26px;
+          align-items: end;
+          gap: 3px;
+          margin-top: 5px;
+        }
+
+        .community-mini-bars span {
+          flex: 1;
+          border-radius: 2px 2px 0 0;
+          background: var(--community-primary);
+        }
+
+        .community-mini-card.energy-flow {
+          box-shadow: 0 0 8px rgba(255, 181, 0, var(--community-effect-alpha));
+        }
+
+        .community-mini-card.status-pulse {
+          box-shadow: 0 0 8px rgba(69, 212, 131, var(--community-effect-alpha));
+        }
+
+        .community-mini-card.climate-aura {
+          box-shadow: 0 0 8px rgba(79, 157, 255, var(--community-effect-alpha));
+        }
+
+        .community-mini-card.alert-focus {
+          box-shadow: 0 0 9px rgba(255, 59, 79, var(--community-effect-alpha));
+        }
+
+        .community-mode-label {
+          position: absolute;
+          z-index: 3;
+          right: 7px;
+          bottom: 5px;
+          padding: 2px 4px;
+          border-radius: 999px;
+          background: var(--community-card);
+          color: var(--community-text);
+          font-size: 5px;
+          opacity: 0.82;
+        }
+
+        .community-card-content {
+          display: flex;
+          min-height: 145px;
+          flex: 1;
+          flex-direction: column;
+          gap: 7px;
+          padding: 12px;
+        }
+
+        .community-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+
+        .community-badge {
+          padding: 3px 7px;
+          border-radius: 999px;
+          background: var(--primary-background-color);
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .community-card h3 {
+          margin: 0;
+          font-size: 15px;
+        }
+
+        .community-summary {
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        .community-meta {
+          margin-top: auto;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .community-import-button {
+          width: 100%;
+          margin-top: 2px;
+        }
+
+        .community-import-button[aria-busy="true"] {
           opacity: 0.65;
           cursor: wait;
         }
@@ -1287,6 +1531,10 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         @media (prefers-reduced-motion: reduce) {
+          .community-grid {
+            scroll-behavior: auto;
+          }
+
           .preview-effect.space-command {
             animation: none;
           }
@@ -1587,6 +1835,10 @@ class ThemeStudioPanel extends HTMLElement {
           .preview-grid {
             grid-template-columns: 1fr 1fr;
           }
+
+          .community-grid {
+            grid-auto-columns: calc((100% - 11px) / 2);
+          }
         }
 
         @media (max-width: 620px) {
@@ -1603,17 +1855,10 @@ class ThemeStudioPanel extends HTMLElement {
             width: 100%;
           }
 
-          .preset-gallery {
+          .topbar-actions {
+            display: grid;
+            width: 100%;
             grid-template-columns: 1fr;
-          }
-
-          .selected-card {
-            grid-template-columns: 82px 1fr;
-          }
-
-          .selected-thumbnail {
-            width: 82px;
-            height: 60px;
           }
 
           .preview-panel {
@@ -1740,6 +1985,30 @@ class ThemeStudioPanel extends HTMLElement {
           .profile-actions > * {
             flex: 1 1 calc(50% - 7px);
           }
+
+          .community-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .community-heading-actions {
+            width: 100%;
+          }
+
+          .community-heading-actions > * {
+            flex: 1;
+          }
+
+          .community-grid {
+            grid-auto-columns: 100%;
+            margin-inline: 13px;
+            padding: 0 0 13px;
+          }
+
+          .community-slider-controls {
+            justify-content: center;
+            padding: 0 13px 10px;
+          }
         }
       </style>
 
@@ -1755,28 +2024,117 @@ class ThemeStudioPanel extends HTMLElement {
           <div>
             <h1>Theme Studio</h1>
             <p>
-              Startdesign wählen und anschließend individuell anpassen.
+              Community-Design wählen oder individuell gestalten.
             </p>
           </div>
 
-          <div class="mode-switcher">
+          <div class="topbar-actions">
+            <div class="mode-switcher">
+              <button
+                class="mode-button"
+                data-mode="light"
+              >
+                ☀ Hell
+              </button>
+
+              <button
+                class="mode-button active"
+                data-mode="dark"
+              >
+                ☾ Dunkel
+              </button>
+            </div>
+
             <button
-              class="mode-button"
-              data-mode="light"
+              id="generate-counterpart-button"
+              class="top-pair-button"
+              type="button"
+              title="Erzeugt aus dem gewählten Modus einen farblich passenden Gegenmodus"
             >
-              ☀ Hell
+              Passenden Hellmodus erzeugen
             </button>
 
             <button
-              class="mode-button active"
-              data-mode="dark"
+              id="apply-button"
+              class="top-apply-button"
+              type="button"
             >
-              ☾ Dunkel
+              Beide Modi anwenden
             </button>
           </div>
         </header>
 
         <p id="status" class="status"></p>
+
+        <section class="panel community-panel">
+          <div class="panel-heading community-heading">
+            <div>
+              <h2>Community-Galerie</h2>
+              <p>
+                Geprüfte Designs ansehen und direkt als Profil importieren.
+              </p>
+            </div>
+
+            <div class="community-heading-actions">
+              <button
+                id="community-refresh-button"
+                class="profile-button"
+                type="button"
+              >
+                Aktualisieren
+              </button>
+              <a
+                class="profile-button community-link"
+                href="https://ha-theme-studio.com"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Galerie öffnen
+              </a>
+            </div>
+          </div>
+
+          <div
+            id="community-state"
+            class="community-state"
+          >
+            Galerie wird geladen …
+          </div>
+
+          <div
+            id="community-slider-controls"
+            class="community-slider-controls"
+            hidden
+          >
+            <button
+              id="community-slider-previous"
+              class="community-slider-button"
+              type="button"
+              aria-label="Vorherige Designs anzeigen"
+            >
+              ‹
+            </button>
+            <span
+              id="community-slider-position"
+              class="community-slider-position"
+              aria-live="polite"
+            ></span>
+            <button
+              id="community-slider-next"
+              class="community-slider-button"
+              type="button"
+              aria-label="Weitere Designs anzeigen"
+            >
+              ›
+            </button>
+          </div>
+
+          <div
+            id="community-grid"
+            class="community-grid"
+            hidden
+          ></div>
+        </section>
 
         <section class="panel profile-panel">
           <div class="panel-heading">
@@ -1871,56 +2229,6 @@ class ThemeStudioPanel extends HTMLElement {
 
         <section class="builder-grid">
           <div class="builder-controls">
-            <div class="panel">
-            <div class="panel-heading">
-              <h2>Startdesign</h2>
-              <p>
-                Eine Vorlage für beide Farbmodi wählen.
-              </p>
-            </div>
-
-            <div
-              id="preset-gallery"
-              class="preset-gallery"
-            >
-              ${this._presetGalleryMarkup()}
-            </div>
-
-            <div
-              id="selected-design"
-              class="selected-design"
-              hidden
-            >
-              <div class="selected-card">
-                <div
-                  id="selected-thumbnail"
-                  class="selected-thumbnail"
-                ></div>
-
-                <div class="selected-content">
-                  <h3 id="selected-name"></h3>
-                  <p id="selected-description"></p>
-
-                  <div class="selected-actions">
-                    <button
-                      id="change-design-button"
-                      class="small-button secondary"
-                    >
-                      Andere Vorlage
-                    </button>
-
-                    <button
-                      id="quick-apply-button"
-                      class="small-button primary"
-                    >
-                      Aktivieren
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
             <div class="panel">
             <div class="panel-heading">
               <h2>Feineinstellungen</h2>
@@ -2454,20 +2762,6 @@ class ThemeStudioPanel extends HTMLElement {
 
             <div class="editor-actions">
               <button
-                id="reset-button"
-                class="editor-action secondary"
-              >
-                Modus auf Design 1 zurücksetzen
-              </button>
-
-              <button
-                id="apply-button"
-                class="editor-action primary"
-              >
-                Beide Modi anwenden
-              </button>
-
-              <button
                 id="restore-default-button"
                 class="editor-action restore-default"
               >
@@ -2603,65 +2897,8 @@ class ThemeStudioPanel extends HTMLElement {
     this._bindEvents();
     this._syncControls();
     this._updatePreview();
-    this._syncPresetArea();
     this._renderProfileOptions();
     this._renderBackgroundLibrary();
-  }
-
-  _presetGalleryMarkup() {
-    return Object.values(THEME_STUDIO_PRESETS)
-      .map((preset) => {
-        const preview = preset.preview;
-
-        return `
-          <button
-            class="preset-card"
-            data-design="${preset.id}"
-            style="
-              --design-background:${preview.background};
-              --design-card:${preview.card};
-              --design-accent:${preview.accent};
-              --design-text:${preview.text};
-              --design-border:${preview.border};
-              --design-radius:${preview.radius};
-            "
-          >
-            <span class="preset-preview">
-              <span class="preset-preview-header">
-                <span>Mein Zuhause</span>
-                <span class="preset-dot"></span>
-              </span>
-
-              <span class="preset-mini-grid">
-                ${this._miniCardMarkup()}
-                ${this._miniCardMarkup()}
-                ${this._miniCardMarkup()}
-                ${this._miniCardMarkup()}
-              </span>
-            </span>
-
-            <span class="preset-info">
-              <span class="preset-name">
-                ${preset.name}
-              </span>
-
-              <span class="preset-description">
-                ${preset.description}
-              </span>
-            </span>
-          </button>
-        `;
-      })
-      .join("");
-  }
-
-  _miniCardMarkup() {
-    return `
-      <span class="preset-mini-card">
-        <span class="preset-mini-line"></span>
-        <span class="preset-mini-value"></span>
-      </span>
-    `;
   }
 
   _colorPreset(color, title) {
@@ -3014,6 +3251,53 @@ class ThemeStudioPanel extends HTMLElement {
 
   _bindEvents() {
     this.shadowRoot
+      .getElementById("community-refresh-button")
+      .addEventListener("click", () => {
+        this._loadCommunityGallery(true);
+      });
+
+    const communityGrid = this.shadowRoot.getElementById(
+      "community-grid"
+    );
+
+    this.shadowRoot
+      .getElementById("community-slider-previous")
+      .addEventListener("click", () => {
+        this._moveCommunitySlider(-1);
+      });
+
+    this.shadowRoot
+      .getElementById("community-slider-next")
+      .addEventListener("click", () => {
+        this._moveCommunitySlider(1);
+      });
+
+    communityGrid.addEventListener("scroll", () => {
+      this._updateCommunitySlider();
+    }, { passive: true });
+
+    this._communitySliderObserver = new ResizeObserver(() => {
+      this._updateCommunitySlider();
+    });
+    this._communitySliderObserver.observe(communityGrid);
+
+    communityGrid
+      .addEventListener("click", (event) => {
+        const button = event.target.closest(
+          ".community-import-button"
+        );
+
+        if (!button || button.disabled) {
+          return;
+        }
+
+        this._importCommunityDesign(
+          button.dataset.designId,
+          button
+        );
+      });
+
+    this.shadowRoot
       .getElementById("profile-select")
       .addEventListener("change", (event) => {
         this._loadProfileSelection(event.target.value);
@@ -3056,21 +3340,6 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
-      .querySelectorAll(".preset-card")
-      .forEach((button) => {
-        button.addEventListener("click", () => {
-          this._applyDesign(button.dataset.design);
-        });
-      });
-
-    this.shadowRoot
-      .getElementById("change-design-button")
-      .addEventListener("click", () => {
-        this.galleryOpen = true;
-        this._syncPresetArea();
-      });
-
-    this.shadowRoot
       .querySelectorAll(".mode-button")
       .forEach((button) => {
         button.addEventListener("click", () => {
@@ -3078,7 +3347,14 @@ class ThemeStudioPanel extends HTMLElement {
           this._clearStatus();
           this._syncControls();
           this._updatePreview();
+          this._renderCommunityGallery();
         });
+      });
+
+    this.shadowRoot
+      .getElementById("generate-counterpart-button")
+      .addEventListener("click", () => {
+        this._generateCounterpartMode();
       });
 
     this.shadowRoot
@@ -3088,7 +3364,6 @@ class ThemeStudioPanel extends HTMLElement {
           this.profile.primaryColor =
             button.dataset.color;
 
-          this.selectedDesign = null;
           this._clearStatus();
           this._syncControls();
           this._updatePreview();
@@ -3295,7 +3570,6 @@ class ThemeStudioPanel extends HTMLElement {
           this.profile.background =
             button.dataset.background;
 
-          this.selectedDesign = null;
           this._clearStatus();
           this._syncControls();
           this._updatePreview();
@@ -3329,19 +3603,7 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
-      .getElementById("reset-button")
-      .addEventListener("click", () => {
-        this._resetActiveMode();
-      });
-
-    this.shadowRoot
       .getElementById("apply-button")
-      .addEventListener("click", () => {
-        this._saveAndApplySettings();
-      });
-
-    this.shadowRoot
-      .getElementById("quick-apply-button")
       .addEventListener("click", () => {
         this._saveAndApplySettings();
       });
@@ -3355,6 +3617,517 @@ class ThemeStudioPanel extends HTMLElement {
 
   _cloneSettings(settings) {
     return JSON.parse(JSON.stringify(settings));
+  }
+
+  _generateCounterpartMode() {
+    const sourceMode = this.activeMode;
+    const targetMode = sourceMode === "dark" ? "light" : "dark";
+    const sourceLabel = sourceMode === "dark" ? "Dunkelmodus" : "Hellmodus";
+    const targetLabel = targetMode === "dark" ? "Dunkelmodus" : "Hellmodus";
+
+    if (
+      !window.confirm(
+        `${targetLabel} aus dem aktuellen ${sourceLabel} erzeugen? ` +
+        `Die bisherigen Einstellungen des ${targetLabel} werden ersetzt.`
+      )
+    ) {
+      return;
+    }
+
+    this.settings[targetMode] = this._deriveCounterpartMode(
+      this.settings[sourceMode],
+      targetMode
+    );
+    this.activeMode = targetMode;
+    this._syncControls();
+    this._updatePreview();
+    this._renderCommunityGallery();
+    this._setStatus(
+      `${targetLabel} wurde passend aus dem ${sourceLabel} erzeugt. ` +
+      "Profil anschließend speichern oder aktualisieren.",
+      "success"
+    );
+  }
+
+  _deriveCounterpartMode(source, targetMode) {
+    const light = targetMode === "light";
+    const white = "#ffffff";
+    const black = "#000000";
+    const primary = light
+      ? this._mixColors(source.primaryColor, white, 0.08)
+      : this._mixColors(source.primaryColor, white, 0.14);
+    const backgroundColor = light
+      ? this._mixColors(source.backgroundColor, white, 0.72)
+      : this._mixColors(source.backgroundColor, black, 0.78);
+    const cardColor = light
+      ? this._mixColors(source.cardColor, white, 0.76)
+      : this._mixColors(source.cardColor, black, 0.72);
+    const headerBackgroundColor = light
+      ? this._mixColors(source.headerBackgroundColor, white, 0.8)
+      : this._mixColors(source.headerBackgroundColor, black, 0.8);
+    const sidebarBackgroundColor = light
+      ? this._mixColors(source.sidebarBackgroundColor, white, 0.78)
+      : this._mixColors(source.sidebarBackgroundColor, black, 0.8);
+    const textColor = light
+      ? this._mixColors(source.primaryColor, black, 0.72)
+      : "#f5f7fa";
+    const secondaryTextColor = light
+      ? this._mixColors(source.primaryColor, black, 0.58)
+      : this._mixColors(source.primaryColor, white, 0.7);
+
+    return {
+      primaryColor: primary,
+      backgroundColor,
+      cardColor,
+      cardTextColor: textColor,
+      cardIconColor: primary,
+      cardBorderColor: light
+        ? this._mixColors(primary, white, 0.3)
+        : primary,
+      headerBackgroundColor,
+      headerTextColor: textColor,
+      sidebarBackgroundColor,
+      sidebarTextColor: textColor,
+      sidebarIconColor: secondaryTextColor,
+      sidebarSelectedColor: primary,
+      cardOpacity: light
+        ? Math.max(82, Number(source.cardOpacity) || 92)
+        : Math.max(78, Number(source.cardOpacity) || 92),
+      cardBorderWidth: Number(source.cardBorderWidth) || 0,
+      cardShadow: Number(source.cardShadow) || 0,
+      borderRadius: Number(source.borderRadius) || 0,
+      darkening: light
+        ? Math.round((Number(source.darkening) || 0) * 0.35)
+        : Math.max(24, Number(source.darkening) || 0),
+      background: source.background,
+      backgroundImage: source.backgroundImage || "",
+    };
+  }
+
+  _communityPreviewBackground(mode) {
+    if (mode.background_type === "waves") {
+      return `
+        radial-gradient(
+          circle at 18% 24%,
+          ${mode.primary} 0,
+          transparent 36%
+        ),
+        radial-gradient(
+          circle at 82% 72%,
+          #2f6fa3 0,
+          transparent 42%
+        ),
+        ${mode.background}
+      `;
+    }
+
+    if (mode.background_type === "aurora") {
+      return `
+        linear-gradient(
+          128deg,
+          ${mode.background} 8%,
+          ${mode.primary} 48%,
+          #684a8f 100%
+        )
+      `;
+    }
+
+    return mode.background;
+  }
+
+  _communityCardMarkup(design) {
+    const preview = design.preview || {};
+    const modes = preview.modes || {};
+    const fallbackMode = {
+      primary: preview.primary || "#26b2b3",
+      background: preview.background || "#101719",
+      card: preview.card || "#182326",
+      text: preview.text || "#ffffff",
+      icon: preview.primary || "#26b2b3",
+      border: preview.border || "#26b2b3",
+      header_background: preview.background || "#101719",
+      header_text: preview.text || "#ffffff",
+      sidebar_background: preview.background || "#101719",
+      sidebar_text: preview.text || "#ffffff",
+      sidebar_icon: preview.text || "#b8c4c7",
+      sidebar_selected: preview.primary || "#26b2b3",
+      opacity: Number(preview.opacity) || 92,
+      border_width: Number(preview.border_width) || 0,
+      shadow: 20,
+      radius: Number(preview.radius) || 18,
+      darkening: 0,
+      background_type: "color",
+    };
+    const mode = modes[this.activeMode] || fallbackMode;
+    const effects = preview.effects || {};
+    const cardEffects = Array.isArray(effects.card_effects)
+      ? effects.card_effects
+      : [];
+    const effectClass = (name) =>
+      cardEffects.includes(name) ? name : "";
+    const backgroundEffect =
+      effects.background === "space-command"
+        ? "space-command"
+        : "";
+    const opacity = Math.min(
+      1,
+      Math.max(0.2, (Number(mode.opacity) || 92) / 100)
+    );
+    const effectAlpha = Math.min(
+      0.9,
+      Math.max(0.2, (Number(effects.intensity) || 55) / 100)
+    );
+    const downloads = Number(design.downloads) || 0;
+
+    return `
+      <article class="community-card">
+        <div
+          class="community-preview"
+          role="img"
+          aria-label="Farbvorschau für ${this._escapeHtml(design.title)}"
+          style="
+            --community-background:${this._escapeHtml(mode.background)};
+            --community-dashboard-background:${this._escapeHtml(this._communityPreviewBackground(mode))};
+            --community-card:${this._escapeHtml(this._rgba(mode.card, opacity))};
+            --community-primary:${this._escapeHtml(mode.primary)};
+            --community-text:${this._escapeHtml(mode.text)};
+            --community-icon:${this._escapeHtml(mode.icon)};
+            --community-border:${this._escapeHtml(mode.border)};
+            --community-border-width:${Number(mode.border_width) || 0}px;
+            --community-radius:${Math.round((Number(mode.radius) || 0) * 0.45)}px;
+            --community-shadow-blur:${Math.round((Number(mode.shadow) || 0) * 0.28)}px;
+            --community-darkening:${Math.min(0.8, Math.max(0, (Number(mode.darkening) || 0) / 100))};
+            --community-header-background:${this._escapeHtml(mode.header_background)};
+            --community-header-text:${this._escapeHtml(mode.header_text)};
+            --community-sidebar-background:${this._escapeHtml(mode.sidebar_background)};
+            --community-sidebar-text:${this._escapeHtml(mode.sidebar_text)};
+            --community-sidebar-icon:${this._escapeHtml(mode.sidebar_icon)};
+            --community-sidebar-selected:${this._escapeHtml(mode.sidebar_selected)};
+            --community-sidebar-selected-soft:${this._escapeHtml(this._rgba(mode.sidebar_selected, 0.18))};
+            --community-effect-alpha:${effectAlpha};
+          "
+        >
+          <div class="community-mini-header">
+            <span>☰</span>
+            <strong>Übersicht</strong>
+            <span>＋</span>
+            <span>⋮</span>
+          </div>
+          <div class="community-mini-shell">
+            <aside class="community-mini-sidebar">
+              <strong>Home Assistant</strong>
+              <div class="community-mini-nav active">
+                <span>⌂</span> Übersicht
+              </div>
+              <div class="community-mini-nav">
+                <span>◇</span> Karte
+              </div>
+              <div class="community-mini-nav">
+                <span>ϟ</span> Energie
+              </div>
+              <div class="community-mini-nav">
+                <span>⚙</span> Einstellungen
+              </div>
+            </aside>
+            <section class="community-mini-dashboard ${backgroundEffect}">
+              <div class="community-mini-title">
+                <span>Mein Zuhause</span>
+                <small>17:36</small>
+              </div>
+              <div class="community-mini-cards">
+                <div class="community-mini-card ${effectClass("energy-flow")}">
+                  <div class="community-mini-card-title">
+                    <span class="community-mini-icon">●</span>
+                    Stromverbrauch
+                  </div>
+                  <div class="community-mini-value">846 W</div>
+                  <div class="community-mini-detail">Heute 8,4 kWh</div>
+                </div>
+                <div class="community-mini-card ${effectClass("status-pulse")}">
+                  <div class="community-mini-card-title">
+                    <span class="community-mini-icon">●</span>
+                    Wohnzimmer
+                  </div>
+                  <div class="community-mini-switch-row">
+                    Deckenlicht
+                    <span class="community-mini-switch"></span>
+                  </div>
+                  <div class="community-mini-switch-row">
+                    Stehlampe
+                    <span class="community-mini-switch"></span>
+                  </div>
+                </div>
+                <div class="community-mini-card ${effectClass("climate-aura")}">
+                  <div class="community-mini-card-title">
+                    <span class="community-mini-icon">●</span>
+                    Temperatur
+                  </div>
+                  <div class="community-mini-value">22,4 °C</div>
+                  <div class="community-mini-detail">Luftfeuchtigkeit 48 %</div>
+                </div>
+                <div class="community-mini-card ${effectClass("alert-focus")}">
+                  <div class="community-mini-card-title">
+                    <span class="community-mini-icon">●</span>
+                    Verlauf
+                  </div>
+                  <div class="community-mini-bars">
+                    <span style="height:38%"></span>
+                    <span style="height:55%"></span>
+                    <span style="height:47%"></span>
+                    <span style="height:78%"></span>
+                    <span style="height:62%"></span>
+                    <span style="height:92%"></span>
+                  </div>
+                </div>
+              </div>
+              <span class="community-mode-label">
+                ${this.activeMode === "light" ? "Hell" : "Dunkel"}
+              </span>
+            </section>
+          </div>
+        </div>
+
+        <div class="community-card-content">
+          <div class="community-badges">
+            <span class="community-badge">
+              ${this._escapeHtml(design.category || "Design")}
+            </span>
+            ${design.license ? `
+              <span class="community-badge">
+                ${this._escapeHtml(design.license)}
+              </span>
+            ` : ""}
+          </div>
+
+          <h3>${this._escapeHtml(design.title)}</h3>
+          <p class="community-summary">
+            ${this._escapeHtml(design.summary || "Keine Beschreibung")}
+          </p>
+          <div class="community-meta">
+            @${this._escapeHtml(design.author || "Community")}
+            · ${downloads.toLocaleString("de-DE")} Downloads
+          </div>
+
+          <button
+            class="profile-button primary community-import-button"
+            type="button"
+            data-design-id="${this._escapeHtml(design.id)}"
+          >
+            Mit einem Klick importieren
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  _communitySliderMetrics() {
+    const grid = this.shadowRoot.getElementById("community-grid");
+    const card = grid.querySelector(".community-card");
+
+    if (!card || grid.hidden) {
+      return null;
+    }
+
+    const style = getComputedStyle(grid);
+    const gap = Number.parseFloat(style.columnGap) || 0;
+    const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(style.paddingRight) || 0;
+    const step = card.getBoundingClientRect().width + gap;
+    const usableWidth =
+      grid.clientWidth - paddingLeft - paddingRight;
+    const visible = Math.max(
+      1,
+      Math.round((usableWidth + gap) / step)
+    );
+    const count = this.communityDesigns.length;
+    const maximumIndex = Math.max(0, count - visible);
+    const index = Math.min(
+      maximumIndex,
+      Math.max(0, Math.round(grid.scrollLeft / step))
+    );
+
+    return {
+      grid,
+      step,
+      visible,
+      count,
+      maximumIndex,
+      index,
+    };
+  }
+
+  _updateCommunitySlider() {
+    const controls = this.shadowRoot.getElementById(
+      "community-slider-controls"
+    );
+    const previous = this.shadowRoot.getElementById(
+      "community-slider-previous"
+    );
+    const next = this.shadowRoot.getElementById(
+      "community-slider-next"
+    );
+    const position = this.shadowRoot.getElementById(
+      "community-slider-position"
+    );
+    const metrics = this._communitySliderMetrics();
+
+    if (!metrics || metrics.count <= metrics.visible) {
+      controls.hidden = true;
+      return;
+    }
+
+    controls.hidden = false;
+    previous.disabled = metrics.index === 0;
+    next.disabled = metrics.index >= metrics.maximumIndex;
+    position.textContent =
+      `${metrics.index + 1}–` +
+      `${Math.min(metrics.count, metrics.index + metrics.visible)} ` +
+      `von ${metrics.count}`;
+  }
+
+  _moveCommunitySlider(direction) {
+    const metrics = this._communitySliderMetrics();
+
+    if (!metrics) {
+      return;
+    }
+
+    const targetIndex = Math.min(
+      metrics.maximumIndex,
+      Math.max(0, metrics.index + direction)
+    );
+
+    metrics.grid.scrollTo({
+      left: targetIndex * metrics.step,
+      behavior: "smooth",
+    });
+  }
+
+  _renderCommunityGallery(errorMessage = "") {
+    const state =
+      this.shadowRoot.getElementById("community-state");
+    const grid =
+      this.shadowRoot.getElementById("community-grid");
+    const refresh = this.shadowRoot.getElementById(
+      "community-refresh-button"
+    );
+    const sliderControls = this.shadowRoot.getElementById(
+      "community-slider-controls"
+    );
+
+    refresh.disabled = this.communityGalleryLoading;
+
+    if (this.communityGalleryLoading) {
+      state.className = "community-state";
+      state.textContent = "Galerie wird geladen …";
+      state.hidden = false;
+      sliderControls.hidden = true;
+      grid.hidden = true;
+      return;
+    }
+
+    if (errorMessage) {
+      state.className = "community-state error";
+      state.textContent = errorMessage;
+      state.hidden = false;
+      sliderControls.hidden = true;
+      grid.hidden = true;
+      return;
+    }
+
+    if (this.communityDesigns.length === 0) {
+      state.className = "community-state";
+      state.textContent = this.communityGalleryLoaded
+        ? "Aktuell sind keine veröffentlichten Designs verfügbar."
+        : "Galerie wird geladen …";
+      state.hidden = false;
+      sliderControls.hidden = true;
+      grid.hidden = true;
+      return;
+    }
+
+    state.hidden = true;
+    grid.innerHTML = this.communityDesigns
+      .map((design) => this._communityCardMarkup(design))
+      .join("");
+    grid.hidden = false;
+    grid.scrollLeft = 0;
+    requestAnimationFrame(() => this._updateCommunitySlider());
+  }
+
+  async _loadCommunityGallery(force = false) {
+    if (
+      this.communityGalleryLoading
+      || (this.communityGalleryLoaded && !force)
+    ) {
+      return;
+    }
+
+    this.communityGalleryLoading = true;
+    this._renderCommunityGallery();
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/get_gallery_designs",
+        refresh: force,
+      });
+
+      this.communityDesigns = Array.isArray(result.designs)
+        ? result.designs
+        : [];
+      this.communityGalleryLoaded = true;
+      this.communityGalleryLoading = false;
+      this._renderCommunityGallery();
+    } catch (error) {
+      this.communityGalleryLoading = false;
+      this._renderCommunityGallery(
+        `Galerie konnte nicht geladen werden: ${this._errorMessage(error)}`
+      );
+    }
+  }
+
+  async _importCommunityDesign(designId, button) {
+    const design = this.communityDesigns.find(
+      (item) => item.id === designId
+    );
+
+    if (!design) {
+      this._setStatus(
+        "Das gewählte Galerie-Design wurde nicht gefunden.",
+        "error"
+      );
+      return;
+    }
+
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "Wird importiert …";
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/import_gallery_design",
+        design_id: design.id,
+        name: design.title,
+      });
+
+      this.profiles = result.profiles;
+      this.activeProfileId = result.profile.id;
+      this.settings = this._cloneSettings(result.profile.settings);
+      this._renderProfileOptions();
+      this._syncControls();
+      this._updatePreview();
+      this._setStatus(
+        `${result.profile.name} wurde aus der Galerie importiert und als Profil gespeichert.`,
+        "success"
+      );
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      button.textContent = originalText;
+    }
   }
 
   _currentProfile() {
@@ -3444,11 +4217,8 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     this.settings = this._cloneSettings(profile.settings);
-    this.selectedDesign = null;
-    this.galleryOpen = true;
     nameInput.value = profile.name;
 
-    this._syncPresetArea();
     this._syncControls();
     this._updatePreview();
     this._syncProfileControls();
@@ -3572,10 +4342,7 @@ class ThemeStudioPanel extends HTMLElement {
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
       this.settings = this._cloneSettings(result.profile.settings);
-      this.selectedDesign = null;
-      this.galleryOpen = true;
       this._renderProfileOptions();
-      this._syncPresetArea();
       this._syncControls();
       this._updatePreview();
       this._setStatus(
@@ -3668,10 +4435,7 @@ class ThemeStudioPanel extends HTMLElement {
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
       this.settings = this._cloneSettings(result.profile.settings);
-      this.selectedDesign = null;
-      this.galleryOpen = true;
       this._renderProfileOptions();
-      this._syncPresetArea();
       this._syncControls();
       this._updatePreview();
       this._setStatus(
@@ -3721,74 +4485,11 @@ class ThemeStudioPanel extends HTMLElement {
     }
   }
 
-  _applyDesign(designId) {
-    const effects = {
-      ...this.settings.effects,
-    };
-
-    this.settings = {
-      ...cloneThemeStudioPreset(designId),
-      effects,
-    };
-
-    this.selectedDesign = designId;
-    this.galleryOpen = false;
-
-    this._syncPresetArea();
-    this._syncControls();
-    this._updatePreview();
-
-    this._setStatus(
-      `${THEME_STUDIO_PRESETS[designId].name} übernommen.`,
-      "success"
-    );
-  }
-
-  _syncPresetArea() {
-    const gallery =
-      this.shadowRoot.getElementById("preset-gallery");
-
-    const selected =
-      this.shadowRoot.getElementById(
-        "selected-design"
-      );
-
-    gallery.hidden = !this.galleryOpen;
-    selected.hidden = this.galleryOpen;
-
-    if (
-      this.galleryOpen
-      || !this.selectedDesign
-    ) {
-      return;
-    }
-
-    const preset =
-      THEME_STUDIO_PRESETS[this.selectedDesign];
-
-    this.shadowRoot
-      .getElementById("selected-name")
-      .textContent = preset.name;
-
-    this.shadowRoot
-      .getElementById("selected-description")
-      .textContent = preset.description;
-
-    this.shadowRoot
-      .getElementById("selected-thumbnail")
-      .style.setProperty(
-        "--selected-background",
-        preset.preview.background
-      );
-  }
-
   _bindColor(elementId, settingName, syncPresets = false) {
     this.shadowRoot
       .getElementById(elementId)
       .addEventListener("input", (event) => {
         this.profile[settingName] = event.target.value;
-        this.selectedDesign = null;
-
         if (syncPresets) {
           this._syncColorPresets();
         }
@@ -3811,8 +4512,6 @@ class ThemeStudioPanel extends HTMLElement {
       const value = Number(event.target.value);
 
       this.profile[settingName] = value;
-      this.selectedDesign = null;
-
       output.textContent = suffix
         ? `${value} ${suffix}`
         : `${value}`;
@@ -4063,6 +4762,7 @@ class ThemeStudioPanel extends HTMLElement {
 
     await this._loadBackgrounds();
     await this._loadProfiles();
+    await this._loadCommunityGallery();
   }
 
   _backgroundById(backgroundId) {
@@ -4178,7 +4878,6 @@ class ThemeStudioPanel extends HTMLElement {
 
     this.profile.backgroundImage = background.url;
     this.profile.background = "image";
-    this.selectedDesign = null;
     this._syncControls();
     this._updatePreview();
     this._setStatus(
@@ -4326,7 +5025,6 @@ class ThemeStudioPanel extends HTMLElement {
 
       this.profile.backgroundImage = result.url;
       this.profile.background = "image";
-      this.selectedDesign = null;
       this.backgrounds = result.backgrounds;
       nameInput.value = "";
 
@@ -4414,17 +5112,11 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    const buttons = [
-      this.shadowRoot.getElementById("apply-button"),
-      this.shadowRoot.getElementById(
-        "quick-apply-button"
-      ),
-    ];
+    const button =
+      this.shadowRoot.getElementById("apply-button");
 
-    buttons.forEach((button) => {
-      button.disabled = true;
-      button.textContent = "Wird aktiviert …";
-    });
+    button.disabled = true;
+    button.textContent = "Wird aktiviert …";
 
     try {
       const result =
@@ -4440,26 +5132,19 @@ class ThemeStudioPanel extends HTMLElement {
         "success"
       );
 
-      buttons.forEach((button) => {
-        button.textContent = "Aktiviert ✓";
-      });
+      button.textContent = "Aktiviert ✓";
     } catch (error) {
       this._setStatus(
         this._errorMessage(error),
         "error"
       );
 
-      buttons.forEach((button) => {
-        button.textContent = "Fehlgeschlagen";
-      });
+      button.textContent = "Fehlgeschlagen";
     }
 
     window.setTimeout(() => {
-      buttons[0].disabled = false;
-      buttons[0].textContent = "Beide Modi anwenden";
-
-      buttons[1].disabled = false;
-      buttons[1].textContent = "Aktivieren";
+      button.disabled = false;
+      button.textContent = "Beide Modi anwenden";
     }, 2200);
   }
 
@@ -4519,6 +5204,15 @@ class ThemeStudioPanel extends HTMLElement {
           button.dataset.mode === this.activeMode
         );
       });
+
+    const counterpartButton = this.shadowRoot.getElementById(
+      "generate-counterpart-button"
+    );
+
+    counterpartButton.textContent =
+      this.activeMode === "dark"
+        ? "Passenden Hellmodus erzeugen"
+        : "Passenden Dunkelmodus erzeugen";
 
     const colors = {
       "primary-color": "primaryColor",
@@ -4819,20 +5513,6 @@ class ThemeStudioPanel extends HTMLElement {
         : "";
   }
 
-  _resetActiveMode() {
-    const defaults =
-      this.activeMode === "light"
-        ? cloneThemeStudioPreset("design_1").light
-        : cloneThemeStudioPreset("design_1").dark;
-
-    this.settings[this.activeMode] = defaults;
-    this.selectedDesign = null;
-
-    this._clearStatus();
-    this._syncControls();
-    this._updatePreview();
-  }
-
   _setStatus(message, type) {
     const status =
       this.shadowRoot.getElementById("status");
@@ -4865,6 +5545,22 @@ class ThemeStudioPanel extends HTMLElement {
       green: parseInt(value.slice(2, 4), 16),
       blue: parseInt(value.slice(4, 6), 16),
     };
+  }
+
+  _mixColors(firstColor, secondColor, secondWeight) {
+    const first = this._hexToRgb(firstColor);
+    const second = this._hexToRgb(secondColor);
+    const weight = Math.min(1, Math.max(0, secondWeight));
+    const channel = (firstValue, secondValue) =>
+      Math.round(firstValue * (1 - weight) + secondValue * weight)
+        .toString(16)
+        .padStart(2, "0");
+
+    return (
+      `#${channel(first.red, second.red)}` +
+      `${channel(first.green, second.green)}` +
+      `${channel(first.blue, second.blue)}`
+    );
   }
 
   _rgba(color, opacity) {
