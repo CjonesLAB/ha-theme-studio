@@ -9,4 +9,7 @@ Thumbs.db
 venv/
 dist/
 build/
-
+.codex-*.png
+ha-theme-studio-v*-complete/
+ha-theme-studio-v*-complete.zip
+.gh-config/
