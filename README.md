@@ -39,17 +39,17 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ### Theme Studio mit Community-Galerie und Dashboard-Vorschau
 
-![Theme Studio mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](docs/images/theme-studio-community-overview.png)
+![Theme Studio mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](docs/images/theme-studio-community-overview-v044.png)
 
 ### Feineinstellungen
 
 | Farben und Karten | Navigation |
 | --- | --- |
-| ![Farben und Karteneinstellungen](docs/images/fine-settings-colors-cards.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](docs/images/fine-settings-navigation.png) |
+| ![Farben und Karteneinstellungen](docs/images/fine-settings-colors-cards-v044.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](docs/images/fine-settings-navigation-v044.png) |
 
 | Hintergrund und Bildbibliothek | Dashboard-Effekte und Entitätsauswahl |
 | --- | --- |
-| ![Hintergrundauswahl, Upload und Bildbibliothek](docs/images/fine-settings-background-library.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Mehrfachauswahl](docs/images/dashboard-effects-entity-selection.png) |
+| ![Hintergrundauswahl, Upload und Bildbibliothek](docs/images/fine-settings-background-library-v044.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Mehrfachauswahl](docs/images/dashboard-effects-entity-selection-v044.png) |
 
 ## Eigenes Design veröffentlichen
 
