@@ -14,6 +14,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - Designprofile als JSON-Datei exportieren und importieren
 - geprüfte Community-Designs in einer vollständigen Mini-Dashboard-Vorschau für Hell und Dunkel ansehen und mit einem Klick als lokales Profil importieren
 - einzeilige Community-Galerie mit drei sichtbaren Designs auf dem Desktop sowie Pfeilsteuerung und Wischbedienung für weitere Designs
+- eigene Designs über [ha-theme-studio.com](https://ha-theme-studio.com/) zur Prüfung und Veröffentlichung in der Community-Galerie einreichen
 - anpassbare Haupt-, Hintergrund-, Karten-, Text-, Symbol- und Rahmenfarben
 - Kopfzeile und Seitenleiste pro Farbmodus separat gestalten
 - eigene Farben für Navigationshintergrund, Text, Symbole und den aktiven Menüpunkt
@@ -36,21 +37,23 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ## Screenshots
 
-### Theme Studio und Dashboard
+### Theme Studio mit Community-Galerie und Dashboard-Vorschau
 
-![Theme Studio mit Community-Galerie, Feineinstellungen und Vorschau](docs/images/theme-studio-overview.png)
-
-![Home-Assistant-Dashboard mit Aurora-Hintergrund und Karteneffekten](docs/images/dashboard-aurora.png)
+![Theme Studio mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](docs/images/theme-studio-community-overview.png)
 
 ### Feineinstellungen
 
-| Farben und Navigation | Kartendesign |
+| Farben und Karten | Navigation |
 | --- | --- |
-| ![Farben und Navigationseinstellungen](docs/images/fine-settings-overview.png) | ![Geöffnete Karteneinstellungen](docs/images/fine-settings-cards.png) |
+| ![Farben und Karteneinstellungen](docs/images/fine-settings-colors-cards.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](docs/images/fine-settings-navigation.png) |
 
-| Hintergrund | Dashboard-Effekte |
+| Hintergrund und Bildbibliothek | Dashboard-Effekte und Entitätsauswahl |
 | --- | --- |
-| ![Hintergrundauswahl und eigener Bild-Upload](docs/images/fine-settings-background.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Entitätsauswahl](docs/images/dashboard-effects.png) |
+| ![Hintergrundauswahl, Upload und Bildbibliothek](docs/images/fine-settings-background-library.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Mehrfachauswahl](docs/images/dashboard-effects-entity-selection.png) |
+
+## Eigenes Design veröffentlichen
+
+Eigene Designprofile können direkt auf [ha-theme-studio.com](https://ha-theme-studio.com/) für die Community-Galerie eingereicht werden. Dazu das Profil in Theme Studio als JSON exportieren, auf der Webseite mit einem GitHub-Konto anmelden und über **Design einreichen** hochladen. Jede Einreichung wird vor der Veröffentlichung geprüft, damit die öffentliche Galerie übersichtlich und qualitativ einheitlich bleibt.
 
 ## Installation über HACS
 
