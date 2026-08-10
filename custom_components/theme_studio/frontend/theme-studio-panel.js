@@ -8,6 +8,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.profiles = [];
     this.profileLimit = 32;
     this.activeProfileId = "";
+    this.persistedActiveProfileId = "";
     this.communityDesigns = [];
     this.communityGalleryLoaded = false;
     this.communityGalleryLoading = false;
@@ -3619,6 +3620,34 @@ class ThemeStudioPanel extends HTMLElement {
     return JSON.parse(JSON.stringify(settings));
   }
 
+  _settingsEqual(first, second) {
+    return JSON.stringify(first) === JSON.stringify(second);
+  }
+
+  _portableProfileSettings(settings) {
+    const portable = this._cloneSettings(settings);
+
+    portable.effects = {
+      effect: "none",
+      motion: 35,
+      glow: 35,
+      cardEffects: [],
+      cardIntensity: 55,
+      pulseEntities: [],
+      energyEntities: [],
+      energyWarning: 500,
+      energyCritical: 2000,
+      climateEntities: [],
+      climateComfortMin: 19,
+      climateComfortMax: 24,
+      climateHot: 28,
+      alertEntities: [],
+      alertBatteryLow: 20,
+    };
+
+    return portable;
+  }
+
   _generateCounterpartMode() {
     const sourceMode = this.activeMode;
     const targetMode = sourceMode === "dark" ? "light" : "dark";
@@ -4238,6 +4267,26 @@ class ThemeStudioPanel extends HTMLElement {
         ? result.profiles
         : [];
       this.profileLimit = Number(result.maximum) || 32;
+
+      const currentThemeIsThemeStudio =
+        this._hass.themes?.theme === "Theme Studio";
+      const persistedProfile = currentThemeIsThemeStudio
+        ? this.profiles.find(
+          (profile) => profile.id === this.persistedActiveProfileId
+        )
+        : null;
+      const matchingProfile = currentThemeIsThemeStudio
+        ? this.profiles.find(
+          (profile) => this._settingsEqual(
+            profile.settings,
+            this.settings
+          )
+        )
+        : null;
+
+      this.activeProfileId = (
+        persistedProfile || matchingProfile
+      )?.id || "";
       this._renderProfileOptions();
     } catch (error) {
       this._setStatus(
@@ -4368,7 +4417,7 @@ class ThemeStudioPanel extends HTMLElement {
       version: 1,
       name: profile.name,
       exported_at: new Date().toISOString(),
-      settings: this._cloneSettings(profile.settings),
+      settings: this._portableProfileSettings(profile.settings),
     };
     const blob = new Blob(
       [JSON.stringify(exportData, null, 2)],
@@ -4387,7 +4436,7 @@ class ThemeStudioPanel extends HTMLElement {
     URL.revokeObjectURL(url);
 
     this._setStatus(
-      `${profile.name} wurde als JSON exportiert.`,
+      `${profile.name} wurde ohne lokale Effekte und Entitätszuordnungen als JSON exportiert.`,
       "success"
     );
   }
@@ -4735,6 +4784,11 @@ class ThemeStudioPanel extends HTMLElement {
         await this._hass.callWS({
           type: "theme_studio/get_settings",
         });
+
+      this.persistedActiveProfileId =
+        typeof saved.active_profile_id === "string"
+          ? saved.active_profile_id
+          : "";
 
       this.settings = {
         light: {
@@ -5123,9 +5177,14 @@ class ThemeStudioPanel extends HTMLElement {
         await this._hass.callWS({
           type: "theme_studio/save_settings",
           settings: this.settings,
+          ...(this._currentProfile()
+            ? { active_profile_id: this.activeProfileId }
+            : {}),
         });
 
       this.settings = result.settings;
+      this.persistedActiveProfileId =
+        result.active_profile_id || "";
 
       this._setStatus(
         "Design gespeichert und aktiviert.",
@@ -5171,6 +5230,10 @@ class ThemeStudioPanel extends HTMLElement {
       await this._hass.callWS({
         type: "theme_studio/restore_default_theme",
       });
+
+      this.persistedActiveProfileId = "";
+      this.activeProfileId = "";
+      this._renderProfileOptions();
 
       this._setStatus(
         "Das originale Home-Assistant-Standarddesign ist aktiv. "
