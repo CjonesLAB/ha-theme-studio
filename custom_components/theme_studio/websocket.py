@@ -1238,9 +1238,23 @@ async def websocket_get_settings(
     except (vol.Invalid, TypeError, ValueError):
         settings = default_settings()
 
+    active_profile_id = ""
+
+    if isinstance(saved_settings, dict):
+        candidate = saved_settings.get("active_profile_id")
+
+        if isinstance(candidate, str):
+            try:
+                active_profile_id = PROFILE_ID_VALIDATOR(candidate)
+            except vol.Invalid:
+                active_profile_id = ""
+
     connection.send_result(
         msg["id"],
-        settings,
+        {
+            **settings,
+            "active_profile_id": active_profile_id,
+        },
     )
 
 
@@ -1250,6 +1264,9 @@ async def websocket_get_settings(
             "type"
         ): "theme_studio/save_settings",
         vol.Required("settings"): dict,
+        vol.Optional(
+            "active_profile_id"
+        ): PROFILE_ID_VALIDATOR,
     }
 )
 @websocket_api.require_admin
@@ -1273,8 +1290,24 @@ async def websocket_save_settings(
         )
         return
 
+    active_profile_id = msg.get("active_profile_id", "")
+
+    if active_profile_id:
+        profiles = await async_load_profiles(hass)
+
+        if not any(
+            profile["id"] == active_profile_id
+            for profile in profiles
+        ):
+            active_profile_id = ""
+
+    stored_settings = {
+        **settings,
+        "active_profile_id": active_profile_id,
+    }
+
     store = get_store(hass)
-    await store.async_save(settings)
+    await store.async_save(stored_settings)
 
     try:
         await async_generate_and_apply_theme(
@@ -1302,6 +1335,7 @@ async def websocket_save_settings(
             "applied": True,
             "theme": THEME_NAME,
             "settings": settings,
+            "active_profile_id": active_profile_id,
         },
     )
 
@@ -1343,6 +1377,21 @@ async def websocket_restore_default_theme(
             ),
         )
         return
+
+    store = get_store(hass)
+    saved_settings = await store.async_load()
+
+    try:
+        settings = normalize_settings(saved_settings or {})
+    except (vol.Invalid, TypeError, ValueError):
+        settings = default_settings()
+
+    await store.async_save(
+        {
+            **settings,
+            "active_profile_id": "",
+        }
+    )
 
     connection.send_result(
         msg["id"],
