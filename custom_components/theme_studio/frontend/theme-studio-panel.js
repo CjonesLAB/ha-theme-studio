@@ -14,6 +14,13 @@ class ThemeStudioPanel extends HTMLElement {
     this.communityGalleryLoading = false;
     this.backgrounds = [];
     this.backgroundLimit = 24;
+    this.undoHistory = [];
+    this.redoHistory = [];
+    this.historyLimit = 50;
+    this.historyCoalesceKey = "";
+    this.appliedSettings = null;
+    this.integrationVersion = "";
+    this.pendingProfileImport = null;
 
     this.settings = {
       light: {
@@ -155,6 +162,19 @@ class ThemeStudioPanel extends HTMLElement {
           font-size: 13px;
         }
 
+        .version-badge {
+          display: inline-flex;
+          align-items: center;
+          min-height: 22px;
+          margin-top: 7px;
+          padding: 0 8px;
+          border: 1px solid var(--divider-color);
+          border-radius: 999px;
+          color: var(--secondary-text-color);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
         .mode-switcher {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -171,6 +191,36 @@ class ThemeStudioPanel extends HTMLElement {
           flex: 0 0 auto;
           align-items: stretch;
           gap: 9px;
+        }
+
+        .history-actions {
+          display: grid;
+          grid-template-columns: 38px 38px;
+          gap: 4px;
+          padding: 4px;
+          border-radius: 12px;
+          background: var(--card-background-color, #ffffff);
+          box-shadow: var(--ha-card-box-shadow);
+        }
+
+        .history-button {
+          min-height: 38px;
+          padding: 0;
+          border: 0;
+          border-radius: 9px;
+          background: transparent;
+          color: var(--primary-text-color, #1c1c1c);
+          font-size: 20px;
+          font-weight: 700;
+        }
+
+        .history-button:hover:not(:disabled) {
+          background: var(--secondary-background-color, #eeeeee);
+        }
+
+        .history-button:disabled {
+          cursor: default;
+          opacity: 0.35;
         }
 
         .top-apply-button {
@@ -233,6 +283,14 @@ class ThemeStudioPanel extends HTMLElement {
 
         .status.error {
           color: var(--error-color, #db4437);
+        }
+
+        .unsaved-indicator {
+          min-height: 18px;
+          margin: -10px 0 12px;
+          color: var(--warning-color, #f9a825);
+          font-size: 12px;
+          font-weight: 600;
         }
 
         .builder-grid {
@@ -351,6 +409,175 @@ class ThemeStudioPanel extends HTMLElement {
           margin: 0;
           color: var(--secondary-text-color);
           font-size: 10px;
+        }
+
+        .import-preview-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: grid;
+          place-items: center;
+          padding: 20px;
+          background: rgba(0, 0, 0, 0.62);
+          backdrop-filter: blur(5px);
+        }
+
+        .import-preview-dialog {
+          width: min(680px, 100%);
+          max-height: min(760px, calc(100vh - 40px));
+          overflow: auto;
+          border: 1px solid var(--divider-color);
+          border-radius: 18px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+        }
+
+        .import-preview-header,
+        .import-preview-body,
+        .import-preview-actions {
+          padding: 18px 20px;
+        }
+
+        .import-preview-header {
+          border-bottom: 1px solid var(--divider-color);
+        }
+
+        .import-preview-header h2 {
+          margin: 0 0 4px;
+          font-size: 21px;
+        }
+
+        .import-preview-header p,
+        .import-preview-body p {
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .import-preview-body {
+          display: grid;
+          gap: 16px;
+        }
+
+        .import-preview-modes {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .import-preview-mode {
+          overflow: hidden;
+          border: 1px solid var(--divider-color);
+          border-radius: 13px;
+        }
+
+        .import-preview-colors {
+          position: relative;
+          min-height: 158px;
+          padding: 38px 12px 12px 68px;
+          background: var(--import-background);
+          color: var(--import-text);
+        }
+
+        .import-preview-colors::before {
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 56px;
+          background: var(--import-sidebar);
+          content: "";
+        }
+
+        .import-preview-colors::after {
+          position: absolute;
+          inset: 0 0 auto 0;
+          height: 27px;
+          background: var(--import-header);
+          content: "";
+        }
+
+        .import-preview-mini-title {
+          position: relative;
+          z-index: 1;
+          display: block;
+          margin-bottom: 9px;
+          font-size: 10px;
+        }
+
+        .import-preview-mini-cards {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 7px;
+        }
+
+        .import-preview-mini-card {
+          min-height: 38px;
+          border: var(--import-border-width) solid var(--import-border);
+          border-radius: var(--import-radius);
+          background: var(--import-card);
+          box-shadow: 0 4px var(--import-shadow-blur) rgba(0, 0, 0, 0.2);
+        }
+
+        .import-preview-mini-card::before,
+        .import-preview-mini-card::after {
+          display: block;
+          height: 4px;
+          margin: 9px 8px 0;
+          border-radius: 99px;
+          background: var(--import-text);
+          opacity: 0.7;
+          content: "";
+        }
+
+        .import-preview-mini-card::after {
+          width: 48%;
+          margin-top: 5px;
+          background: var(--import-primary);
+          opacity: 1;
+        }
+
+        .import-preview-mode strong {
+          display: block;
+          padding: 10px 12px;
+          font-size: 12px;
+        }
+
+        .import-preview-facts {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .import-preview-fact {
+          padding: 11px 12px;
+          border-radius: 11px;
+          background: var(--secondary-background-color);
+          font-size: 11px;
+        }
+
+        .import-preview-fact strong {
+          display: block;
+          margin-bottom: 3px;
+        }
+
+        .import-preview-notices {
+          margin: 0;
+          padding-left: 20px;
+          color: var(--secondary-text-color);
+          font-size: 11px;
+        }
+
+        .import-preview-notices li + li {
+          margin-top: 5px;
+        }
+
+        .import-preview-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          border-top: 1px solid var(--divider-color);
         }
 
         .community-panel {
@@ -1987,6 +2214,34 @@ class ThemeStudioPanel extends HTMLElement {
             flex: 1 1 calc(50% - 7px);
           }
 
+          .import-preview-overlay {
+            padding: 10px;
+          }
+
+          .import-preview-dialog {
+            max-height: calc(100vh - 20px);
+          }
+
+          .import-preview-header,
+          .import-preview-body,
+          .import-preview-actions {
+            padding: 14px;
+          }
+
+          .import-preview-modes,
+          .import-preview-facts,
+          .import-preview-actions {
+            grid-template-columns: 1fr;
+          }
+
+          .topbar-actions {
+            flex-wrap: wrap;
+          }
+
+          .history-actions {
+            flex: 0 0 80px;
+          }
+
           .community-heading {
             align-items: flex-start;
             flex-direction: column;
@@ -2027,9 +2282,31 @@ class ThemeStudioPanel extends HTMLElement {
             <p>
               Community-Design wählen oder individuell gestalten.
             </p>
+            <span id="version-badge" class="version-badge">
+              Version wird geladen …
+            </span>
           </div>
 
           <div class="topbar-actions">
+            <div class="history-actions" aria-label="Änderungsverlauf">
+              <button
+                id="undo-button"
+                class="history-button"
+                type="button"
+                title="Letzte Änderung rückgängig machen"
+                aria-label="Rückgängig"
+                disabled
+              >↶</button>
+              <button
+                id="redo-button"
+                class="history-button"
+                type="button"
+                title="Änderung wiederholen"
+                aria-label="Wiederholen"
+                disabled
+              >↷</button>
+            </div>
+
             <div class="mode-switcher">
               <button
                 class="mode-button"
@@ -2066,6 +2343,48 @@ class ThemeStudioPanel extends HTMLElement {
         </header>
 
         <p id="status" class="status"></p>
+        <p
+          id="unsaved-indicator"
+          class="unsaved-indicator"
+          hidden
+        >
+          ● Nicht angewendete Änderungen
+        </p>
+
+        <div
+          id="import-preview-overlay"
+          class="import-preview-overlay"
+          hidden
+        >
+          <section
+            class="import-preview-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="import-preview-title"
+          >
+            <header class="import-preview-header">
+              <h2 id="import-preview-title">Import prüfen</h2>
+              <p id="import-preview-subtitle"></p>
+            </header>
+            <div id="import-preview-body" class="import-preview-body"></div>
+            <footer class="import-preview-actions">
+              <button
+                id="import-preview-cancel"
+                class="profile-button"
+                type="button"
+              >
+                Abbrechen
+              </button>
+              <button
+                id="import-preview-confirm"
+                class="profile-button primary"
+                type="button"
+              >
+                Profil importieren
+              </button>
+            </footer>
+          </section>
+        </div>
 
         <section class="panel community-panel">
           <div class="panel-heading community-heading">
@@ -3252,6 +3571,14 @@ class ThemeStudioPanel extends HTMLElement {
 
   _bindEvents() {
     this.shadowRoot
+      .getElementById("undo-button")
+      .addEventListener("click", () => this._undoSettings());
+
+    this.shadowRoot
+      .getElementById("redo-button")
+      .addEventListener("click", () => this._redoSettings());
+
+    this.shadowRoot
       .getElementById("community-refresh-button")
       .addEventListener("click", () => {
         this._loadCommunityGallery(true);
@@ -3335,6 +3662,26 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
+      .getElementById("import-preview-cancel")
+      .addEventListener("click", () => {
+        this._closeImportPreview();
+      });
+
+    this.shadowRoot
+      .getElementById("import-preview-confirm")
+      .addEventListener("click", () => {
+        this._confirmProfileImport();
+      });
+
+    this.shadowRoot
+      .getElementById("import-preview-overlay")
+      .addEventListener("click", (event) => {
+        if (event.target.id === "import-preview-overlay") {
+          this._closeImportPreview();
+        }
+      });
+
+    this.shadowRoot
       .getElementById("profile-delete-button")
       .addEventListener("click", () => {
         this._deleteProfile();
@@ -3362,12 +3709,13 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".color-preset")
       .forEach((button) => {
         button.addEventListener("click", () => {
+          this._recordHistory();
           this.profile.primaryColor =
             button.dataset.color;
 
-          this._clearStatus();
           this._syncControls();
           this._updatePreview();
+          this._finishSettingsChange();
         });
       });
 
@@ -3423,12 +3771,13 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".background-effect-option")
       .forEach((button) => {
         button.addEventListener("click", () => {
+          this._recordHistory();
           this.settings.effects.effect =
             button.dataset.effect;
 
-          this._clearStatus();
           this._syncEffectControls();
           this._updatePreview();
+          this._finishSettingsChange();
         });
       });
 
@@ -3448,6 +3797,7 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".card-effect-option")
       .forEach((button) => {
         button.addEventListener("click", () => {
+          this._recordHistory();
           const effect = button.dataset.cardEffect;
 
           if (effect === "none") {
@@ -3467,9 +3817,9 @@ class ThemeStudioPanel extends HTMLElement {
               Array.from(selected);
           }
 
-          this._clearStatus();
           this._syncEffectControls();
           this._updatePreview();
+          this._finishSettingsChange();
         });
       });
 
@@ -3568,12 +3918,13 @@ class ThemeStudioPanel extends HTMLElement {
             return;
           }
 
+          this._recordHistory();
           this.profile.background =
             button.dataset.background;
 
-          this._clearStatus();
           this._syncControls();
           this._updatePreview();
+          this._finishSettingsChange();
         });
       });
 
@@ -3620,12 +3971,125 @@ class ThemeStudioPanel extends HTMLElement {
     return JSON.parse(JSON.stringify(settings));
   }
 
+  _recordHistory(coalesceKey = "") {
+    if (coalesceKey && this.historyCoalesceKey === coalesceKey) {
+      return;
+    }
+
+    this.undoHistory.push(this._cloneSettings(this.settings));
+
+    if (this.undoHistory.length > this.historyLimit) {
+      this.undoHistory.shift();
+    }
+
+    this.redoHistory = [];
+    this.historyCoalesceKey = coalesceKey;
+    this._syncHistoryControls();
+  }
+
+  _endHistoryCoalescing(coalesceKey) {
+    if (this.historyCoalesceKey === coalesceKey) {
+      this.historyCoalesceKey = "";
+    }
+  }
+
+  _resetHistory() {
+    this.undoHistory = [];
+    this.redoHistory = [];
+    this.historyCoalesceKey = "";
+    this._syncHistoryControls();
+  }
+
+  _replaceEditorSettings(settings) {
+    this.settings = this._cloneSettings(settings);
+    this._resetHistory();
+    this._syncControls();
+    this._updatePreview();
+    this._syncUnsavedStatus();
+  }
+
+  _finishSettingsChange() {
+    this.historyCoalesceKey = "";
+    this._syncHistoryControls();
+    this._syncUnsavedStatus();
+  }
+
+  _undoSettings() {
+    const previous = this.undoHistory.pop();
+
+    if (!previous) {
+      return;
+    }
+
+    this.redoHistory.push(this._cloneSettings(this.settings));
+    this.settings = previous;
+    this.historyCoalesceKey = "";
+    this._syncControls();
+    this._updatePreview();
+    this._syncHistoryControls();
+    this._syncUnsavedStatus();
+  }
+
+  _redoSettings() {
+    const next = this.redoHistory.pop();
+
+    if (!next) {
+      return;
+    }
+
+    this.undoHistory.push(this._cloneSettings(this.settings));
+    this.settings = next;
+    this.historyCoalesceKey = "";
+    this._syncControls();
+    this._updatePreview();
+    this._syncHistoryControls();
+    this._syncUnsavedStatus();
+  }
+
+  _syncHistoryControls() {
+    const undoButton = this.shadowRoot?.getElementById("undo-button");
+    const redoButton = this.shadowRoot?.getElementById("redo-button");
+
+    if (undoButton) {
+      undoButton.disabled = this.undoHistory.length === 0;
+    }
+
+    if (redoButton) {
+      redoButton.disabled = this.redoHistory.length === 0;
+    }
+  }
+
+  _hasUnsavedSettings() {
+    return this.appliedSettings !== null
+      && !this._settingsEqual(this.settings, this.appliedSettings);
+  }
+
+  _syncUnsavedStatus() {
+    const indicator = this.shadowRoot?.getElementById(
+      "unsaved-indicator"
+    );
+
+    if (indicator) {
+      indicator.hidden = !this._hasUnsavedSettings();
+    }
+  }
+
   _settingsEqual(first, second) {
     return JSON.stringify(first) === JSON.stringify(second);
   }
 
   _portableProfileSettings(settings) {
     const portable = this._cloneSettings(settings);
+
+    for (const mode of ["light", "dark"]) {
+      if (
+        portable[mode].background === "image"
+        || portable[mode].backgroundImage
+      ) {
+        portable[mode].background = "color";
+        portable[mode].backgroundImage = "";
+      }
+    }
 
     portable.effects = {
       effect: "none",
@@ -3663,6 +4127,7 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
+    this._recordHistory();
     this.settings[targetMode] = this._deriveCounterpartMode(
       this.settings[sourceMode],
       targetMode
@@ -4142,10 +4607,8 @@ class ThemeStudioPanel extends HTMLElement {
 
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
-      this.settings = this._cloneSettings(result.profile.settings);
+      this._replaceEditorSettings(result.profile.settings);
       this._renderProfileOptions();
-      this._syncControls();
-      this._updatePreview();
       this._setStatus(
         `${result.profile.name} wurde aus der Galerie importiert und als Profil gespeichert.`,
         "success"
@@ -4245,11 +4708,9 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    this.settings = this._cloneSettings(profile.settings);
+    this._replaceEditorSettings(profile.settings);
     nameInput.value = profile.name;
 
-    this._syncControls();
-    this._updatePreview();
     this._syncProfileControls();
     this._setStatus(
       `${profile.name} geladen. Zum Aktivieren „Beide Modi anwenden“ drücken.`,
@@ -4390,10 +4851,8 @@ class ThemeStudioPanel extends HTMLElement {
 
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
-      this.settings = this._cloneSettings(result.profile.settings);
+      this._replaceEditorSettings(result.profile.settings);
       this._renderProfileOptions();
-      this._syncControls();
-      this._updatePreview();
       this._setStatus(
         `${result.profile.name} wurde angelegt.`,
         "success"
@@ -4436,9 +4895,10 @@ class ThemeStudioPanel extends HTMLElement {
     URL.revokeObjectURL(url);
 
     this._setStatus(
-      `${profile.name} wurde ohne lokale Effekte und Entitätszuordnungen als JSON exportiert.`,
+      `${profile.name} wurde ohne lokale Bildpfade, Effekte und Entitätszuordnungen als JSON exportiert.`,
       "success"
     );
+    this._finishSettingsChange();
   }
 
   async _importProfile(event) {
@@ -4462,39 +4922,189 @@ class ThemeStudioPanel extends HTMLElement {
 
     try {
       const imported = JSON.parse(await file.text());
+      const preview = await this._hass.callWS({
+        type: "theme_studio/preview_profile_import",
+        profile: imported,
+      });
 
-      if (
-        imported?.format !== "theme-studio-profile"
-        || imported?.version !== 1
-        || typeof imported?.name !== "string"
-        || !imported?.settings
-        || typeof imported.settings !== "object"
-      ) {
-        throw new Error(
-          "Die Datei ist kein gültiges Theme-Studio-Profil."
-        );
-      }
+      this.pendingProfileImport = {
+        name: preview.name,
+        settings: preview.settings,
+        notices: Array.isArray(preview.notices)
+          ? preview.notices
+          : [],
+        summary: preview.summary || {},
+        formatVersion: preview.format_version,
+        filename: file.name,
+      };
+      this._openImportPreview();
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+    } finally {
+      input.value = "";
+      this._syncProfileControls();
+    }
+  }
 
+  _openImportPreview() {
+    const pending = this.pendingProfileImport;
+
+    if (!pending) {
+      return;
+    }
+
+    const overlay = this.shadowRoot.getElementById(
+      "import-preview-overlay"
+    );
+    const subtitle = this.shadowRoot.getElementById(
+      "import-preview-subtitle"
+    );
+    const body = this.shadowRoot.getElementById(
+      "import-preview-body"
+    );
+    const summary = pending.summary;
+    const notices = pending.notices.length > 0
+      ? pending.notices
+      : [
+        "Keine lokalen Hintergrundbild-Pfade oder Entitätszuordnungen gefunden.",
+      ];
+
+    subtitle.textContent =
+      `„${pending.name}“ aus ${pending.filename}`;
+    body.innerHTML = `
+      <div class="import-preview-modes">
+        ${this._importPreviewMode(
+          "Hellmodus",
+          pending.settings.light
+        )}
+        ${this._importPreviewMode(
+          "Dunkelmodus",
+          pending.settings.dark
+        )}
+      </div>
+      <div class="import-preview-facts">
+        <div class="import-preview-fact">
+          <strong>Profilformat</strong>
+          Theme Studio ${this._escapeHtml(pending.formatVersion)}
+        </div>
+        <div class="import-preview-fact">
+          <strong>Übernommen</strong>
+          Farben, Karten, Navigation und Hintergrundeinstellungen
+        </div>
+        <div class="import-preview-fact">
+          <strong>Nicht übernommen</strong>
+          Lokale Bildpfade, Dashboard-Effekte und Entitätszuordnungen
+        </div>
+        <div class="import-preview-fact">
+          <strong>Speicherung</strong>
+          Erst nach Bestätigung als neues lokales Profil
+        </div>
+      </div>
+      <div>
+        <p><strong>Prüfergebnis</strong></p>
+        <ul class="import-preview-notices">
+          ${notices.map((notice) => `
+            <li>${this._escapeHtml(notice)}</li>
+          `).join("")}
+        </ul>
+      </div>
+    `;
+    overlay.hidden = false;
+    this.shadowRoot.getElementById(
+      "import-preview-confirm"
+    ).focus();
+  }
+
+  _importPreviewMode(label, mode) {
+    const opacity = Math.min(
+      1,
+      Math.max(0.3, Number(mode.cardOpacity) / 100)
+    );
+    const borderWidth = Math.max(
+      0,
+      Math.min(3, Number(mode.cardBorderWidth) || 0)
+    );
+    const radius = Math.max(
+      0,
+      Math.min(16, Math.round((Number(mode.borderRadius) || 0) * 0.45))
+    );
+    const shadow = Math.max(
+      0,
+      Math.min(14, Math.round((Number(mode.cardShadow) || 0) * 0.28))
+    );
+
+    return `
+      <div class="import-preview-mode">
+        <div
+          class="import-preview-colors"
+          style="
+            --import-background:${this._escapeHtml(mode.backgroundColor)};
+            --import-card:${this._escapeHtml(this._rgba(mode.cardColor, opacity))};
+            --import-primary:${this._escapeHtml(mode.primaryColor)};
+            --import-text:${this._escapeHtml(mode.cardTextColor)};
+            --import-border:${this._escapeHtml(mode.cardBorderColor)};
+            --import-border-width:${borderWidth}px;
+            --import-radius:${radius}px;
+            --import-shadow-blur:${shadow}px;
+            --import-header:${this._escapeHtml(mode.headerBackgroundColor)};
+            --import-sidebar:${this._escapeHtml(mode.sidebarBackgroundColor)};
+          "
+        >
+          <span class="import-preview-mini-title">Mein Zuhause</span>
+          <div class="import-preview-mini-cards">
+            <span class="import-preview-mini-card"></span>
+            <span class="import-preview-mini-card"></span>
+            <span class="import-preview-mini-card"></span>
+            <span class="import-preview-mini-card"></span>
+          </div>
+        </div>
+        <strong>${label}</strong>
+      </div>
+    `;
+  }
+
+  _closeImportPreview() {
+    this.pendingProfileImport = null;
+    this.shadowRoot.getElementById(
+      "import-preview-overlay"
+    ).hidden = true;
+  }
+
+  async _confirmProfileImport() {
+    const pending = this.pendingProfileImport;
+
+    if (!pending) {
+      return;
+    }
+
+    const confirmButton = this.shadowRoot.getElementById(
+      "import-preview-confirm"
+    );
+    confirmButton.disabled = true;
+    confirmButton.textContent = "Wird importiert …";
+    this._syncProfileControls(true);
+
+    try {
       const result = await this._hass.callWS({
         type: "theme_studio/save_profile",
-        name: imported.name,
-        settings: imported.settings,
+        name: pending.name,
+        settings: pending.settings,
       });
 
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
-      this.settings = this._cloneSettings(result.profile.settings);
+      this._replaceEditorSettings(result.profile.settings);
       this._renderProfileOptions();
-      this._syncControls();
-      this._updatePreview();
+      this._closeImportPreview();
       this._setStatus(
-        `${result.profile.name} wurde importiert.`,
+        `${result.profile.name} wurde geprüft und importiert. Zum Aktivieren „Beide Modi anwenden“ drücken.`,
         "success"
       );
     } catch (error) {
       this._setStatus(this._errorMessage(error), "error");
     } finally {
-      input.value = "";
+      confirmButton.disabled = false;
+      confirmButton.textContent = "Profil importieren";
       this._syncProfileControls();
     }
   }
@@ -4535,17 +5145,24 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   _bindColor(elementId, settingName, syncPresets = false) {
-    this.shadowRoot
-      .getElementById(elementId)
-      .addEventListener("input", (event) => {
+    const input = this.shadowRoot.getElementById(elementId);
+    const historyKey = `color:${elementId}`;
+
+    input.addEventListener("input", (event) => {
+        this._recordHistory(historyKey);
         this.profile[settingName] = event.target.value;
         if (syncPresets) {
           this._syncColorPresets();
         }
 
-        this._clearStatus();
         this._updatePreview();
+        this._syncUnsavedStatus();
       });
+
+    input.addEventListener("change", () => {
+      this._endHistoryCoalescing(historyKey);
+      this._syncHistoryControls();
+    });
   }
 
   _bindRange(elementId, settingName, suffix) {
@@ -4556,8 +5173,10 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot.getElementById(
         `${elementId}-value`
       );
+    const historyKey = `range:${elementId}`;
 
     input.addEventListener("input", (event) => {
+      this._recordHistory(historyKey);
       const value = Number(event.target.value);
 
       this.profile[settingName] = value;
@@ -4565,8 +5184,13 @@ class ThemeStudioPanel extends HTMLElement {
         ? `${value} ${suffix}`
         : `${value}`;
 
-      this._clearStatus();
       this._updatePreview();
+      this._syncUnsavedStatus();
+    });
+
+    input.addEventListener("change", () => {
+      this._endHistoryCoalescing(historyKey);
+      this._syncHistoryControls();
     });
   }
 
@@ -4578,16 +5202,23 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot.getElementById(
         `${elementId}-value`
       );
+    const historyKey = `effect-range:${elementId}`;
 
     input.addEventListener("input", (event) => {
+      this._recordHistory(historyKey);
       const value = Number(event.target.value);
 
       this.settings.effects[settingName] = value;
 
       output.textContent = `${value} ${suffix}`;
 
-      this._clearStatus();
       this._updatePreview();
+      this._syncUnsavedStatus();
+    });
+
+    input.addEventListener("change", () => {
+      this._endHistoryCoalescing(historyKey);
+      this._syncHistoryControls();
     });
   }
 
@@ -4650,6 +5281,7 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(selector)
       .forEach((checkbox) => {
         checkbox.addEventListener("change", () => {
+          const beforeChange = this._cloneSettings(this.settings);
           const selected = Array.from(
             this.shadowRoot.querySelectorAll(
               `${selector}:checked`
@@ -4663,12 +5295,17 @@ class ThemeStudioPanel extends HTMLElement {
             return;
           }
 
+          this.undoHistory.push(beforeChange);
+          if (this.undoHistory.length > this.historyLimit) {
+            this.undoHistory.shift();
+          }
+          this.redoHistory = [];
           this.settings.effects[settingName] =
             selected.map((item) => item.value);
 
           updateCount();
-          this._clearStatus();
           this._updatePreview();
+          this._finishSettingsChange();
         });
       });
 
@@ -4679,6 +5316,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .getElementById(elementId)
       .addEventListener("change", (event) => {
+        this._recordHistory();
         const input = event.target;
         const minimum = Number(input.min);
         const maximum = Number(input.max);
@@ -4704,9 +5342,9 @@ class ThemeStudioPanel extends HTMLElement {
             this.settings.effects.energyWarning + 1;
         }
 
-        this._clearStatus();
         this._syncEffectControls();
         this._updatePreview();
+        this._finishSettingsChange();
       });
   }
 
@@ -4714,6 +5352,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .getElementById(elementId)
       .addEventListener("change", (event) => {
+        this._recordHistory();
         const input = event.target;
         const minimum = Number(input.min);
         const maximum = Number(input.max);
@@ -4747,9 +5386,9 @@ class ThemeStudioPanel extends HTMLElement {
             this.settings.effects.climateComfortMax + 1;
         }
 
-        this._clearStatus();
         this._syncEffectControls();
         this._updatePreview();
+        this._finishSettingsChange();
       });
   }
 
@@ -4757,6 +5396,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .getElementById(elementId)
       .addEventListener("change", (event) => {
+        this._recordHistory();
         const input = event.target;
         const minimum = Number(input.min);
         const maximum = Number(input.max);
@@ -4772,13 +5412,15 @@ class ThemeStudioPanel extends HTMLElement {
         );
 
         this.settings.effects[settingName] = value;
-        this._clearStatus();
         this._syncEffectControls();
         this._updatePreview();
+        this._finishSettingsChange();
       });
   }
 
   async _loadSettings() {
+    await this._loadIntegrationInfo();
+
     try {
       const saved =
         await this._hass.callWS({
@@ -4805,6 +5447,9 @@ class ThemeStudioPanel extends HTMLElement {
         },
       };
 
+      this.appliedSettings = this._cloneSettings(this.settings);
+      this._resetHistory();
+
       this._syncControls();
       this._updatePreview();
     } catch (error) {
@@ -4817,6 +5462,24 @@ class ThemeStudioPanel extends HTMLElement {
     await this._loadBackgrounds();
     await this._loadProfiles();
     await this._loadCommunityGallery();
+  }
+
+  async _loadIntegrationInfo() {
+    const badge = this.shadowRoot.getElementById("version-badge");
+
+    try {
+      const info = await this._hass.callWS({
+        type: "theme_studio/get_info",
+      });
+      this.integrationVersion = typeof info.version === "string"
+        ? info.version
+        : "";
+      badge.textContent = this.integrationVersion
+        ? `Version ${this.integrationVersion}`
+        : "Version unbekannt";
+    } catch (error) {
+      badge.textContent = "Version unbekannt";
+    }
   }
 
   _backgroundById(backgroundId) {
@@ -4930,6 +5593,7 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
+    this._recordHistory();
     this.profile.backgroundImage = background.url;
     this.profile.background = "image";
     this._syncControls();
@@ -4938,6 +5602,7 @@ class ThemeStudioPanel extends HTMLElement {
       `${background.name} ausgewählt. Bitte beide Modi anwenden.`,
       "success"
     );
+    this._finishSettingsChange();
   }
 
   async _renameBackground(backgroundId) {
@@ -5077,6 +5742,7 @@ class ThemeStudioPanel extends HTMLElement {
           content: dataUrl.split(",", 2)[1],
         });
 
+      this._recordHistory();
       this.profile.backgroundImage = result.url;
       this.profile.background = "image";
       this.backgrounds = result.backgrounds;
@@ -5089,6 +5755,7 @@ class ThemeStudioPanel extends HTMLElement {
         "Bild hochgeladen. Bitte anwenden.",
         "success"
       );
+      this._finishSettingsChange();
     } catch (error) {
       this._setStatus(
         this._errorMessage(error),
@@ -5183,8 +5850,11 @@ class ThemeStudioPanel extends HTMLElement {
         });
 
       this.settings = result.settings;
+      this.appliedSettings = this._cloneSettings(this.settings);
       this.persistedActiveProfileId =
         result.active_profile_id || "";
+      this._resetHistory();
+      this._syncUnsavedStatus();
 
       this._setStatus(
         "Design gespeichert und aktiviert.",

@@ -2,7 +2,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Version: **0.4.5**
+> Aktuelle Version: **0.4.7**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -11,7 +11,12 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - getrennte Einstellungen für hellen und dunklen Modus
 - farblich passenden Hell- oder Dunkelmodus aus dem aktuell gestalteten Modus erzeugen
 - eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
-- Designprofile als JSON-Datei exportieren und importieren
+- Designänderungen mit Rückgängig und Wiederholen korrigieren
+- sichtbarer Hinweis auf noch nicht angewendete Änderungen
+- Designprofile ohne lokale Entitätszuordnungen und Hintergrundbild-Pfade als portable JSON-Datei exportieren
+- JSON-Dateien vor dem Import serverseitig prüfen und bereinigen
+- übersichtliche Importvorschau mit den übernommenen Farben und entfernten lokalen Inhalten
+- installierte Theme-Studio-Version direkt im Bedienfeld anzeigen
 - geprüfte Community-Designs in einer vollständigen Mini-Dashboard-Vorschau für Hell und Dunkel ansehen und mit einem Klick als lokales Profil importieren
 - einzeilige Community-Galerie mit drei sichtbaren Designs auf dem Desktop sowie Pfeilsteuerung und Wischbedienung für weitere Designs
 - eigene Designs über [ha-theme-studio.com](https://ha-theme-studio.com/) zur Prüfung und Veröffentlichung in der Community-Galerie einreichen
@@ -53,7 +58,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ## Eigenes Design veröffentlichen
 
-Eigene Designprofile können direkt auf [ha-theme-studio.com](https://ha-theme-studio.com/) für die Community-Galerie eingereicht werden. Dazu das Profil in Theme Studio als JSON exportieren, auf der Webseite mit einem GitHub-Konto anmelden und über **Design einreichen** hochladen. Jede Einreichung wird vor der Veröffentlichung geprüft, damit die öffentliche Galerie übersichtlich und qualitativ einheitlich bleibt.
+Eigene Designprofile können direkt auf [ha-theme-studio.com](https://ha-theme-studio.com/) für die Community-Galerie eingereicht werden. Dazu das Profil in Theme Studio als portable JSON-Datei exportieren, auf der Webseite mit einem GitHub-Konto anmelden und über **Design einreichen** hochladen. Lokale Hintergrundbild-Pfade, Dashboard-Effekte und Entitätszuordnungen werden nicht exportiert. Beim lokalen Import zeigt Theme Studio zunächst eine geprüfte Vorschau und speichert das Profil erst nach ausdrücklicher Bestätigung. Jede Einreichung wird vor der Veröffentlichung geprüft, damit die öffentliche Galerie übersichtlich und qualitativ einheitlich bleibt.
 
 ## Installation über HACS
 
@@ -110,7 +115,7 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 
 Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für den hellen und dunklen Modus deaktiviert und das originale Home-Assistant-Design wieder aktiviert. Gespeicherte Designprofile und Hintergrundbilder bleiben dabei erhalten.
 
-Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Das zuletzt mit **Beide Modi anwenden** aktivierte Profil wird beim nächsten Öffnen von Theme Studio automatisch ausgewählt. Über **JSON exportieren** lassen sich die gestalterischen Einstellungen sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Installationsabhängige Dashboard-Effekte und Entitätszuordnungen werden bewusst nicht exportiert. Eigene Hintergrundbilder werden nur als lokaler Pfad referenziert; die Bilddatei selbst muss auf dem Zielsystem separat vorhanden sein.
+Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Das zuletzt mit **Beide Modi anwenden** aktivierte Profil wird beim nächsten Öffnen von Theme Studio automatisch ausgewählt. Über **JSON exportieren** lassen sich die portablen gestalterischen Einstellungen sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Installationsabhängige Dashboard-Effekte, Entitätszuordnungen und lokale Hintergrundbild-Pfade werden bewusst nicht exportiert.
 
 Die integrierte Community-Galerie zeigt ausschließlich zuvor geprüfte und veröffentlichte Designs von [ha-theme-studio.com](https://ha-theme-studio.com). Jede Vorschau bildet ein vollständiges kleines Home-Assistant-Dashboard mit Kopfzeile, Seitenleiste, Karten, Navigation, Hintergrund und aktivierten Karteneffekten ab. Die Vorschaukarten wechseln zusammen mit der oberen Auswahl zwischen hellem und dunklem Modus. Beim Import wird das Profil erneut durch Home Assistant validiert und anschließend in den lokalen Designprofilen gespeichert. Hintergrundbild-Pfade des Erstellers werden nicht übernommen, da die zugehörige lokale Bilddatei auf dem eigenen System nicht vorhanden ist.
 

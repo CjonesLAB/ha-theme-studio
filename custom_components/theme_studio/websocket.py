@@ -17,7 +17,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
-from .const import DOMAIN
+from .const import DOMAIN, VERSION
 from .gallery import (
     GalleryError,
     async_download_gallery_profile,
@@ -446,6 +446,69 @@ def default_settings() -> dict[str, Any]:
         "dark": DEFAULT_DARK_PROFILE.copy(),
         "effects": DEFAULT_EFFECT_SETTINGS.copy(),
     }
+
+
+def portable_import_settings(
+    settings: dict[str, Any],
+) -> tuple[dict[str, Any], list[str]]:
+    """Return portable design settings and describe discarded local data."""
+
+    if not isinstance(settings.get("light"), dict) or not isinstance(
+        settings.get("dark"), dict
+    ):
+        raise vol.Invalid("Hell- und Dunkelmodus müssen enthalten sein.")
+
+    supported_profile_keys = set(DEFAULT_LIGHT_PROFILE)
+    supported_effect_keys = set(DEFAULT_EFFECT_SETTINGS)
+    missing_profile_fields = bool(
+        supported_profile_keys - set(settings["light"])
+        or supported_profile_keys - set(settings["dark"])
+    )
+    has_unsupported_fields = bool(
+        set(settings) - {"light", "dark", "effects"}
+        or set(settings["light"]) - supported_profile_keys
+        or set(settings["dark"]) - supported_profile_keys
+        or (
+            isinstance(settings.get("effects"), dict)
+            and set(settings["effects"]) - supported_effect_keys
+        )
+    )
+
+    normalized = normalize_settings(settings)
+    portable = json.loads(json.dumps(normalized))
+    notices: list[str] = []
+
+    for mode, label in (("light", "Hellmodus"), ("dark", "Dunkelmodus")):
+        profile = portable[mode]
+        if profile["background"] == "image" or profile["backgroundImage"]:
+            profile["background"] = "color"
+            profile["backgroundImage"] = ""
+            notices.append(
+                f"Lokaler Hintergrundbild-Pfad im {label} wurde entfernt."
+            )
+
+    if portable["effects"] != DEFAULT_EFFECT_SETTINGS:
+        notices.append(
+            "Dashboard-Effekte und Entitätszuordnungen wurden nicht übernommen."
+        )
+
+    if has_unsupported_fields:
+        notices.append(
+            "Nicht unterstützte Zusatzfelder wurden sicher verworfen."
+        )
+
+    if missing_profile_fields:
+        notices.append(
+            "Fehlende Designwerte wurden mit sicheren Standardwerten ergänzt."
+        )
+
+    if "effects" in settings and not isinstance(settings["effects"], dict):
+        notices.append(
+            "Ungültige Effektdaten wurden durch sichere Standardwerte ersetzt."
+        )
+
+    portable["effects"] = DEFAULT_EFFECT_SETTINGS.copy()
+    return SETTINGS_SCHEMA(portable), notices
 
 
 def normalize_profile_name(name: Any) -> str:
@@ -1432,6 +1495,93 @@ async def websocket_get_profiles(
     {
         vol.Required(
             "type"
+        ): "theme_studio/get_info",
+    }
+)
+@websocket_api.async_response
+async def websocket_get_info(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return public information about the installed integration."""
+
+    connection.send_result(
+        msg["id"],
+        {
+            "version": VERSION,
+            "profile_format": "theme-studio-profile",
+            "profile_format_version": 1,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/preview_profile_import",
+        vol.Required("profile"): dict,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_preview_profile_import(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Validate and sanitize one profile without persisting it."""
+
+    imported = msg["profile"]
+
+    try:
+        if len(json.dumps(imported, ensure_ascii=False)) > 1024 * 1024:
+            raise vol.Invalid("Die Profildatei ist größer als 1 MB.")
+        if imported.get("format") != "theme-studio-profile":
+            raise vol.Invalid("Unbekanntes Dateiformat.")
+        if type(imported.get("version")) is not int or imported["version"] != 1:
+            raise vol.Invalid("Diese Profilversion wird nicht unterstützt.")
+
+        name = normalize_profile_name(imported.get("name"))
+        raw_settings = imported.get("settings")
+        if not isinstance(raw_settings, dict):
+            raise vol.Invalid("Die Designeinstellungen fehlen.")
+
+        settings, notices = portable_import_settings(raw_settings)
+    except (vol.Invalid, TypeError, ValueError) as error:
+        connection.send_error(
+            msg["id"],
+            "invalid_profile",
+            f"Das Profil ist ungültig: {error}",
+        )
+        return
+
+    connection.send_result(
+        msg["id"],
+        {
+            "valid": True,
+            "name": name,
+            "format": "theme-studio-profile",
+            "format_version": 1,
+            "settings": settings,
+            "notices": notices,
+            "summary": {
+                "light_background": settings["light"]["backgroundColor"],
+                "light_card": settings["light"]["cardColor"],
+                "light_primary": settings["light"]["primaryColor"],
+                "dark_background": settings["dark"]["backgroundColor"],
+                "dark_card": settings["dark"]["cardColor"],
+                "dark_primary": settings["dark"]["primaryColor"],
+            },
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
         ): "theme_studio/save_profile",
         vol.Optional("profile_id"): PROFILE_ID_VALIDATOR,
         vol.Required("name"): str,
@@ -2095,6 +2245,16 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_get_profiles,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_get_info,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_preview_profile_import,
     )
 
     websocket_api.async_register_command(
