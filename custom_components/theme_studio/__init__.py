@@ -9,7 +9,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, VERSION
 from .websocket import async_register_websocket_commands
 
 
@@ -49,7 +49,7 @@ async def async_setup_entry(
             frontend_url_path=PANEL_URL,
             sidebar_title=PANEL_TITLE,
             sidebar_icon=PANEL_ICON,
-            module_url=f"{STATIC_URL}/theme-studio-panel.js",
+            module_url=f"{STATIC_URL}/theme-studio-panel.js?v={VERSION}",
             embed_iframe=False,
             require_admin=False,
         )
