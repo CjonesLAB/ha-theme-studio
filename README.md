@@ -44,7 +44,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ### Theme Studio mit Community-Galerie und Dashboard-Vorschau
 
-![Theme Studio mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](docs/images/theme-studio-community-overview-v044.png)
+![Theme Studio 0.4.7 mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](docs/images/theme-studio-community-overview-v047.png)
 
 ### Feineinstellungen
 
