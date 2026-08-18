@@ -21,6 +21,8 @@ class ThemeStudioPanel extends HTMLElement {
     this.appliedSettings = null;
     this.integrationVersion = "";
     this.pendingProfileImport = null;
+    this.recoveryAvailable = false;
+    this.themeStudioActive = true;
 
     this.settings = {
       light: {
@@ -247,6 +249,11 @@ class ThemeStudioPanel extends HTMLElement {
           font-weight: 700;
           white-space: nowrap;
           box-shadow: var(--ha-card-box-shadow);
+        }
+
+        .top-pair-button:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
         }
 
         .top-apply-button:disabled {
@@ -2008,6 +2015,16 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         @media (max-width: 900px) {
+          .topbar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .topbar-actions {
+            width: 100%;
+            flex-wrap: wrap;
+          }
+
           .mobile-navigation {
             position: sticky;
             top: 0;
@@ -2338,6 +2355,16 @@ class ThemeStudioPanel extends HTMLElement {
               type="button"
             >
               Beide Modi anwenden
+            </button>
+
+            <button
+              id="restore-last-button"
+              class="top-pair-button"
+              type="button"
+              title="Aktiviert das zuletzt gesicherte Design"
+              disabled
+            >
+              Letztes Design wiederherstellen
             </button>
           </div>
         </header>
@@ -3961,6 +3988,12 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
+      .getElementById("restore-last-button")
+      .addEventListener("click", () => {
+        this._restoreLastDesign();
+      });
+
+    this.shadowRoot
       .getElementById("restore-default-button")
       .addEventListener("click", () => {
         this._restoreHomeAssistantDefault();
@@ -5431,6 +5464,8 @@ class ThemeStudioPanel extends HTMLElement {
         typeof saved.active_profile_id === "string"
           ? saved.active_profile_id
           : "";
+      this.recoveryAvailable = saved.recovery_available === true;
+      this.themeStudioActive = saved.theme_studio_active !== false;
 
       this.settings = {
         light: {
@@ -5452,6 +5487,7 @@ class ThemeStudioPanel extends HTMLElement {
 
       this._syncControls();
       this._updatePreview();
+      this._syncRecoveryButton();
     } catch (error) {
       this._setStatus(
         "Die Einstellungen konnten nicht geladen werden.",
@@ -5844,6 +5880,7 @@ class ThemeStudioPanel extends HTMLElement {
         await this._hass.callWS({
           type: "theme_studio/save_settings",
           settings: this.settings,
+          previous_theme_studio_active: this.themeStudioActive,
           ...(this._currentProfile()
             ? { active_profile_id: this.activeProfileId }
             : {}),
@@ -5853,8 +5890,11 @@ class ThemeStudioPanel extends HTMLElement {
       this.appliedSettings = this._cloneSettings(this.settings);
       this.persistedActiveProfileId =
         result.active_profile_id || "";
+      this.recoveryAvailable = result.recovery_available === true;
+      this.themeStudioActive = true;
       this._resetHistory();
       this._syncUnsavedStatus();
+      this._syncRecoveryButton();
 
       this._setStatus(
         "Design gespeichert und aktiviert.",
@@ -5877,6 +5917,78 @@ class ThemeStudioPanel extends HTMLElement {
     }, 2200);
   }
 
+  _syncRecoveryButton() {
+    const button = this.shadowRoot?.getElementById(
+      "restore-last-button"
+    );
+
+    if (!button) {
+      return;
+    }
+
+    button.disabled = !this.recoveryAvailable;
+    button.title = this.recoveryAvailable
+      ? "Aktiviert das zuletzt gesicherte Design"
+      : "Noch kein vorheriges Design gespeichert";
+  }
+
+  async _restoreLastDesign() {
+    if (!this.recoveryAvailable) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Das zuletzt gesicherte Design wird aktiviert.\n\n"
+      + "Der aktuelle Stand bleibt als Wiederherstellungspunkt erhalten. "
+      + "Fortfahren?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const button = this.shadowRoot.getElementById(
+      "restore-last-button"
+    );
+    button.disabled = true;
+    button.textContent = "Wird wiederhergestellt …";
+
+    try {
+      const result = await this._hass.callWS({
+        type: "theme_studio/restore_last_design",
+        current_theme_studio_active: this.themeStudioActive,
+      });
+
+      this.settings = this._cloneSettings(result.settings);
+      this.appliedSettings = this._cloneSettings(result.settings);
+      this.persistedActiveProfileId = result.active_profile_id || "";
+      this.activeProfileId = this.persistedActiveProfileId;
+      this.recoveryAvailable = result.recovery_available === true;
+      this.themeStudioActive = result.theme_studio_active === true;
+      this._resetHistory();
+      this._renderProfileOptions();
+      this._syncControls();
+      this._updatePreview();
+      this._syncUnsavedStatus();
+
+      this._setStatus(
+        this.themeStudioActive
+          ? "Das zuletzt gesicherte Design wurde aktiviert."
+          : "Der zuvor gesicherte Home-Assistant-Standard wurde aktiviert.",
+        "success"
+      );
+      button.textContent = "Wiederhergestellt ✓";
+    } catch (error) {
+      this._setStatus(this._errorMessage(error), "error");
+      button.textContent = "Wiederherstellung fehlgeschlagen";
+    }
+
+    window.setTimeout(() => {
+      button.textContent = "Letztes Design wiederherstellen";
+      this._syncRecoveryButton();
+    }, 2600);
+  }
+
   async _restoreHomeAssistantDefault() {
     const confirmed = window.confirm(
       "Das originale Home-Assistant-Standarddesign wird für "
@@ -5897,13 +6009,17 @@ class ThemeStudioPanel extends HTMLElement {
     button.textContent = "Standarddesign wird aktiviert …";
 
     try {
-      await this._hass.callWS({
+      const result = await this._hass.callWS({
         type: "theme_studio/restore_default_theme",
+        current_theme_studio_active: this.themeStudioActive,
       });
 
       this.persistedActiveProfileId = "";
       this.activeProfileId = "";
+      this.recoveryAvailable = result.recovery_available === true;
+      this.themeStudioActive = false;
       this._renderProfileOptions();
+      this._syncRecoveryButton();
 
       this._setStatus(
         "Das originale Home-Assistant-Standarddesign ist aktiv. "
