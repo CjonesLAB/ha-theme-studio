@@ -31,6 +31,8 @@ PROFILE_STORAGE_VERSION = 1
 PROFILE_STORAGE_KEY = f"{DOMAIN}.profiles"
 BACKGROUND_STORAGE_VERSION = 1
 BACKGROUND_STORAGE_KEY = f"{DOMAIN}.backgrounds"
+RECOVERY_STORAGE_VERSION = 1
+RECOVERY_STORAGE_KEY = f"{DOMAIN}.recovery"
 
 MAX_PROFILES = 32
 MAX_PROFILE_NAME_LENGTH = 48
@@ -300,6 +302,85 @@ def get_background_store(
     )
 
 
+def get_recovery_store(
+    hass: HomeAssistant,
+) -> Store[dict[str, Any]]:
+    """Return the Theme Studio recovery storage helper."""
+
+    return Store(
+        hass,
+        RECOVERY_STORAGE_VERSION,
+        RECOVERY_STORAGE_KEY,
+    )
+
+
+def recovery_state_from_settings(
+    saved_settings: Any,
+    *,
+    theme_studio_active: bool,
+) -> dict[str, Any]:
+    """Build one validated, persistent recovery state."""
+
+    try:
+        settings = normalize_settings(
+            saved_settings
+            if isinstance(saved_settings, dict)
+            else {}
+        )
+    except (vol.Invalid, TypeError, ValueError):
+        settings = default_settings()
+
+    active_profile_id = ""
+
+    if isinstance(saved_settings, dict):
+        candidate = saved_settings.get("active_profile_id")
+
+        if isinstance(candidate, str):
+            try:
+                active_profile_id = PROFILE_ID_VALIDATOR(candidate)
+            except vol.Invalid:
+                active_profile_id = ""
+
+    return {
+        "settings": settings,
+        "active_profile_id": active_profile_id,
+        "theme_studio_active": theme_studio_active,
+        "saved_at": datetime.now(UTC).isoformat(),
+    }
+
+
+def normalize_recovery_state(
+    recovery: Any,
+) -> dict[str, Any] | None:
+    """Validate a stored recovery state or return none."""
+
+    if not isinstance(recovery, dict):
+        return None
+
+    try:
+        settings = normalize_settings(recovery.get("settings", {}))
+    except (vol.Invalid, TypeError, ValueError):
+        return None
+
+    active_profile_id = ""
+    candidate = recovery.get("active_profile_id")
+
+    if isinstance(candidate, str):
+        try:
+            active_profile_id = PROFILE_ID_VALIDATOR(candidate)
+        except vol.Invalid:
+            active_profile_id = ""
+
+    return {
+        "settings": settings,
+        "active_profile_id": active_profile_id,
+        "theme_studio_active": bool(
+            recovery.get("theme_studio_active", True)
+        ),
+        "saved_at": str(recovery.get("saved_at", "")),
+    }
+
+
 def normalize_profile(
     profile: dict[str, Any],
     defaults: dict[str, Any],
@@ -405,6 +486,9 @@ def normalize_settings(
     settings: dict[str, Any],
 ) -> dict[str, Any]:
     """Normalize settings and migrate older formats."""
+
+    if not isinstance(settings, dict):
+        raise vol.Invalid("Die Designeinstellungen müssen ein Objekt sein.")
 
     if (
         isinstance(settings.get("light"), dict)
@@ -1293,6 +1377,9 @@ async def websocket_get_settings(
 
     store = get_store(hass)
     saved_settings = await store.async_load()
+    recovery = normalize_recovery_state(
+        await get_recovery_store(hass).async_load()
+    )
 
     try:
         settings = normalize_settings(
@@ -1302,8 +1389,11 @@ async def websocket_get_settings(
         settings = default_settings()
 
     active_profile_id = ""
+    theme_studio_active = True
 
     if isinstance(saved_settings, dict):
+        if isinstance(saved_settings.get("theme_studio_active"), bool):
+            theme_studio_active = saved_settings["theme_studio_active"]
         candidate = saved_settings.get("active_profile_id")
 
         if isinstance(candidate, str):
@@ -1317,6 +1407,8 @@ async def websocket_get_settings(
         {
             **settings,
             "active_profile_id": active_profile_id,
+            "theme_studio_active": theme_studio_active,
+            "recovery_available": recovery is not None,
         },
     )
 
@@ -1330,6 +1422,10 @@ async def websocket_get_settings(
         vol.Optional(
             "active_profile_id"
         ): PROFILE_ID_VALIDATOR,
+        vol.Optional(
+            "previous_theme_studio_active",
+            default=True,
+        ): bool,
     }
 )
 @websocket_api.require_admin
@@ -1364,13 +1460,23 @@ async def websocket_save_settings(
         ):
             active_profile_id = ""
 
-    stored_settings = {
-        **settings,
-        "active_profile_id": active_profile_id,
-    }
-
     store = get_store(hass)
-    await store.async_save(stored_settings)
+    saved_settings = await store.async_load()
+    previous_theme_studio_active = msg[
+        "previous_theme_studio_active"
+    ]
+    previous_state = recovery_state_from_settings(
+        saved_settings,
+        theme_studio_active=previous_theme_studio_active,
+    )
+    settings_changed = (
+        previous_state["settings"] != settings
+        or previous_state["active_profile_id"] != active_profile_id
+        or not previous_theme_studio_active
+    )
+
+    if settings_changed:
+        await get_recovery_store(hass).async_save(previous_state)
 
     try:
         await async_generate_and_apply_theme(
@@ -1384,12 +1490,22 @@ async def websocket_save_settings(
             msg["id"],
             "theme_apply_failed",
             (
-                "Das Theme wurde gespeichert, "
-                "konnte aber nicht aktiviert werden: "
+                "Das Theme konnte nicht aktiviert werden: "
                 f"{error}"
             ),
         )
         return
+
+    stored_settings = {
+        **settings,
+        "active_profile_id": active_profile_id,
+        "theme_studio_active": True,
+    }
+    await store.async_save(stored_settings)
+
+    recovery_available = settings_changed or normalize_recovery_state(
+        await get_recovery_store(hass).async_load()
+    ) is not None
 
     connection.send_result(
         msg["id"],
@@ -1397,8 +1513,10 @@ async def websocket_save_settings(
             "success": True,
             "applied": True,
             "theme": THEME_NAME,
+            "theme_studio_active": True,
             "settings": settings,
             "active_profile_id": active_profile_id,
+            "recovery_available": recovery_available,
         },
     )
 
@@ -1408,6 +1526,10 @@ async def websocket_save_settings(
         vol.Required(
             "type"
         ): "theme_studio/restore_default_theme",
+        vol.Optional(
+            "current_theme_studio_active",
+            default=True,
+        ): bool,
     }
 )
 @websocket_api.require_admin
@@ -1418,6 +1540,17 @@ async def websocket_restore_default_theme(
     msg: dict[str, Any],
 ) -> None:
     """Restore the backend-preferred Home Assistant themes."""
+
+    store = get_store(hass)
+    saved_settings = await store.async_load()
+
+    if msg["current_theme_studio_active"]:
+        await get_recovery_store(hass).async_save(
+            recovery_state_from_settings(
+                saved_settings,
+                theme_studio_active=True,
+            )
+        )
 
     try:
         await hass.services.async_call(
@@ -1441,9 +1574,6 @@ async def websocket_restore_default_theme(
         )
         return
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
-
     try:
         settings = normalize_settings(saved_settings or {})
     except (vol.Invalid, TypeError, ValueError):
@@ -1453,6 +1583,7 @@ async def websocket_restore_default_theme(
         {
             **settings,
             "active_profile_id": "",
+            "theme_studio_active": False,
         }
     )
 
@@ -1461,6 +1592,10 @@ async def websocket_restore_default_theme(
         {
             "success": True,
             "theme": "default",
+            "theme_studio_active": False,
+            "recovery_available": normalize_recovery_state(
+                await get_recovery_store(hass).async_load()
+            ) is not None,
         },
     )
 
@@ -1489,8 +1624,6 @@ async def websocket_get_profiles(
             "maximum": MAX_PROFILES,
         },
     )
-
-
 @websocket_api.websocket_command(
     {
         vol.Required(
@@ -1512,6 +1645,98 @@ async def websocket_get_info(
             "version": VERSION,
             "profile_format": "theme-studio-profile",
             "profile_format_version": 1,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/restore_last_design",
+        vol.Optional(
+            "current_theme_studio_active",
+            default=True,
+        ): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_restore_last_design(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Restore the last persistent design and retain the current one."""
+
+    recovery_store = get_recovery_store(hass)
+    recovery = normalize_recovery_state(
+        await recovery_store.async_load()
+    )
+
+    if recovery is None:
+        connection.send_error(
+            msg["id"],
+            "recovery_not_available",
+            "Es ist noch kein vorheriges Design gespeichert.",
+        )
+        return
+
+    store = get_store(hass)
+    saved_settings = await store.async_load()
+    current_state = recovery_state_from_settings(
+        saved_settings,
+        theme_studio_active=msg["current_theme_studio_active"],
+    )
+
+    try:
+        if recovery["theme_studio_active"]:
+            await async_generate_and_apply_theme(
+                hass,
+                connection,
+                msg,
+                recovery["settings"],
+            )
+        else:
+            await hass.services.async_call(
+                "frontend",
+                "set_theme",
+                {
+                    "name": "default",
+                    "name_dark": "default",
+                },
+                blocking=True,
+                context=connection.context(msg),
+            )
+    except Exception as error:
+        connection.send_error(
+            msg["id"],
+            "recovery_failed",
+            f"Das vorherige Design konnte nicht aktiviert werden: {error}",
+        )
+        return
+
+    restored_settings = {
+        **recovery["settings"],
+        "active_profile_id": recovery["active_profile_id"],
+        "theme_studio_active": recovery["theme_studio_active"],
+    }
+    await store.async_save(restored_settings)
+    await recovery_store.async_save(current_state)
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "theme": (
+                THEME_NAME
+                if recovery["theme_studio_active"]
+                else "default"
+            ),
+            "theme_studio_active": recovery["theme_studio_active"],
+            "settings": recovery["settings"],
+            "active_profile_id": recovery["active_profile_id"],
+            "recovery_available": True,
         },
     )
 
@@ -1706,7 +1931,6 @@ async def websocket_delete_profile(
         hass,
         remaining_profiles,
     )
-
     connection.send_result(
         msg["id"],
         {
@@ -2240,6 +2464,10 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_restore_default_theme,
+    )
+    websocket_api.async_register_command(
+        hass,
+        websocket_restore_last_design,
     )
 
     websocket_api.async_register_command(

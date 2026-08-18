@@ -2,7 +2,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Version: **0.4.7**
+> Aktuelle Version: **0.4.8**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -13,6 +13,8 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
 - Designänderungen mit Rückgängig und Wiederholen korrigieren
 - sichtbarer Hinweis auf noch nicht angewendete Änderungen
+- automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
+- zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
 - Designprofile ohne lokale Entitätszuordnungen und Hintergrundbild-Pfade als portable JSON-Datei exportieren
 - JSON-Dateien vor dem Import serverseitig prüfen und bereinigen
 - übersichtliche Importvorschau mit den übernommenen Farben und entfernten lokalen Inhalten
@@ -115,6 +117,8 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 
 Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für den hellen und dunklen Modus deaktiviert und das originale Home-Assistant-Design wieder aktiviert. Gespeicherte Designprofile und Hintergrundbilder bleiben dabei erhalten.
 
+Vor dem Anwenden eines geänderten Designs speichert Theme Studio den bisher aktiven Stand automatisch. Über **Letztes Design wiederherstellen** kann dieser Stand auch nach einem Neustart erneut aktiviert werden. Der beim Wiederherstellen abgelöste Stand bleibt seinerseits als Wiederherstellungspunkt erhalten, sodass zwischen beiden Zuständen gewechselt werden kann.
+
 Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Das zuletzt mit **Beide Modi anwenden** aktivierte Profil wird beim nächsten Öffnen von Theme Studio automatisch ausgewählt. Über **JSON exportieren** lassen sich die portablen gestalterischen Einstellungen sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Installationsabhängige Dashboard-Effekte, Entitätszuordnungen und lokale Hintergrundbild-Pfade werden bewusst nicht exportiert.
 
 Die integrierte Community-Galerie zeigt ausschließlich zuvor geprüfte und veröffentlichte Designs von [ha-theme-studio.com](https://ha-theme-studio.com). Jede Vorschau bildet ein vollständiges kleines Home-Assistant-Dashboard mit Kopfzeile, Seitenleiste, Karten, Navigation, Hintergrund und aktivierten Karteneffekten ab. Die Vorschaukarten wechseln zusammen mit der oberen Auswahl zwischen hellem und dunklem Modus. Beim Import wird das Profil erneut durch Home Assistant validiert und anschließend in den lokalen Designprofilen gespeichert. Hintergrundbild-Pfade des Erstellers werden nicht übernommen, da die zugehörige lokale Bilddatei auf dem eigenen System nicht vorhanden ist.
@@ -139,6 +143,30 @@ Nach jeder Aktualisierung die Home-Assistant-Oberfläche vollständig neu laden:
 - Companion App: App vollständig schließen und erneut öffnen
 
 Die aktuelle Version ist auf der [Releases-Seite](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) verfügbar.
+
+## Automatisierte Tests
+
+Bei jedem Push und Pull Request prüft GitHub automatisch:
+
+- die Syntax aller Python- und JavaScript-Dateien
+- das sichere Bereinigen portabler Profilimporte
+- das Entfernen lokaler Hintergrundbild-Pfade, Effekte und Entitätszuordnungen
+- das Abweisen beschädigter Einstellungs- und Wiederherstellungsdaten
+- das persistente Sichern und gegenseitige Austauschen zweier Wiederherstellungspunkte
+- das Bereinigen, Sortieren und Begrenzen gespeicherter Designprofile
+- das sichere Validieren und Zwischenspeichern öffentlicher Galeriedaten
+- das Erkennen, Auflisten und Schützen lokaler Hintergrundbilder
+- die Übernahme älterer Einstellungs- und Effektformate
+
+Die Tests laufen direkt gegen Home Assistant 2026.8.1 und benötigen keine
+vollständige Home-Assistant-Testinstanz.
+
+Die Tests lassen sich mit Python 3.14 auch lokal ausführen:
+
+```bash
+python -m pip install --requirement requirements_test.txt
+python -m pytest
+```
 
 ## Erzeugte Daten
 
