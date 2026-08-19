@@ -145,11 +145,17 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .topbar {
+          position: sticky;
+          top: 0;
+          z-index: 130;
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 24px;
-          margin-bottom: 18px;
+          margin-bottom: 8px;
+          padding: 10px 0;
+          background: var(--primary-background-color);
+          box-shadow: 0 10px 18px -18px rgba(0, 0, 0, 0.7);
         }
 
         .topbar h1 {
@@ -1576,7 +1582,7 @@ class ThemeStudioPanel extends HTMLElement {
 
         .preview-panel {
           position: sticky;
-          top: 18px;
+          top: var(--theme-studio-preview-sticky-top, 82px);
           min-width: 0;
           align-self: start;
           padding: 12px;
@@ -2016,13 +2022,21 @@ class ThemeStudioPanel extends HTMLElement {
 
         @media (max-width: 900px) {
           .topbar {
-            align-items: stretch;
-            flex-direction: column;
+            top: 56px;
+            margin: 0 -2px 12px;
+            padding: 7px 2px;
+          }
+
+          .topbar-intro {
+            display: none;
           }
 
           .topbar-actions {
             width: 100%;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scrollbar-width: thin;
           }
 
           .mobile-navigation {
@@ -2066,7 +2080,6 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .preview-panel {
-            top: 68px;
             z-index: 90;
             order: -1;
             padding: 8px;
@@ -2092,22 +2105,46 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .topbar {
-            align-items: stretch;
-            flex-direction: column;
+            top: 56px;
+            margin: 0 -1px 10px;
+            padding: 6px 1px;
           }
 
           .mode-switcher {
-            width: 100%;
+            min-width: 132px;
+            padding: 3px;
           }
 
           .topbar-actions {
-            display: grid;
+            display: flex;
             width: 100%;
-            grid-template-columns: 1fr;
+            gap: 6px;
+          }
+
+          .history-actions {
+            grid-template-columns: 30px 30px;
+            flex: 0 0 68px;
+            padding: 3px;
+          }
+
+          .history-button,
+          .mode-button {
+            min-height: 32px;
+          }
+
+          .mode-button {
+            padding: 0 7px;
+            font-size: 11px;
+          }
+
+          .top-apply-button,
+          .top-pair-button {
+            min-height: 38px;
+            padding: 0 10px;
+            font-size: 11px;
           }
 
           .preview-panel {
-            top: 56px;
             padding: 5px;
             border-radius: 12px;
           }
@@ -2252,11 +2289,11 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .topbar-actions {
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
           }
 
           .history-actions {
-            flex: 0 0 80px;
+            flex: 0 0 68px;
           }
 
           .community-heading {
@@ -2294,7 +2331,7 @@ class ThemeStudioPanel extends HTMLElement {
 
       <main class="page">
         <header class="topbar">
-          <div>
+          <div class="topbar-intro">
             <h1>Theme Studio</h1>
             <p>
               Community-Design wählen oder individuell gestalten.
@@ -2341,20 +2378,20 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
 
             <button
+              id="apply-button"
+              class="top-apply-button"
+              type="button"
+            >
+              Beide Modi anwenden
+            </button>
+
+            <button
               id="generate-counterpart-button"
               class="top-pair-button"
               type="button"
               title="Erzeugt aus dem gewählten Modus einen farblich passenden Gegenmodus"
             >
               Passenden Hellmodus erzeugen
-            </button>
-
-            <button
-              id="apply-button"
-              class="top-apply-button"
-              type="button"
-            >
-              Beide Modi anwenden
             </button>
 
             <button
@@ -3242,6 +3279,7 @@ class ThemeStudioPanel extends HTMLElement {
     `;
 
     this._bindEvents();
+    this._setupStickyOffsets();
     this._syncControls();
     this._updatePreview();
     this._renderProfileOptions();
@@ -3594,6 +3632,33 @@ class ThemeStudioPanel extends HTMLElement {
         ${content}
       </div>
     `;
+  }
+
+  _setupStickyOffsets() {
+    const topbar = this.shadowRoot.querySelector(".topbar");
+
+    if (!topbar) {
+      return;
+    }
+
+    const updateOffset = () => {
+      const stickyTop = Number.parseFloat(
+        getComputedStyle(topbar).top
+      ) || 0;
+      const previewTop = Math.ceil(
+        stickyTop + topbar.getBoundingClientRect().height + 8
+      );
+
+      this.style.setProperty(
+        "--theme-studio-preview-sticky-top",
+        `${previewTop}px`
+      );
+    };
+
+    this._stickyOffsetObserver?.disconnect();
+    this._stickyOffsetObserver = new ResizeObserver(updateOffset);
+    this._stickyOffsetObserver.observe(topbar);
+    requestAnimationFrame(updateOffset);
   }
 
   _bindEvents() {
