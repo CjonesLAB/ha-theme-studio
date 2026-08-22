@@ -1,91 +1,94 @@
 # Theme Studio for Home Assistant
 
-Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
+[English](README.md) | [Deutsch](docs/README.de.md) | [Français](docs/README.fr.md) | [Español](docs/README.es.md)
 
-> Aktuelle Version: **0.4.9**
+Theme Studio is a custom Home Assistant integration for creating, previewing, and directly applying your own interface designs.
+
+> Current development version: **0.5.0**
 >
-> Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
+> Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
-## Funktionen
+## Features
 
-- getrennte Einstellungen für hellen und dunklen Modus
-- farblich passenden Hell- oder Dunkelmodus aus dem aktuell gestalteten Modus erzeugen
-- eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
-- Designänderungen mit Rückgängig und Wiederholen korrigieren
-- sichtbarer Hinweis auf noch nicht angewendete Änderungen
-- automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
-- zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
-- dauerhaft sichtbare Aktionsleiste zum Anwenden und Wechseln des Farbmodus beim Scrollen
-- Designprofile ohne lokale Entitätszuordnungen und Hintergrundbild-Pfade als portable JSON-Datei exportieren
-- JSON-Dateien vor dem Import serverseitig prüfen und bereinigen
-- übersichtliche Importvorschau mit den übernommenen Farben und entfernten lokalen Inhalten
-- installierte Theme-Studio-Version direkt im Bedienfeld anzeigen
-- geprüfte Community-Designs in einer vollständigen Mini-Dashboard-Vorschau für Hell und Dunkel ansehen und mit einem Klick als lokales Profil importieren
-- einzeilige Community-Galerie mit drei sichtbaren Designs auf dem Desktop sowie Pfeilsteuerung und Wischbedienung für weitere Designs
-- eigene Designs über [ha-theme-studio.com](https://ha-theme-studio.com/) zur Prüfung und Veröffentlichung in der Community-Galerie einreichen
-- anpassbare Haupt-, Hintergrund-, Karten-, Text-, Symbol- und Rahmenfarben
-- Kopfzeile und Seitenleiste pro Farbmodus separat gestalten
-- eigene Farben für Navigationshintergrund, Text, Symbole und den aktiven Menüpunkt
-- Kartenradius, Deckkraft, Rahmenstärke und Schatten
-- Farbverläufe sowie eine Bibliothek für mehrere eigene Hintergrundbilder
-- Hintergrundbilder auswählen, umbenennen und sicher löschen
-- Dashboard-Hintergrundeffekt **Space Command**
-- frei kombinierbare Karteneffekte:
-  - **Status Pulse** für gezielt ausgewählte Entitäten
-  - **Energy Flow** für Leistungssensoren mit Warn- und Kritisch-Schwellenwerten
-  - **Climate Aura** für Temperatur- und Luftfeuchtigkeitssensoren
-  - **Alarm-Fokus** für Alarm-, Problem- und Batteriesensoren
-- Suche und Mehrfachauswahl in allen Entitätslisten
-- Anzeige der Anzahl gewählter Entitäten
-- dauerhafte Speicherung der ausgewählten Effekt-Entitäten
-- Speicherung aller Einstellungen in Home Assistant
-- Erzeugung und direkte Aktivierung eines echten Home-Assistant-Themes
-- sichere Rückkehr zum originalen Home-Assistant-Standarddesign
-- responsive Bedienung auf Desktop, Tablet und Smartphone
+- separate settings for light and dark mode
+- generate a matching light or dark mode from the mode currently being edited
+- save, load, rename, duplicate, and delete custom design profiles
+- correct design changes with Undo and Redo
+- visible notice for unapplied changes
+- automatic recovery point before applying a design
+- restore the last active design with one click, even after a restart
+- automatic user interface in German, English, French, or Spanish
+- action bar remains visible while scrolling for applying changes and switching modes
+- export portable JSON profiles without local entity assignments or background-image paths
+- validate and sanitize JSON files on the server before importing them
+- clear import preview showing retained design settings and removed local content
+- display the installed Theme Studio version directly in the panel
+- browse verified community designs as complete mini-dashboard previews in light and dark mode and import them as a local profile with one click
+- single-row community gallery showing three designs on desktop, with arrow controls and swipe navigation for additional designs
+- submit custom designs to [ha-theme-studio.com](https://ha-theme-studio.com/) for review and publication in the community gallery
+- configurable primary, background, card, text, icon, and border colors
+- separate header and sidebar design for each color mode
+- custom navigation background, text, icon, and selected-item colors
+- configurable card radius, opacity, border width, and shadow
+- gradients and a library for multiple custom background images
+- select, rename, and safely delete background images
+- **Space Command** dashboard background effect
+- freely combinable card effects:
+  - **Status Pulse** for selected entities
+  - **Energy Flow** for power sensors with warning and critical thresholds
+  - **Climate Aura** for temperature and humidity sensors
+  - **Alert Focus** for alarm, problem, and battery sensors
+- search and multiple selection in every entity list
+- selected-entity count
+- persistent storage of effect entity selections
+- persistent storage of all settings in Home Assistant
+- generation and direct activation of a real Home Assistant theme
+- safe return to the original Home Assistant default design
+- responsive operation on desktop, tablet, and smartphone
 
 ## Screenshots
 
-### Theme Studio mit Community-Galerie und Dashboard-Vorschau
+### Theme Studio with Community Gallery and dashboard preview
 
-![Theme Studio 0.4.7 mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](docs/images/theme-studio-community-overview-v047.png)
+![Theme Studio 0.4.7 with Community Gallery, design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v047.png)
 
-### Feineinstellungen
+### Fine-tuning
 
-| Farben und Karten | Navigation |
+| Colors and cards | Navigation |
 | --- | --- |
-| ![Farben und Karteneinstellungen](docs/images/fine-settings-colors-cards-v044.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](docs/images/fine-settings-navigation-v044.png) |
+| ![Color and card settings](docs/images/fine-settings-colors-cards-v044.png) | ![Customize header, sidebar, and active navigation](docs/images/fine-settings-navigation-v044.png) |
 
-| Hintergrund und Bildbibliothek | Dashboard-Effekte und Entitätsauswahl |
+| Background and image library | Dashboard effects and entity selection |
 | --- | --- |
-| ![Hintergrundauswahl, Upload und Bildbibliothek](docs/images/fine-settings-background-library-v044.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Mehrfachauswahl](docs/images/dashboard-effects-entity-selection-v044.png) |
+| ![Background selection, upload, and image library](docs/images/fine-settings-background-library-v044.png) | ![Dashboard and card effects with searchable multiple selection](docs/images/dashboard-effects-entity-selection-v044.png) |
 
-## Eigenes Design veröffentlichen
+## Publish your own design
 
-Eigene Designprofile können direkt auf [ha-theme-studio.com](https://ha-theme-studio.com/) für die Community-Galerie eingereicht werden. Dazu das Profil in Theme Studio als portable JSON-Datei exportieren, auf der Webseite mit einem GitHub-Konto anmelden und über **Design einreichen** hochladen. Lokale Hintergrundbild-Pfade, Dashboard-Effekte und Entitätszuordnungen werden nicht exportiert. Beim lokalen Import zeigt Theme Studio zunächst eine geprüfte Vorschau und speichert das Profil erst nach ausdrücklicher Bestätigung. Jede Einreichung wird vor der Veröffentlichung geprüft, damit die öffentliche Galerie übersichtlich und qualitativ einheitlich bleibt.
+Custom design profiles can be submitted directly to [ha-theme-studio.com](https://ha-theme-studio.com/) for inclusion in the community gallery. Export the profile from Theme Studio as a portable JSON file, sign in to the website with a GitHub account, and upload it through **Submit design**. Local background-image paths, dashboard effects, and entity assignments are not exported. When importing locally, Theme Studio first displays a validated preview and only saves the profile after explicit confirmation. Every submission is reviewed before publication to keep the public gallery organized and consistently high quality.
 
-## Installation über HACS
+## Installation through HACS
 
-Theme Studio kann als benutzerdefiniertes Repository über HACS installiert werden:
+Theme Studio can be installed as a custom repository through HACS:
 
-1. In HACS den Bereich **Integrationen** öffnen.
-2. Oben rechts das Drei-Punkte-Menü öffnen und **Benutzerdefinierte Repositorys** auswählen.
-3. Als Repository-URL `https://github.com/CjonesLAB/ha-theme-studio` eintragen.
-4. Als Kategorie **Integration** auswählen und das Repository hinzufügen.
-5. **Theme Studio** in HACS öffnen und die aktuelle Version herunterladen.
-6. Home Assistant neu starten.
-7. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen und die Integration hinzufügen.
+1. Open **Integrations** in HACS.
+2. Open the three-dot menu in the top-right corner and select **Custom repositories**.
+3. Enter `https://github.com/CjonesLAB/ha-theme-studio` as the repository URL.
+4. Select **Integration** as the category and add the repository.
+5. Open **Theme Studio** in HACS and download the current version.
+6. Restart Home Assistant.
+7. Go to **Settings → Devices & services → Add integration**, search for **Theme Studio**, and add the integration.
 
-Danach erscheint **Theme Studio** in der Seitenleiste.
+Theme Studio will then appear in the sidebar.
 
-## Manuelle Installation
+## Manual installation
 
-1. Den Ordner `custom_components/theme_studio` aus dem aktuellen Release nach Home Assistant kopieren:
+1. Copy the `custom_components/theme_studio` directory from the current release to Home Assistant:
 
    ```text
    /config/custom_components/theme_studio
    ```
 
-2. In `/config/configuration.yaml` das Laden von Themes und des Effektmoduls eintragen:
+2. Enable themes and the effect module in `/config/configuration.yaml`:
 
    ```yaml
    frontend:
@@ -94,84 +97,83 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
        - /theme_studio_files/theme-studio-effects.js
    ```
 
-3. Die Konfiguration prüfen und Home Assistant neu starten:
+3. Check the configuration and restart Home Assistant:
 
    ```bash
    ha core check
    ha core restart
    ```
 
-4. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen und die Integration hinzufügen.
+4. Go to **Settings → Devices & services → Add integration**, search for **Theme Studio**, and add the integration.
 
-5. Danach erscheint **Theme Studio** in der Seitenleiste.
+5. Theme Studio will then appear in the sidebar.
 
-## Bedienung
+## Usage
 
-1. In der Seitenleiste **Theme Studio** öffnen.
-2. In der **Community-Galerie** ein geprüftes Design auswählen und mit **Mit einem Klick importieren** als lokales Profil übernehmen oder ein vorhandenes eigenes Profil laden.
-3. Oben zwischen hellem und dunklem Modus wechseln.
-4. Farben, Karten, Navigation und Hintergrund in den Feineinstellungen anpassen.
-5. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
-6. In den Entitätslisten über das Suchfeld nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere passende Entitäten auswählen.
-7. Optional unter **Eigene Designprofile** einen Namen eingeben und das komplette Design als wiederverwendbares Profil speichern.
-8. Mit dem jederzeit oben sichtbaren Button **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+1. Open **Theme Studio** from the sidebar.
+2. Choose a verified design in the **Community Gallery** and select **Import with one click**, or load one of your own profiles.
+3. Switch between light and dark mode at the top.
+4. Adjust colors, cards, navigation, and the background in the fine-tuning section.
+5. Enable the desired effects under **Dashboard effects**.
+6. Filter entity lists by name, entity ID, or device class and select multiple suitable entities.
+7. Optionally enter a name under **My design profiles** and save the complete design as a reusable profile.
+8. Use the permanently visible **Apply both modes** button to save the settings and activate the theme.
 
-Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für den hellen und dunklen Modus deaktiviert und das originale Home-Assistant-Design wieder aktiviert. Gespeicherte Designprofile und Hintergrundbilder bleiben dabei erhalten.
+**Restore Home Assistant default** disables Theme Studio for light and dark mode and activates the original Home Assistant design. Saved design profiles and background images are retained.
 
-Vor dem Anwenden eines geänderten Designs speichert Theme Studio den bisher aktiven Stand automatisch. Über **Letztes Design wiederherstellen** kann dieser Stand auch nach einem Neustart erneut aktiviert werden. Der beim Wiederherstellen abgelöste Stand bleibt seinerseits als Wiederherstellungspunkt erhalten, sodass zwischen beiden Zuständen gewechselt werden kann.
+Before applying a changed design, Theme Studio automatically saves the currently active state. **Restore last design** can reactivate this state even after a restart. The state replaced during restoration becomes the new recovery point, allowing you to switch between both states.
 
-Gespeicherte Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Das zuletzt mit **Beide Modi anwenden** aktivierte Profil wird beim nächsten Öffnen von Theme Studio automatisch ausgewählt. Über **JSON exportieren** lassen sich die portablen gestalterischen Einstellungen sichern und auf einer anderen Theme-Studio-Installation über **JSON importieren** einlesen. Installationsabhängige Dashboard-Effekte, Entitätszuordnungen und lokale Hintergrundbild-Pfade werden bewusst nicht exportiert.
+Saved profiles can be loaded, updated, renamed, duplicated, or deleted. The profile most recently activated with **Apply both modes** is selected automatically the next time Theme Studio opens. **Export JSON** saves the portable visual settings, which can be loaded into another Theme Studio installation with **Import JSON**. Installation-specific dashboard effects, entity assignments, and local background-image paths are intentionally excluded.
 
-Die integrierte Community-Galerie zeigt ausschließlich zuvor geprüfte und veröffentlichte Designs von [ha-theme-studio.com](https://ha-theme-studio.com). Jede Vorschau bildet ein vollständiges kleines Home-Assistant-Dashboard mit Kopfzeile, Seitenleiste, Karten, Navigation, Hintergrund und aktivierten Karteneffekten ab. Die Vorschaukarten wechseln zusammen mit der oberen Auswahl zwischen hellem und dunklem Modus. Beim Import wird das Profil erneut durch Home Assistant validiert und anschließend in den lokalen Designprofilen gespeichert. Hintergrundbild-Pfade des Erstellers werden nicht übernommen, da die zugehörige lokale Bilddatei auf dem eigenen System nicht vorhanden ist.
+The integrated Community Gallery only displays previously reviewed and published designs from [ha-theme-studio.com](https://ha-theme-studio.com). Every preview represents a complete compact Home Assistant dashboard with header, sidebar, cards, navigation, background, and active card effects. Preview cards follow the light/dark selection at the top. During import, Home Assistant validates the profile again and then stores it in the local design profiles. The creator's background-image paths are not imported because the corresponding local image does not exist on your system.
 
-Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-Dateien verwaltet werden. Bereits vorhandene Theme-Studio-Bilder werden automatisch übernommen. Ein Bild, das vom aktiven Design oder von einem gespeicherten Profil verwendet wird, ist vor versehentlichem Löschen geschützt.
+Up to 24 JPG, PNG, or WebP files can be managed under **Background → Image library**. Existing Theme Studio images are detected automatically. An image used by the active design or a saved profile is protected against accidental deletion.
 
-Karteneffekte werden nur auf die jeweils ausgewählten Entitäten angewendet. Dadurch bleiben auch große Dashboards übersichtlich und unnötige Effekte werden vermieden.
+Card effects are only applied to the selected entities. This keeps large dashboards clear and avoids unnecessary effects.
 
-## Aktualisierung
+## Updating
 
-### Über HACS
+### Through HACS
 
-Das Update in HACS installieren und Home Assistant anschließend neu starten.
+Install the update in HACS and restart Home Assistant afterward.
 
-### Manuell
+### Manually
 
-Den vollständigen Ordner `custom_components/theme_studio` durch die Dateien des neuen Releases ersetzen und Home Assistant neu starten.
+Replace the complete `custom_components/theme_studio` directory with the files from the new release and restart Home Assistant.
 
-Nach jeder Aktualisierung die Home-Assistant-Oberfläche vollständig neu laden:
+After every update, reload the Home Assistant interface completely:
 
-- Desktop: `Strg + F5`
-- Companion App: App vollständig schließen und erneut öffnen
+- Desktop: `Ctrl + F5`
+- Companion App: close the app completely and reopen it
 
-Die aktuelle Version ist auf der [Releases-Seite](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) verfügbar.
+The current version is available on the [Releases page](https://github.com/CjonesLAB/ha-theme-studio/releases/latest).
 
-## Automatisierte Tests
+## Automated tests
 
-Bei jedem Push und Pull Request prüft GitHub automatisch:
+For every push and pull request, GitHub automatically checks:
 
-- die Syntax aller Python- und JavaScript-Dateien
-- das sichere Bereinigen portabler Profilimporte
-- das Entfernen lokaler Hintergrundbild-Pfade, Effekte und Entitätszuordnungen
-- das Abweisen beschädigter Einstellungs- und Wiederherstellungsdaten
-- das persistente Sichern und gegenseitige Austauschen zweier Wiederherstellungspunkte
-- das Bereinigen, Sortieren und Begrenzen gespeicherter Designprofile
-- das sichere Validieren und Zwischenspeichern öffentlicher Galeriedaten
-- das Erkennen, Auflisten und Schützen lokaler Hintergrundbilder
-- die Übernahme älterer Einstellungs- und Effektformate
+- syntax of all Python and JavaScript files
+- safe sanitization of portable profile imports
+- removal of local background-image paths, effects, and entity assignments
+- rejection of damaged settings and recovery data
+- persistent storage and mutual swapping of two recovery points
+- sanitization, sorting, and limiting of saved design profiles
+- safe validation and caching of public gallery data
+- detection, listing, and protection of local background images
+- migration of older settings and effect formats
 
-Die Tests laufen direkt gegen Home Assistant 2026.8.1 und benötigen keine
-vollständige Home-Assistant-Testinstanz.
+The tests run directly against Home Assistant 2026.8.1 and do not require a complete Home Assistant test instance.
 
-Die Tests lassen sich mit Python 3.14 auch lokal ausführen:
+Run the tests locally with Python 3.14:
 
 ```bash
 python -m pip install --requirement requirements_test.txt
 python -m pytest
 ```
 
-## Erzeugte Daten
+## Generated data
 
-Theme Studio erzeugt beziehungsweise verwaltet folgende lokale Dateien:
+Theme Studio creates or manages the following local files:
 
 ```text
 /config/themes/theme_studio.yaml
@@ -181,18 +183,18 @@ Theme Studio erzeugt beziehungsweise verwaltet folgende lokale Dateien:
 /config/.storage/theme_studio.backgrounds
 ```
 
-Diese benutzerspezifischen Dateien gehören nicht zum GitHub-Repository und werden bei einem Update nicht überschrieben.
+These user-specific files are not part of the GitHub repository and are not overwritten by updates.
 
-## Datenschutz
+## Privacy
 
-Die Designbearbeitung, Theme-Erzeugung, Profile und eigenen Hintergrundbilder bleiben lokal in Home Assistant. Zum Anzeigen und Importieren der optionalen Community-Galerie stellt Home Assistant eine HTTPS-Verbindung zu `ha-theme-studio.com` her. Dabei können technisch notwendige Verbindungsdaten wie die IP-Adresse in den Serverprotokollen anfallen; Home-Assistant-Zugangsdaten, Entitätszustände und lokale Hintergrundbilder werden nicht übertragen.
+Design editing, theme generation, profiles, and custom background images remain local in Home Assistant. To display and import the optional Community Gallery, Home Assistant establishes an HTTPS connection to `ha-theme-studio.com`. Technically necessary connection data, such as the IP address, may be recorded in server logs. Home Assistant credentials, entity states, and local background images are not transmitted.
 
-## Fehler melden
+## Reporting issues
 
-Fehler und Verbesserungsvorschläge können über den [GitHub-Issue-Tracker](https://github.com/CjonesLAB/ha-theme-studio/issues) gemeldet werden.
+Report bugs and improvement suggestions through the [GitHub issue tracker](https://github.com/CjonesLAB/ha-theme-studio/issues).
 
-Bitte dabei nach Möglichkeit die Home-Assistant-Version, die Theme-Studio-Version, die verwendete Plattform und relevante Protokollmeldungen angeben.
+Whenever possible, include your Home Assistant version, Theme Studio version, platform, and relevant log messages.
 
-## Lizenz
+## License
 
-Theme Studio wird unter der [MIT-Lizenz](LICENSE) veröffentlicht.
+Theme Studio is released under the [MIT License](LICENSE).
