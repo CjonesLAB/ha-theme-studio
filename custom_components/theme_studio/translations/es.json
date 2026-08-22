@@ -1,0 +1,14 @@
+{
+  "title": "Theme Studio",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Theme Studio",
+        "description": "Instala el diseño predeterminado y añade el editor de diseño fácil de usar a Home Assistant."
+      }
+    },
+    "abort": {
+      "already_configured": "Theme Studio ya está configurado."
+    }
+  }
+}

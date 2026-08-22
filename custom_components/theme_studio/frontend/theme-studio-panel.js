@@ -1,3 +1,8 @@
+import {
+  ThemeStudioLocalizer,
+  themeStudioLanguage,
+} from "./theme-studio-locales.js?v=0.5.0";
+
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
     super();
@@ -23,6 +28,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.pendingProfileImport = null;
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
+    this.localizer = null;
 
     this.settings = {
       light: {
@@ -95,6 +101,9 @@ class ThemeStudioPanel extends HTMLElement {
     this._hass = hass;
 
     if (!this._rendered) {
+      this.localizer = new ThemeStudioLocalizer(
+        themeStudioLanguage(hass)
+      );
       this._render();
       this._rendered = true;
       this._loadSettings();
@@ -3284,6 +3293,32 @@ class ThemeStudioPanel extends HTMLElement {
     this._updatePreview();
     this._renderProfileOptions();
     this._renderBackgroundLibrary();
+    this.localizer?.observe(this.shadowRoot);
+  }
+
+  disconnectedCallback() {
+    this.localizer?.disconnect();
+  }
+
+  connectedCallback() {
+    if (this._rendered) {
+      this.localizer?.observe(this.shadowRoot);
+    }
+  }
+
+  _translate(value) {
+    return this.localizer?.translate(value) || value;
+  }
+
+  _confirm(message) {
+    return window.confirm(this._translate(message));
+  }
+
+  _prompt(message, defaultValue = "") {
+    return window.prompt(
+      this._translate(message),
+      defaultValue
+    );
   }
 
   _colorPreset(color, title) {
@@ -4217,7 +4252,7 @@ class ThemeStudioPanel extends HTMLElement {
     const targetLabel = targetMode === "dark" ? "Dunkelmodus" : "Hellmodus";
 
     if (
-      !window.confirm(
+      !this._confirm(
         `${targetLabel} aus dem aktuellen ${sourceLabel} erzeugen? ` +
         `Die bisherigen Einstellungen des ${targetLabel} werden ersetzt.`
       )
@@ -4937,7 +4972,12 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    const copyName = `${currentProfile.name} Kopie`.slice(0, 48);
+    const copyLabel = {
+      en: "Copy",
+      es: "Copia",
+      fr: "Copie",
+    }[this.localizer?.language] || "Kopie";
+    const copyName = `${currentProfile.name} ${copyLabel}`.slice(0, 48);
     this._syncProfileControls(true);
 
     try {
@@ -5212,7 +5252,7 @@ class ThemeStudioPanel extends HTMLElement {
 
     if (
       !profile
-      || !window.confirm(
+      || !this._confirm(
         `Profil „${profile.name}“ wirklich löschen?`
       )
     ) {
@@ -5713,7 +5753,7 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    const name = window.prompt(
+    const name = this._prompt(
       "Neuer Name des Hintergrundbildes:",
       background.name
     )?.trim().replace(/\s+/g, " ");
@@ -5764,7 +5804,7 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    if (!window.confirm(`Bild „${background.name}“ wirklich löschen?`)) {
+    if (!this._confirm(`Bild „${background.name}“ wirklich löschen?`)) {
       return;
     }
 
@@ -6002,7 +6042,7 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    const confirmed = window.confirm(
+    const confirmed = this._confirm(
       "Das zuletzt gesicherte Design wird aktiviert.\n\n"
       + "Der aktuelle Stand bleibt als Wiederherstellungspunkt erhalten. "
       + "Fortfahren?"
@@ -6055,7 +6095,7 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   async _restoreHomeAssistantDefault() {
-    const confirmed = window.confirm(
+    const confirmed = this._confirm(
       "Das originale Home-Assistant-Standarddesign wird für "
       + "den hellen und dunklen Modus aktiviert.\n\n"
       + "Deine Theme-Studio-Profile und Hintergrundbilder "
@@ -6431,7 +6471,7 @@ class ThemeStudioPanel extends HTMLElement {
     const status =
       this.shadowRoot.getElementById("status");
 
-    status.textContent = message;
+    status.textContent = this._translate(message);
     status.className = "status";
 
     if (type) {
@@ -6447,7 +6487,7 @@ class ThemeStudioPanel extends HTMLElement {
     return (
       error?.message ||
       error?.body?.message ||
-      "Der Vorgang ist fehlgeschlagen."
+      this._translate("Der Vorgang ist fehlgeschlagen.")
     );
   }
 
