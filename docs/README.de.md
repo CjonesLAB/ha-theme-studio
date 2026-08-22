@@ -4,7 +4,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Entwicklungsversion: **0.5.0**
+> Aktuelle Entwicklungsversion: **0.5.1**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -18,6 +18,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
 - automatische Bedienoberfläche auf Deutsch, Englisch, Französisch oder Spanisch
+- datenschutzfreundliche Home-Assistant-Diagnose mit ausschließlich technischen Zuständen und Anzahlen
 - dauerhaft sichtbare Aktionsleiste zum Anwenden und Wechseln des Farbmodus beim Scrollen
 - Designprofile ohne lokale Entitätszuordnungen und Hintergrundbild-Pfade als portable JSON-Datei exportieren
 - JSON-Dateien vor dem Import serverseitig prüfen und bereinigen
@@ -173,6 +174,8 @@ Diese benutzerspezifischen Dateien gehören nicht zum Repository und werden bei 
 ## Datenschutz
 
 Designbearbeitung, Theme-Erzeugung, Profile und eigene Hintergrundbilder bleiben lokal. Für die optionale Galerie stellt Home Assistant eine HTTPS-Verbindung zu `ha-theme-studio.com` her. Dabei können technisch notwendige Verbindungsdaten wie die IP-Adresse in Serverprotokollen anfallen. Zugangsdaten, Entitätszustände und lokale Hintergrundbilder werden nicht übertragen.
+
+Der über Home Assistant verfügbare Diagnose-Download enthält absichtlich keine Farben, Designwerte, Entitäts-IDs, Profilnamen, Bildnamen oder Pfade, Zugangsdaten oder gespeicherten Designs. Ausgegeben werden ausschließlich Theme-Studio-Version, Speicherformat-Versionen, Gültigkeit der Speicherbereiche, Funktionsverfügbarkeit und anonyme Anzahlen. Die Datei kann unter **Einstellungen → Geräte & Dienste → Theme Studio → Diagnose herunterladen** für eine Supportanfrage erstellt werden.
 
 ## Fehler melden
 
