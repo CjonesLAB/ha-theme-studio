@@ -18,6 +18,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
 - automatische Bedienoberfläche auf Deutsch, Englisch, Französisch oder Spanisch
+- Tastaturbedienung, sichtbare Fokusmarkierungen und barrierearmer Importdialog
 - datenschutzfreundliche Home-Assistant-Diagnose mit ausschließlich technischen Zuständen und Anzahlen
 - dauerhaft sichtbare Aktionsleiste zum Anwenden und Wechseln des Farbmodus beim Scrollen
 - Designprofile ohne lokale Entitätszuordnungen und Hintergrundbild-Pfade als portable JSON-Datei exportieren

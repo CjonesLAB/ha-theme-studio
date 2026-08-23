@@ -18,6 +18,7 @@ Theme Studio es una integración personalizada para Home Assistant que permite c
 - punto de recuperación automático antes de aplicar un diseño
 - restauración con un clic del último diseño activo, incluso después de reiniciar
 - interfaz automática en alemán, inglés, francés o español
+- controles accesibles mediante teclado, foco visible y diálogo de importación accesible
 - diagnóstico de Home Assistant respetuoso con la privacidad y limitado a estados técnicos y recuentos
 - barra de acciones siempre visible durante el desplazamiento
 - exportación JSON portátil sin asignaciones de entidades locales ni rutas de imágenes de fondo
