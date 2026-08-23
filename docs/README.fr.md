@@ -4,7 +4,7 @@
 
 Theme Studio est une intégration personnalisée pour Home Assistant permettant de créer, prévisualiser et appliquer directement vos propres designs d’interface.
 
-> Version de développement actuelle : **0.5.0**
+> Version de développement actuelle : **0.5.1**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 
@@ -18,6 +18,8 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 - point de restauration automatique avant l’application d’un design
 - restauration en un clic du dernier design actif, même après un redémarrage
 - interface automatique en allemand, anglais, français ou espagnol
+- commandes accessibles au clavier, focus visible et boîte de dialogue d’importation accessible
+- diagnostic Home Assistant respectueux de la vie privée, limité aux états techniques et aux comptages
 - barre d’actions toujours visible pendant le défilement
 - export JSON portable sans associations d’entités locales ni chemins d’images d’arrière-plan
 - validation et nettoyage côté serveur des fichiers JSON avant importation
@@ -173,6 +175,8 @@ Ces fichiers propres à l’utilisateur ne font pas partie du dépôt et ne sont
 ## Confidentialité
 
 La modification des designs, la création du thème, les profils et les images personnalisées restent dans Home Assistant. Pour afficher la galerie facultative, Home Assistant établit une connexion HTTPS avec `ha-theme-studio.com`. Des données techniques nécessaires, telles que l’adresse IP, peuvent apparaître dans les journaux du serveur. Les identifiants Home Assistant, les états des entités et les images locales ne sont pas transmis.
+
+Le téléchargement de diagnostic proposé par Home Assistant ne contient volontairement aucune couleur, valeur de design, ID d’entité, nom de profil, nom ou chemin d’image, information d’identification ou design enregistré. Il indique uniquement la version de Theme Studio, les versions des formats de stockage, la validité des stockages, la disponibilité des fonctions et des comptages anonymes. Pour créer le fichier destiné au support, ouvrez **Paramètres → Appareils et services → Theme Studio → Télécharger les diagnostics**.
 
 ## Signaler un problème
 

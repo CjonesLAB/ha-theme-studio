@@ -1,7 +1,7 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.5.0";
+} from "./theme-studio-locales.js?v=0.5.1";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -26,6 +26,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.appliedSettings = null;
     this.integrationVersion = "";
     this.pendingProfileImport = null;
+    this.importPreviewReturnFocus = null;
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
     this.localizer = null;
@@ -137,6 +138,18 @@ class ThemeStudioPanel extends HTMLElement {
 
         button {
           cursor: pointer;
+        }
+
+        :where(
+          button,
+          a,
+          input,
+          select,
+          summary,
+          [tabindex]
+        ):focus-visible {
+          outline: 3px solid var(--primary-color, #03a9f4);
+          outline-offset: 3px;
         }
 
         [hidden] {
@@ -422,8 +435,23 @@ class ThemeStudioPanel extends HTMLElement {
           cursor: not-allowed;
         }
 
-        .profile-import-label input {
-          display: none;
+        .profile-import-label input,
+        #background-file {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+
+        .profile-import-label:has(input:focus-visible),
+        .upload-button:has(+ #background-file:focus-visible) {
+          outline: 3px solid var(--primary-color, #03a9f4);
+          outline-offset: 3px;
         }
 
         .profile-hint {
@@ -1422,10 +1450,6 @@ class ThemeStudioPanel extends HTMLElement {
           pointer-events: none;
         }
 
-        #background-file {
-          display: none;
-        }
-
         .file-name {
           min-height: 15px;
           margin-top: 5px;
@@ -2331,9 +2355,9 @@ class ThemeStudioPanel extends HTMLElement {
         }
       </style>
 
-      <nav class="mobile-navigation">
+      <nav class="mobile-navigation" aria-label="Mobile Navigation">
         <a class="mobile-back" href="/">
-          <span class="back-arrow">‹</span>
+          <span class="back-arrow" aria-hidden="true">‹</span>
           <span>Zur Übersicht</span>
         </a>
       </nav>
@@ -2370,10 +2394,16 @@ class ThemeStudioPanel extends HTMLElement {
               >↷</button>
             </div>
 
-            <div class="mode-switcher">
+            <div
+              class="mode-switcher"
+              role="group"
+              aria-label="Vorschaumodus"
+            >
               <button
                 class="mode-button"
                 data-mode="light"
+                type="button"
+                aria-pressed="false"
               >
                 ☀ Hell
               </button>
@@ -2381,6 +2411,8 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 class="mode-button active"
                 data-mode="dark"
+                type="button"
+                aria-pressed="true"
               >
                 ☾ Dunkel
               </button>
@@ -2415,10 +2447,18 @@ class ThemeStudioPanel extends HTMLElement {
           </div>
         </header>
 
-        <p id="status" class="status"></p>
+        <p
+          id="status"
+          class="status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        ></p>
         <p
           id="unsaved-indicator"
           class="unsaved-indicator"
+          role="status"
+          aria-live="polite"
           hidden
         >
           ● Nicht angewendete Änderungen
@@ -2434,6 +2474,7 @@ class ThemeStudioPanel extends HTMLElement {
             role="dialog"
             aria-modal="true"
             aria-labelledby="import-preview-title"
+            aria-describedby="import-preview-subtitle"
           >
             <header class="import-preview-header">
               <h2 id="import-preview-title">Import prüfen</h2>
@@ -2566,6 +2607,7 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 id="profile-save-button"
                 class="profile-button primary"
+                type="button"
               >
                 Profil speichern
               </button>
@@ -2573,6 +2615,7 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 id="profile-rename-button"
                 class="profile-button"
+                type="button"
                 disabled
               >
                 Umbenennen
@@ -2581,6 +2624,7 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 id="profile-duplicate-button"
                 class="profile-button"
+                type="button"
                 disabled
               >
                 Duplizieren
@@ -2589,6 +2633,7 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 id="profile-export-button"
                 class="profile-button"
+                type="button"
                 disabled
               >
                 JSON exportieren
@@ -2606,6 +2651,7 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 id="profile-delete-button"
                 class="profile-button danger"
+                type="button"
                 disabled
               >
                 Löschen
@@ -2761,6 +2807,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="background-option background-color"
                     data-background="color"
+                    type="button"
+                    aria-pressed="false"
                   >
                     Farbe
                   </button>
@@ -2768,6 +2816,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="background-option background-waves"
                     data-background="waves"
+                    type="button"
+                    aria-pressed="false"
                   >
                     Wellen
                   </button>
@@ -2775,6 +2825,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="background-option background-aurora"
                     data-background="aurora"
+                    type="button"
+                    aria-pressed="false"
                   >
                     Aurora
                   </button>
@@ -2783,6 +2835,8 @@ class ThemeStudioPanel extends HTMLElement {
                     id="image-option"
                     class="background-option background-image-option"
                     data-background="image"
+                    type="button"
+                    aria-pressed="false"
                   >
                     Eigenes Bild
                   </button>
@@ -2857,6 +2911,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option background-effect-option effect-none"
                     data-effect="none"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Kein Effekt
@@ -2869,6 +2925,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option background-effect-option effect-space-command"
                     data-effect="space-command"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Space Command
@@ -2904,6 +2962,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option card-effect-option effect-none"
                     data-card-effect="none"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Kein Karteneffekt
@@ -2916,6 +2976,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option card-effect-option effect-status-pulse"
                     data-card-effect="status-pulse"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Status Pulse
@@ -2928,6 +2990,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option card-effect-option effect-energy-flow"
                     data-card-effect="energy-flow"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Energy Flow
@@ -2940,6 +3004,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option card-effect-option effect-climate-aura"
                     data-card-effect="climate-aura"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Climate Aura
@@ -2952,6 +3018,8 @@ class ThemeStudioPanel extends HTMLElement {
                   <button
                     class="effect-option card-effect-option effect-alert-focus"
                     data-card-effect="alert-focus"
+                    type="button"
+                    aria-pressed="false"
                   >
                     <span class="effect-option-title">
                       Alarm-Fokus
@@ -3157,6 +3225,7 @@ class ThemeStudioPanel extends HTMLElement {
               <button
                 id="restore-default-button"
                 class="editor-action restore-default"
+                type="button"
               >
                 Home-Assistant-Standard wiederherstellen
               </button>
@@ -3165,7 +3234,12 @@ class ThemeStudioPanel extends HTMLElement {
           </div>
 
           <aside class="preview-panel">
-          <div id="preview" class="preview">
+          <div
+            id="preview"
+            class="preview"
+            role="img"
+            aria-label="Dashboard-Vorschau im dunklen Modus"
+          >
             <div class="preview-app-header">
               <div class="preview-app-header-left">
                 <span class="preview-menu-icon">☰</span>
@@ -3327,6 +3401,9 @@ class ThemeStudioPanel extends HTMLElement {
         class="color-preset"
         data-color="${color}"
         title="${title}"
+        type="button"
+        aria-label="Hauptfarbe ${title} wählen"
+        aria-pressed="false"
         style="background:${color}"
       ></button>
     `;
@@ -3806,6 +3883,12 @@ class ThemeStudioPanel extends HTMLElement {
         if (event.target.id === "import-preview-overlay") {
           this._closeImportPreview();
         }
+      });
+
+    this.shadowRoot
+      .getElementById("import-preview-overlay")
+      .addEventListener("keydown", (event) => {
+        this._handleImportPreviewKeydown(event);
       });
 
     this.shadowRoot
@@ -5147,10 +5230,51 @@ class ThemeStudioPanel extends HTMLElement {
         </ul>
       </div>
     `;
+    this.importPreviewReturnFocus = this.shadowRoot.activeElement;
     overlay.hidden = false;
     this.shadowRoot.getElementById(
       "import-preview-confirm"
     ).focus();
+  }
+
+  _handleImportPreviewKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      this._closeImportPreview();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const dialog = this.shadowRoot.querySelector(
+      ".import-preview-dialog"
+    );
+    const focusable = Array.from(dialog.querySelectorAll(
+      "button:not([disabled]), a[href], input:not([disabled]), "
+      + "select:not([disabled]), textarea:not([disabled]), "
+      + "[tabindex]:not([tabindex='-1'])"
+    ));
+
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && this.shadowRoot.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (
+      !event.shiftKey
+      && this.shadowRoot.activeElement === last
+    ) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   _importPreviewMode(label, mode) {
@@ -5202,10 +5326,17 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   _closeImportPreview() {
+    const returnFocus = this.importPreviewReturnFocus;
+
     this.pendingProfileImport = null;
+    this.importPreviewReturnFocus = null;
     this.shadowRoot.getElementById(
       "import-preview-overlay"
     ).hidden = true;
+
+    if (returnFocus instanceof HTMLElement) {
+      returnFocus.focus();
+    }
   }
 
   async _confirmProfileImport() {
@@ -5373,11 +5504,21 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot.getElementById(searchId);
     const list = this.shadowRoot.getElementById(listId);
     const selector = `.${checkboxClass}`;
+    const checkboxes = Array.from(
+      this.shadowRoot.querySelectorAll(selector)
+    );
+    const choices = Array.from(
+      list.querySelectorAll(".energy-entity-choice")
+    );
+    const emptyMessage =
+      list.querySelector(".entity-filter-empty");
+    let pendingFilterFrame = 0;
 
     const updateCount = () => {
-      const selected = this.shadowRoot.querySelectorAll(
-        `${selector}:checked`
-      ).length;
+      const selected = checkboxes.reduce(
+        (count, checkbox) => count + Number(checkbox.checked),
+        0
+      );
       this.shadowRoot.getElementById(countId).textContent =
         `${selected} gewählt`;
     };
@@ -5388,64 +5529,61 @@ class ThemeStudioPanel extends HTMLElement {
         .toLocaleLowerCase("de");
       let visibleChoices = 0;
 
-      list
-        .querySelectorAll(".energy-entity-choice")
-        .forEach((choice) => {
-          const visible =
-            !query
-            || choice.dataset.entitySearch.includes(query);
-          choice.hidden = !visible;
+      choices.forEach((choice) => {
+        const visible =
+          !query
+          || choice.dataset.entitySearch.includes(query);
+        choice.hidden = !visible;
 
-          if (visible) {
-            visibleChoices += 1;
-          }
-        });
-
-      const emptyMessage =
-        list.querySelector(".entity-filter-empty");
+        if (visible) {
+          visibleChoices += 1;
+        }
+      });
 
       if (emptyMessage) {
-        const hasChoices = list.querySelector(
-          ".energy-entity-choice"
-        ) !== null;
         emptyMessage.hidden =
-          !hasChoices || visibleChoices > 0;
+          choices.length === 0 || visibleChoices > 0;
       }
     };
 
-    searchInput.addEventListener("input", filterChoices);
+    searchInput.addEventListener("input", () => {
+      if (pendingFilterFrame) {
+        cancelAnimationFrame(pendingFilterFrame);
+      }
 
-    this.shadowRoot
-      .querySelectorAll(selector)
-      .forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-          const beforeChange = this._cloneSettings(this.settings);
-          const selected = Array.from(
-            this.shadowRoot.querySelectorAll(
-              `${selector}:checked`
-            )
-          );
-
-          if (selected.length > maximum) {
-            checkbox.checked = false;
-            this._setStatus(maximumMessage, "error");
-            updateCount();
-            return;
-          }
-
-          this.undoHistory.push(beforeChange);
-          if (this.undoHistory.length > this.historyLimit) {
-            this.undoHistory.shift();
-          }
-          this.redoHistory = [];
-          this.settings.effects[settingName] =
-            selected.map((item) => item.value);
-
-          updateCount();
-          this._updatePreview();
-          this._finishSettingsChange();
-        });
+      pendingFilterFrame = requestAnimationFrame(() => {
+        pendingFilterFrame = 0;
+        filterChoices();
       });
+    });
+
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        const beforeChange = this._cloneSettings(this.settings);
+        const selected = checkboxes.filter(
+          (item) => item.checked
+        );
+
+        if (selected.length > maximum) {
+          checkbox.checked = false;
+          this._setStatus(maximumMessage, "error");
+          updateCount();
+          return;
+        }
+
+        this.undoHistory.push(beforeChange);
+        if (this.undoHistory.length > this.historyLimit) {
+          this.undoHistory.shift();
+        }
+        this.redoHistory = [];
+        this.settings.effects[settingName] =
+          selected.map((item) => item.value);
+
+        updateCount();
+        this._updatePreview();
+        this._finishSettingsChange();
+      });
+    });
 
     updateCount();
   }
@@ -5675,6 +5813,8 @@ class ThemeStudioPanel extends HTMLElement {
             class="background-select-button"
             data-background-id="${this._escapeHtml(background.id)}"
             title="${this._escapeHtml(background.name)} auswählen"
+            type="button"
+            aria-pressed="${active}"
           >
             <span
               class="background-library-preview"
@@ -5692,6 +5832,7 @@ class ThemeStudioPanel extends HTMLElement {
               class="background-library-action"
               data-action="rename"
               data-background-id="${this._escapeHtml(background.id)}"
+              type="button"
             >
               Umbenennen
             </button>
@@ -5699,6 +5840,7 @@ class ThemeStudioPanel extends HTMLElement {
               class="background-library-action danger"
               data-action="delete"
               data-background-id="${this._escapeHtml(background.id)}"
+              type="button"
             >
               Löschen
             </button>
@@ -6153,10 +6295,10 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .querySelectorAll(".mode-button")
       .forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.mode === this.activeMode
-        );
+        const active = button.dataset.mode === this.activeMode;
+
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
       });
 
     const counterpartButton = this.shadowRoot.getElementById(
@@ -6233,6 +6375,15 @@ class ThemeStudioPanel extends HTMLElement {
           ? "Vorschau: heller Modus"
           : "Vorschau: dunkler Modus";
 
+    this.shadowRoot
+      .getElementById("preview")
+      .setAttribute(
+        "aria-label",
+        this.activeMode === "light"
+          ? "Dashboard-Vorschau im hellen Modus"
+          : "Dashboard-Vorschau im dunklen Modus"
+      );
+
     this._syncColorPresets();
     this._syncBackgroundSelection();
     this._syncImageOption();
@@ -6244,11 +6395,11 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .querySelectorAll(".background-effect-option")
       .forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.effect ===
-            this.settings.effects.effect
-        );
+        const active = button.dataset.effect ===
+          this.settings.effects.effect;
+
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
       });
 
     const ranges = {
@@ -6280,13 +6431,12 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".card-effect-option")
       .forEach((button) => {
         const effect = button.dataset.cardEffect;
+        const active = effect === "none"
+          ? this.settings.effects.cardEffects.length === 0
+          : this.settings.effects.cardEffects.includes(effect);
 
-        button.classList.toggle(
-          "active",
-          effect === "none"
-            ? this.settings.effects.cardEffects.length === 0
-            : this.settings.effects.cardEffects.includes(effect)
-        );
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
       });
 
     const cardIntensity =
@@ -6433,11 +6583,11 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .querySelectorAll(".color-preset")
       .forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.color.toLowerCase() ===
-            this.profile.primaryColor.toLowerCase()
-        );
+        const active = button.dataset.color.toLowerCase() ===
+          this.profile.primaryColor.toLowerCase();
+
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
       });
   }
 
@@ -6445,11 +6595,11 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .querySelectorAll(".background-option")
       .forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.background ===
-            this.profile.background
-        );
+        const active = button.dataset.background ===
+          this.profile.background;
+
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
       });
   }
 
@@ -6473,6 +6623,14 @@ class ThemeStudioPanel extends HTMLElement {
 
     status.textContent = this._translate(message);
     status.className = "status";
+    status.setAttribute(
+      "role",
+      type === "error" ? "alert" : "status"
+    );
+    status.setAttribute(
+      "aria-live",
+      type === "error" ? "assertive" : "polite"
+    );
 
     if (type) {
       status.classList.add(type);

@@ -4,7 +4,7 @@
 
 Theme Studio is a custom Home Assistant integration for creating, previewing, and directly applying your own interface designs.
 
-> Current development version: **0.5.0**
+> Current development version: **0.5.1**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
@@ -18,6 +18,8 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 - automatic recovery point before applying a design
 - restore the last active design with one click, even after a restart
 - automatic user interface in German, English, French, or Spanish
+- keyboard-accessible controls, visible focus indicators, and an accessible import dialog
+- privacy-preserving Home Assistant diagnostics containing technical status and counts only
 - action bar remains visible while scrolling for applying changes and switching modes
 - export portable JSON profiles without local entity assignments or background-image paths
 - validate and sanitize JSON files on the server before importing them
@@ -188,6 +190,8 @@ These user-specific files are not part of the GitHub repository and are not over
 ## Privacy
 
 Design editing, theme generation, profiles, and custom background images remain local in Home Assistant. To display and import the optional Community Gallery, Home Assistant establishes an HTTPS connection to `ha-theme-studio.com`. Technically necessary connection data, such as the IP address, may be recorded in server logs. Home Assistant credentials, entity states, and local background images are not transmitted.
+
+The diagnostic download available through Home Assistant intentionally contains no colors, design values, entity IDs, profile names, background names or paths, credentials, or stored designs. It reports only the Theme Studio version, storage format versions, storage validity, feature availability, and anonymous counts. Open **Settings → Devices & services → Theme Studio → Download diagnostics** to create the file for a support request.
 
 ## Reporting issues
 

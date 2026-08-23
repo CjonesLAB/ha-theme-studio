@@ -4,7 +4,7 @@
 
 Theme Studio es una integración personalizada para Home Assistant que permite crear, previsualizar y aplicar directamente tus propios diseños de interfaz.
 
-> Versión de desarrollo actual: **0.5.0**
+> Versión de desarrollo actual: **0.5.1**
 >
 > Theme Studio todavía se encuentra en una fase temprana de desarrollo. Crea una copia de seguridad de Home Assistant antes de instalarlo o actualizarlo.
 
@@ -18,6 +18,8 @@ Theme Studio es una integración personalizada para Home Assistant que permite c
 - punto de recuperación automático antes de aplicar un diseño
 - restauración con un clic del último diseño activo, incluso después de reiniciar
 - interfaz automática en alemán, inglés, francés o español
+- controles accesibles mediante teclado, foco visible y diálogo de importación accesible
+- diagnóstico de Home Assistant respetuoso con la privacidad y limitado a estados técnicos y recuentos
 - barra de acciones siempre visible durante el desplazamiento
 - exportación JSON portátil sin asignaciones de entidades locales ni rutas de imágenes de fondo
 - validación y limpieza de archivos JSON en el servidor antes de importarlos
@@ -173,6 +175,8 @@ Estos archivos específicos del usuario no forman parte del repositorio y no se 
 ## Privacidad
 
 La edición de diseños, la creación del tema, los perfiles y las imágenes personalizadas permanecen en Home Assistant. Para mostrar la galería opcional, Home Assistant establece una conexión HTTPS con `ha-theme-studio.com`. Los registros del servidor pueden incluir datos técnicos necesarios, como la dirección IP. No se transmiten credenciales de Home Assistant, estados de entidades ni imágenes locales.
+
+La descarga de diagnóstico disponible en Home Assistant no contiene deliberadamente colores, valores de diseño, ID de entidades, nombres de perfiles, nombres o rutas de imágenes, credenciales ni diseños guardados. Solo informa de la versión de Theme Studio, las versiones de los formatos de almacenamiento, la validez del almacenamiento, la disponibilidad de funciones y recuentos anónimos. Para crear el archivo para una solicitud de soporte, abre **Ajustes → Dispositivos y servicios → Theme Studio → Descargar diagnósticos**.
 
 ## Informar de problemas
 
