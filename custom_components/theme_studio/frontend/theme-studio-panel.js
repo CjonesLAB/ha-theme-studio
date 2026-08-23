@@ -5504,11 +5504,21 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot.getElementById(searchId);
     const list = this.shadowRoot.getElementById(listId);
     const selector = `.${checkboxClass}`;
+    const checkboxes = Array.from(
+      this.shadowRoot.querySelectorAll(selector)
+    );
+    const choices = Array.from(
+      list.querySelectorAll(".energy-entity-choice")
+    );
+    const emptyMessage =
+      list.querySelector(".entity-filter-empty");
+    let pendingFilterFrame = 0;
 
     const updateCount = () => {
-      const selected = this.shadowRoot.querySelectorAll(
-        `${selector}:checked`
-      ).length;
+      const selected = checkboxes.reduce(
+        (count, checkbox) => count + Number(checkbox.checked),
+        0
+      );
       this.shadowRoot.getElementById(countId).textContent =
         `${selected} gewählt`;
     };
@@ -5519,64 +5529,61 @@ class ThemeStudioPanel extends HTMLElement {
         .toLocaleLowerCase("de");
       let visibleChoices = 0;
 
-      list
-        .querySelectorAll(".energy-entity-choice")
-        .forEach((choice) => {
-          const visible =
-            !query
-            || choice.dataset.entitySearch.includes(query);
-          choice.hidden = !visible;
+      choices.forEach((choice) => {
+        const visible =
+          !query
+          || choice.dataset.entitySearch.includes(query);
+        choice.hidden = !visible;
 
-          if (visible) {
-            visibleChoices += 1;
-          }
-        });
-
-      const emptyMessage =
-        list.querySelector(".entity-filter-empty");
+        if (visible) {
+          visibleChoices += 1;
+        }
+      });
 
       if (emptyMessage) {
-        const hasChoices = list.querySelector(
-          ".energy-entity-choice"
-        ) !== null;
         emptyMessage.hidden =
-          !hasChoices || visibleChoices > 0;
+          choices.length === 0 || visibleChoices > 0;
       }
     };
 
-    searchInput.addEventListener("input", filterChoices);
+    searchInput.addEventListener("input", () => {
+      if (pendingFilterFrame) {
+        cancelAnimationFrame(pendingFilterFrame);
+      }
 
-    this.shadowRoot
-      .querySelectorAll(selector)
-      .forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-          const beforeChange = this._cloneSettings(this.settings);
-          const selected = Array.from(
-            this.shadowRoot.querySelectorAll(
-              `${selector}:checked`
-            )
-          );
-
-          if (selected.length > maximum) {
-            checkbox.checked = false;
-            this._setStatus(maximumMessage, "error");
-            updateCount();
-            return;
-          }
-
-          this.undoHistory.push(beforeChange);
-          if (this.undoHistory.length > this.historyLimit) {
-            this.undoHistory.shift();
-          }
-          this.redoHistory = [];
-          this.settings.effects[settingName] =
-            selected.map((item) => item.value);
-
-          updateCount();
-          this._updatePreview();
-          this._finishSettingsChange();
-        });
+      pendingFilterFrame = requestAnimationFrame(() => {
+        pendingFilterFrame = 0;
+        filterChoices();
       });
+    });
+
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        const beforeChange = this._cloneSettings(this.settings);
+        const selected = checkboxes.filter(
+          (item) => item.checked
+        );
+
+        if (selected.length > maximum) {
+          checkbox.checked = false;
+          this._setStatus(maximumMessage, "error");
+          updateCount();
+          return;
+        }
+
+        this.undoHistory.push(beforeChange);
+        if (this.undoHistory.length > this.historyLimit) {
+          this.undoHistory.shift();
+        }
+        this.redoHistory = [];
+        this.settings.effects[settingName] =
+          selected.map((item) => item.value);
+
+        updateCount();
+        this._updatePreview();
+        this._finishSettingsChange();
+      });
+    });
 
     updateCount();
   }
