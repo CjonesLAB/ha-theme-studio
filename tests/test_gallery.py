@@ -80,6 +80,51 @@ def test_gallery_rejects_invalid_list_items(item: Any) -> None:
     assert gallery._normalize_gallery_item(item) is None
 
 
+def test_gallery_preview_bounds_match_profile_schema() -> None:
+    """The list preview never shows a value import would later clamp.
+
+    A design imported through ``websocket_import_gallery_design`` is run
+    through ``PROFILE_SCHEMA`` (cardOpacity 30-100, borderRadius 0-36). If
+    the gallery list preview allowed a wider range, users could see a
+    thumbnail that looks different from the profile they actually get.
+    """
+
+    # Mirrors the bounds enforced by PROFILE_SCHEMA in websocket.py.
+    min_opacity, max_opacity = 30, 100
+    min_radius, max_radius = 0, 36
+
+    item = {
+        "id": PUBLIC_ID,
+        "title": "Grenzwerte",
+        "preview": {
+            "opacity": 1,
+            "radius": 999,
+            "modes": {
+                "dark": {
+                    "opacity": 1,
+                    "radius": 999,
+                },
+                "light": {
+                    "opacity": 1,
+                    "radius": 999,
+                },
+            },
+        },
+    }
+
+    normalized = gallery._normalize_gallery_item(item)
+    assert normalized is not None
+    preview = normalized["preview"]
+
+    for values in (
+        preview,
+        preview["modes"]["dark"],
+        preview["modes"]["light"],
+    ):
+        assert min_opacity <= values["opacity"] <= max_opacity
+        assert min_radius <= values["radius"] <= max_radius
+
+
 async def test_gallery_list_is_validated_and_cached(monkeypatch: Any) -> None:
     """Only valid designs are cached and repeated requests avoid the network."""
 

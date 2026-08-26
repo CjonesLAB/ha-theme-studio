@@ -20,6 +20,7 @@ PANEL_ELEMENT = "theme-studio-panel"
 STATIC_URL = "/theme_studio_files"
 
 DATA_WEBSOCKET_REGISTERED = "websocket_registered"
+DATA_STATIC_PATH_REGISTERED = "static_path_registered"
 
 
 async def async_setup_entry(
@@ -30,17 +31,23 @@ async def async_setup_entry(
 
     hass.data.setdefault(DOMAIN, {})
 
-    frontend_path = Path(__file__).parent / "frontend"
+    # Cache the panel/effects bundles: cache-busting already happens via the
+    # "?v=VERSION" query string on module_url/extra_module_url, so clients
+    # can safely keep a cached copy between releases instead of re-fetching
+    # the ~190 KB bundle on every dashboard load.
+    if not hass.data[DOMAIN].get(DATA_STATIC_PATH_REGISTERED):
+        frontend_path = Path(__file__).parent / "frontend"
 
-    await hass.http.async_register_static_paths(
-        [
-            StaticPathConfig(
-                STATIC_URL,
-                str(frontend_path),
-                cache_headers=False,
-            )
-        ]
-    )
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    STATIC_URL,
+                    str(frontend_path),
+                    cache_headers=True,
+                )
+            ]
+        )
+        hass.data[DOMAIN][DATA_STATIC_PATH_REGISTERED] = True
 
     if PANEL_URL not in hass.data.get("frontend_panels", {}):
         await panel_custom.async_register_panel(
@@ -55,6 +62,10 @@ async def async_setup_entry(
         )
 
     if not hass.data[DOMAIN].get(DATA_WEBSOCKET_REGISTERED):
+        # WebSocket commands intentionally stay registered for the lifetime
+        # of the HA process: Home Assistant has no public API to unregister
+        # them, and re-registering after unload/re-add would raise. This
+        # mirrors the pattern used by other core integrations.
         async_register_websocket_commands(hass)
         hass.data[DOMAIN][DATA_WEBSOCKET_REGISTERED] = True
 

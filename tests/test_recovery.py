@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from copy import deepcopy
 from inspect import unwrap
 from types import SimpleNamespace
@@ -79,6 +80,11 @@ async def test_save_creates_recovery_before_applying(
         apply_theme,
     )
     monkeypatch.setattr(websocket, "async_load_profiles", AsyncMock(return_value=[]))
+    monkeypatch.setattr(
+        websocket,
+        "get_storage_lock",
+        lambda _hass: asyncio.Lock(),
+    )
 
     await unwrap(websocket.websocket_save_settings)(
         object(),
@@ -137,6 +143,11 @@ async def test_restore_swaps_current_and_recovery(
         websocket,
         "async_generate_and_apply_theme",
         apply_theme,
+    )
+    monkeypatch.setattr(
+        websocket,
+        "get_storage_lock",
+        lambda _hass: asyncio.Lock(),
     )
 
     await unwrap(websocket.websocket_restore_last_design)(

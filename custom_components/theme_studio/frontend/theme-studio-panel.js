@@ -3464,7 +3464,7 @@ class ThemeStudioPanel extends HTMLElement {
     const states = this._hass?.states || {};
     const entities = Object.entries(states)
       .filter(([entityId]) =>
-        /^[a-z0-9_]+\.[a-z0-9_]+$/.test(entityId)
+        /^[a-z0-9_]+\.[a-z0-9_-]+$/.test(entityId)
       )
       .map(([entityId, stateObject]) => ({
         entityId,

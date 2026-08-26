@@ -19,6 +19,13 @@ const DEFAULT_ALERT_BATTERY_LOW = 20;
 const EFFECT_CHECK_INTERVAL = 1200;
 const MAX_PIXEL_RATIO = 2;
 
+// Rebuilding the entity->card index walks the full (shadow) DOM tree, so it
+// is cached and only rebuilt on navigation or after this TTL, instead of on
+// every 1.2s check.
+const CARD_INDEX_TTL = 30000;
+
+const ENTITY_ID_PATTERN = /^[a-z0-9_]+\.[a-z0-9_-]+$/;
+
 
 class ThemeStudioEffects {
   constructor() {
@@ -53,6 +60,10 @@ class ThemeStudioEffects {
     this.animationFrame = null;
     this.lastFrameTime = 0;
     this.stars = [];
+
+    this.pollIntervalId = null;
+    this.cardIndex = new Map();
+    this.cardIndexBuiltAt = 0;
 
     this.reduceMotionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -110,6 +121,7 @@ class ThemeStudioEffects {
       "location-changed",
       () => {
         this.stateSnapshot.clear();
+        this._invalidateCardIndex();
         this._readThemeSettings();
       }
     );
@@ -119,13 +131,47 @@ class ThemeStudioEffects {
       () => this._readThemeSettings()
     );
 
-    window.setInterval(
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.hidden) {
+          this._stopPolling();
+          return;
+        }
+
+        this._readThemeSettings();
+        this._checkCardStates();
+        this._startPolling();
+      }
+    );
+
+    this._startPolling();
+  }
+
+  _startPolling() {
+    if (
+      this.pollIntervalId !== null
+      || document.hidden
+    ) {
+      return;
+    }
+
+    this.pollIntervalId = window.setInterval(
       () => {
         this._readThemeSettings();
         this._checkCardStates();
       },
       EFFECT_CHECK_INTERVAL
     );
+  }
+
+  _stopPolling() {
+    if (this.pollIntervalId === null) {
+      return;
+    }
+
+    window.clearInterval(this.pollIntervalId);
+    this.pollIntervalId = null;
   }
 
   _themeElements() {
@@ -184,7 +230,7 @@ class ThemeStudioEffects {
           .split(",")
           .map((entityId) => entityId.trim())
           .filter((entityId) =>
-            /^[a-z0-9_]+\.[a-z0-9_]+$/.test(entityId)
+            ENTITY_ID_PATTERN.test(entityId)
           )
       )
     );
@@ -407,19 +453,70 @@ class ThemeStudioEffects {
   }
 
   _checkCardStates() {
+    // Nothing is configured to react to state changes: skip touching
+    // hass.states entirely instead of scanning it every 1.2s for no reason.
+    if (this.cardEffects.length === 0) {
+      return;
+    }
+
     const hass = this._getHass();
 
     if (!hass?.states) {
       return;
     }
 
-    const nextSnapshot = new Map();
-    const changedEntities = [];
+    if (this.cardEffects.includes("energy-flow")) {
+      this._updateEnergyFlow(hass);
+    } else {
+      this._clearEnergyCards();
+    }
+
+    if (this.cardEffects.includes("climate-aura")) {
+      this._updateClimateAura(hass);
+    } else {
+      this._clearClimateCards();
+    }
+
+    if (this.cardEffects.includes("alert-focus")) {
+      this._updateAlertFocus(hass);
+    } else {
+      this._clearAlertCards();
+    }
+
+    if (!this.cardEffects.includes("status-pulse")) {
+      this.stateSnapshot.clear();
+      return;
+    }
 
     for (
       const [entityId, stateObject]
-      of Object.entries(hass.states)
+      of this._collectChangedPulseEntities(hass)
     ) {
+      this._pulseEntityCards(
+        entityId,
+        stateObject
+      );
+    }
+  }
+
+  _collectChangedPulseEntities(hass) {
+    // Status Pulse is the only effect that needs revision tracking. When it
+    // targets specific entities (the UI requires at least one), only those
+    // are read instead of the full hass.states object, which can hold
+    // thousands of entries on larger installations. An empty list is a
+    // legacy "watch everything" mode kept for backward compatibility.
+    const watchAllStates = this.pulseEntities.length === 0;
+
+    const entries = watchAllStates
+      ? Object.entries(hass.states)
+      : this.pulseEntities
+          .map((entityId) => [entityId, hass.states[entityId]])
+          .filter(([, stateObject]) => Boolean(stateObject));
+
+    const nextSnapshot = new Map();
+    const changedEntities = [];
+
+    for (const [entityId, stateObject] of entries) {
       const revision =
         stateObject.last_updated
         || stateObject.last_changed
@@ -443,44 +540,7 @@ class ThemeStudioEffects {
     }
 
     this.stateSnapshot = nextSnapshot;
-
-    if (this.cardEffects.includes("energy-flow")) {
-      this._updateEnergyFlow(hass);
-    } else {
-      this._clearEnergyCards();
-    }
-
-    if (this.cardEffects.includes("climate-aura")) {
-      this._updateClimateAura(hass);
-    } else {
-      this._clearClimateCards();
-    }
-
-    if (this.cardEffects.includes("alert-focus")) {
-      this._updateAlertFocus(hass);
-    } else {
-      this._clearAlertCards();
-    }
-
-    if (!this.cardEffects.includes("status-pulse")) {
-      return;
-    }
-
-    const pulseEntities = new Set(this.pulseEntities);
-
-    for (const [entityId, stateObject] of changedEntities) {
-      if (
-        pulseEntities.size > 0
-        && !pulseEntities.has(entityId)
-      ) {
-        continue;
-      }
-
-      this._pulseEntityCards(
-        entityId,
-        stateObject
-      );
-    }
+    return changedEntities;
   }
 
   _pulseEntityCards(entityId, stateObject) {
@@ -1144,29 +1204,62 @@ class ThemeStudioEffects {
   }
 
   _findCardsForEntity(entityId) {
-    const cards = new Set();
+    this._ensureCardIndex();
+    return this.cardIndex.get(entityId) || new Set();
+  }
+
+  _invalidateCardIndex() {
+    this.cardIndex.clear();
+    this.cardIndexBuiltAt = 0;
+  }
+
+  _ensureCardIndex() {
+    const now = Date.now();
+
+    if (
+      this.cardIndexBuiltAt !== 0
+      && now - this.cardIndexBuiltAt < CARD_INDEX_TTL
+    ) {
+      return;
+    }
+
+    this._buildCardIndex();
+    this.cardIndexBuiltAt = now;
+  }
+
+  // Walking the full (shadow) DOM tree is the expensive part of card
+  // lookups, so it happens once per rebuild and indexes every entity a card
+  // references, rather than once per configured entity per 1.2s check.
+  _buildCardIndex() {
+    this.cardIndex.clear();
 
     this._visitElements(
       document,
       (element) => {
-        if (
-          !this._elementUsesEntity(
-            element,
-            entityId
-          )
-        ) {
+        const entityIds = this._entityIdsForElement(element);
+
+        if (entityIds.size === 0) {
           return;
         }
 
         const card = this._findOwningCard(element);
 
-        if (card) {
+        if (!card) {
+          return;
+        }
+
+        for (const entityId of entityIds) {
+          let cards = this.cardIndex.get(entityId);
+
+          if (!cards) {
+            cards = new Set();
+            this.cardIndex.set(entityId, cards);
+          }
+
           cards.add(card);
         }
       }
     );
-
-    return cards;
   }
 
   _visitElements(root, callback) {
@@ -1186,9 +1279,11 @@ class ThemeStudioEffects {
     }
   }
 
-  _elementUsesEntity(element, entityId) {
-    if (element.entity === entityId) {
-      return true;
+  _entityIdsForElement(element) {
+    const entityIds = new Set();
+
+    if (typeof element.entity === "string") {
+      entityIds.add(element.entity);
     }
 
     const candidates = [];
@@ -1205,18 +1300,23 @@ class ThemeStudioEffects {
       // Some custom elements expose guarded properties.
     }
 
-    return candidates.some((candidate) =>
-      this._configUsesEntity(
+    for (const candidate of candidates) {
+      this._collectConfigEntityIds(
         candidate,
-        entityId,
-        0
-      )
-    );
+        0,
+        entityIds
+      );
+    }
+
+    return entityIds;
   }
 
-  _configUsesEntity(value, entityId, depth) {
-    if (value === entityId) {
-      return true;
+  _collectConfigEntityIds(value, depth, into) {
+    if (typeof value === "string") {
+      if (ENTITY_ID_PATTERN.test(value)) {
+        into.add(value);
+      }
+      return;
     }
 
     if (
@@ -1224,21 +1324,22 @@ class ThemeStudioEffects {
       || value === undefined
       || depth > 3
     ) {
-      return false;
+      return;
     }
 
     if (Array.isArray(value)) {
-      return value.some((item) =>
-        this._configUsesEntity(
+      for (const item of value) {
+        this._collectConfigEntityIds(
           item,
-          entityId,
-          depth + 1
-        )
-      );
+          depth + 1,
+          into
+        );
+      }
+      return;
     }
 
     if (typeof value !== "object") {
-      return false;
+      return;
     }
 
     const keys = [
@@ -1249,14 +1350,15 @@ class ThemeStudioEffects {
       "card",
     ];
 
-    return keys.some((key) =>
-      key in value
-      && this._configUsesEntity(
-        value[key],
-        entityId,
-        depth + 1
-      )
-    );
+    for (const key of keys) {
+      if (key in value) {
+        this._collectConfigEntityIds(
+          value[key],
+          depth + 1,
+          into
+        );
+      }
+    }
   }
 
   _findOwningCard(element) {

@@ -121,6 +121,24 @@ def test_legacy_single_mode_settings_are_migrated() -> None:
     assert migrated["effects"] == DEFAULT_EFFECT_SETTINGS
 
 
+def test_effect_entities_allow_hyphenated_object_ids() -> None:
+    """Home Assistant object IDs may contain hyphens (e.g. "sensor.temp-2")."""
+
+    settings = default_settings()
+    settings["effects"]["cardEffects"] = ["status-pulse", "energy-flow"]
+    settings["effects"]["pulseEntities"] = ["light.living-room-lamp"]
+    settings["effects"]["energyEntities"] = ["sensor.house-power-meter"]
+
+    migrated = normalize_settings(settings)
+
+    assert migrated["effects"]["pulseEntities"] == [
+        "light.living-room-lamp"
+    ]
+    assert migrated["effects"]["energyEntities"] == [
+        "sensor.house-power-meter"
+    ]
+
+
 def test_legacy_effect_fields_are_migrated_and_deduplicated() -> None:
     """Legacy singular effect fields become safe entity lists."""
 

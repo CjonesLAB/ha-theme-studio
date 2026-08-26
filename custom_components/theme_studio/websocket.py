@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import json
@@ -33,6 +34,8 @@ BACKGROUND_STORAGE_VERSION = 1
 BACKGROUND_STORAGE_KEY = f"{DOMAIN}.backgrounds"
 RECOVERY_STORAGE_VERSION = 1
 RECOVERY_STORAGE_KEY = f"{DOMAIN}.recovery"
+
+DATA_STORAGE_LOCK = "storage_lock"
 
 MAX_PROFILES = 32
 MAX_PROFILE_NAME_LENGTH = 48
@@ -115,6 +118,11 @@ DEFAULT_EFFECT_SETTINGS: dict[str, Any] = {
 }
 
 COLOR_VALIDATOR = vol.Match(r"^#[0-9a-fA-F]{6}$")
+
+# Home Assistant object IDs may contain hyphens (e.g. "sensor.temp-2"),
+# so the pattern allows them in addition to the usual slug characters.
+ENTITY_ID_PATTERN = r"^[a-z0-9_]+\.[a-z0-9_-]+$"
+ENTITY_ID_VALIDATOR = vol.Match(ENTITY_ID_PATTERN)
 
 BACKGROUND_URL_VALIDATOR = vol.Any(
     "",
@@ -205,11 +213,11 @@ EFFECT_SCHEMA = vol.Schema(
             vol.Range(min=0, max=100),
         ),
         vol.Required("pulseEntities"): vol.All(
-            [vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$")],
+            [ENTITY_ID_VALIDATOR],
             vol.Length(max=64),
         ),
         vol.Required("energyEntities"): vol.All(
-            [vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$")],
+            [ENTITY_ID_VALIDATOR],
             vol.Length(max=32),
         ),
         vol.Required("energyWarning"): vol.All(
@@ -221,7 +229,7 @@ EFFECT_SCHEMA = vol.Schema(
             vol.Range(min=1, max=1000000),
         ),
         vol.Required("climateEntities"): vol.All(
-            [vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$")],
+            [ENTITY_ID_VALIDATOR],
             vol.Length(max=32),
         ),
         vol.Required("climateComfortMin"): vol.All(
@@ -237,7 +245,7 @@ EFFECT_SCHEMA = vol.Schema(
             vol.Range(min=-48, max=120),
         ),
         vol.Required("alertEntities"): vol.All(
-            [vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$")],
+            [ENTITY_ID_VALIDATOR],
             vol.Length(max=64),
         ),
         vol.Required("alertBatteryLow"): vol.All(
@@ -312,6 +320,25 @@ def get_recovery_store(
         RECOVERY_STORAGE_VERSION,
         RECOVERY_STORAGE_KEY,
     )
+
+
+def get_storage_lock(hass: HomeAssistant) -> asyncio.Lock:
+    """Return the shared lock guarding Theme Studio storage read-modify-write cycles.
+
+    Settings, profiles and backgrounds are each a load-mutate-save cycle
+    without optimistic concurrency control. Serializing these cycles behind
+    one lock prevents two concurrent admin sessions from silently
+    overwriting each other's changes.
+    """
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    lock = domain_data.get(DATA_STORAGE_LOCK)
+
+    if not isinstance(lock, asyncio.Lock):
+        lock = asyncio.Lock()
+        domain_data[DATA_STORAGE_LOCK] = lock
+
+    return lock
 
 
 def recovery_state_from_settings(
@@ -1451,61 +1478,62 @@ async def websocket_save_settings(
 
     active_profile_id = msg.get("active_profile_id", "")
 
-    if active_profile_id:
-        profiles = await async_load_profiles(hass)
+    async with get_storage_lock(hass):
+        if active_profile_id:
+            profiles = await async_load_profiles(hass)
 
-        if not any(
-            profile["id"] == active_profile_id
-            for profile in profiles
-        ):
-            active_profile_id = ""
+            if not any(
+                profile["id"] == active_profile_id
+                for profile in profiles
+            ):
+                active_profile_id = ""
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
-    previous_theme_studio_active = msg[
-        "previous_theme_studio_active"
-    ]
-    previous_state = recovery_state_from_settings(
-        saved_settings,
-        theme_studio_active=previous_theme_studio_active,
-    )
-    settings_changed = (
-        previous_state["settings"] != settings
-        or previous_state["active_profile_id"] != active_profile_id
-        or not previous_theme_studio_active
-    )
-
-    if settings_changed:
-        await get_recovery_store(hass).async_save(previous_state)
-
-    try:
-        await async_generate_and_apply_theme(
-            hass,
-            connection,
-            msg,
-            settings,
+        store = get_store(hass)
+        saved_settings = await store.async_load()
+        previous_theme_studio_active = msg[
+            "previous_theme_studio_active"
+        ]
+        previous_state = recovery_state_from_settings(
+            saved_settings,
+            theme_studio_active=previous_theme_studio_active,
         )
-    except Exception as error:
-        connection.send_error(
-            msg["id"],
-            "theme_apply_failed",
-            (
-                "Das Theme konnte nicht aktiviert werden: "
-                f"{error}"
-            ),
+        settings_changed = (
+            previous_state["settings"] != settings
+            or previous_state["active_profile_id"] != active_profile_id
+            or not previous_theme_studio_active
         )
-        return
 
-    stored_settings = {
-        **settings,
-        "active_profile_id": active_profile_id,
-        "theme_studio_active": True,
-    }
-    await store.async_save(stored_settings)
+        if settings_changed:
+            await get_recovery_store(hass).async_save(previous_state)
 
-    recovery_available = settings_changed or normalize_recovery_state(
-        await get_recovery_store(hass).async_load()
-    ) is not None
+        try:
+            await async_generate_and_apply_theme(
+                hass,
+                connection,
+                msg,
+                settings,
+            )
+        except Exception as error:
+            connection.send_error(
+                msg["id"],
+                "theme_apply_failed",
+                (
+                    "Das Theme konnte nicht aktiviert werden: "
+                    f"{error}"
+                ),
+            )
+            return
+
+        stored_settings = {
+            **settings,
+            "active_profile_id": active_profile_id,
+            "theme_studio_active": True,
+        }
+        await store.async_save(stored_settings)
+
+        recovery_available = settings_changed or normalize_recovery_state(
+            await get_recovery_store(hass).async_load()
+        ) is not None
 
     connection.send_result(
         msg["id"],
@@ -1541,51 +1569,56 @@ async def websocket_restore_default_theme(
 ) -> None:
     """Restore the backend-preferred Home Assistant themes."""
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
+    async with get_storage_lock(hass):
+        store = get_store(hass)
+        saved_settings = await store.async_load()
 
-    if msg["current_theme_studio_active"]:
-        await get_recovery_store(hass).async_save(
-            recovery_state_from_settings(
-                saved_settings,
-                theme_studio_active=True,
+        if msg["current_theme_studio_active"]:
+            await get_recovery_store(hass).async_save(
+                recovery_state_from_settings(
+                    saved_settings,
+                    theme_studio_active=True,
+                )
             )
-        )
 
-    try:
-        await hass.services.async_call(
-            "frontend",
-            "set_theme",
+        try:
+            await hass.services.async_call(
+                "frontend",
+                "set_theme",
+                {
+                    "name": "default",
+                    "name_dark": "default",
+                },
+                blocking=True,
+                context=connection.context(msg),
+            )
+        except Exception as error:
+            connection.send_error(
+                msg["id"],
+                "theme_restore_failed",
+                (
+                    "Das Home-Assistant-Standarddesign konnte "
+                    f"nicht wiederhergestellt werden: {error}"
+                ),
+            )
+            return
+
+        try:
+            settings = normalize_settings(saved_settings or {})
+        except (vol.Invalid, TypeError, ValueError):
+            settings = default_settings()
+
+        await store.async_save(
             {
-                "name": "default",
-                "name_dark": "default",
-            },
-            blocking=True,
-            context=connection.context(msg),
+                **settings,
+                "active_profile_id": "",
+                "theme_studio_active": False,
+            }
         )
-    except Exception as error:
-        connection.send_error(
-            msg["id"],
-            "theme_restore_failed",
-            (
-                "Das Home-Assistant-Standarddesign konnte "
-                f"nicht wiederhergestellt werden: {error}"
-            ),
-        )
-        return
 
-    try:
-        settings = normalize_settings(saved_settings or {})
-    except (vol.Invalid, TypeError, ValueError):
-        settings = default_settings()
-
-    await store.async_save(
-        {
-            **settings,
-            "active_profile_id": "",
-            "theme_studio_active": False,
-        }
-    )
+        recovery_available = normalize_recovery_state(
+            await get_recovery_store(hass).async_load()
+        ) is not None
 
     connection.send_result(
         msg["id"],
@@ -1593,9 +1626,7 @@ async def websocket_restore_default_theme(
             "success": True,
             "theme": "default",
             "theme_studio_active": False,
-            "recovery_available": normalize_recovery_state(
-                await get_recovery_store(hass).async_load()
-            ) is not None,
+            "recovery_available": recovery_available,
         },
     )
 
@@ -1669,60 +1700,61 @@ async def websocket_restore_last_design(
 ) -> None:
     """Restore the last persistent design and retain the current one."""
 
-    recovery_store = get_recovery_store(hass)
-    recovery = normalize_recovery_state(
-        await recovery_store.async_load()
-    )
-
-    if recovery is None:
-        connection.send_error(
-            msg["id"],
-            "recovery_not_available",
-            "Es ist noch kein vorheriges Design gespeichert.",
+    async with get_storage_lock(hass):
+        recovery_store = get_recovery_store(hass)
+        recovery = normalize_recovery_state(
+            await recovery_store.async_load()
         )
-        return
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
-    current_state = recovery_state_from_settings(
-        saved_settings,
-        theme_studio_active=msg["current_theme_studio_active"],
-    )
+        if recovery is None:
+            connection.send_error(
+                msg["id"],
+                "recovery_not_available",
+                "Es ist noch kein vorheriges Design gespeichert.",
+            )
+            return
 
-    try:
-        if recovery["theme_studio_active"]:
-            await async_generate_and_apply_theme(
-                hass,
-                connection,
-                msg,
-                recovery["settings"],
-            )
-        else:
-            await hass.services.async_call(
-                "frontend",
-                "set_theme",
-                {
-                    "name": "default",
-                    "name_dark": "default",
-                },
-                blocking=True,
-                context=connection.context(msg),
-            )
-    except Exception as error:
-        connection.send_error(
-            msg["id"],
-            "recovery_failed",
-            f"Das vorherige Design konnte nicht aktiviert werden: {error}",
+        store = get_store(hass)
+        saved_settings = await store.async_load()
+        current_state = recovery_state_from_settings(
+            saved_settings,
+            theme_studio_active=msg["current_theme_studio_active"],
         )
-        return
 
-    restored_settings = {
-        **recovery["settings"],
-        "active_profile_id": recovery["active_profile_id"],
-        "theme_studio_active": recovery["theme_studio_active"],
-    }
-    await store.async_save(restored_settings)
-    await recovery_store.async_save(current_state)
+        try:
+            if recovery["theme_studio_active"]:
+                await async_generate_and_apply_theme(
+                    hass,
+                    connection,
+                    msg,
+                    recovery["settings"],
+                )
+            else:
+                await hass.services.async_call(
+                    "frontend",
+                    "set_theme",
+                    {
+                        "name": "default",
+                        "name_dark": "default",
+                    },
+                    blocking=True,
+                    context=connection.context(msg),
+                )
+        except Exception as error:
+            connection.send_error(
+                msg["id"],
+                "recovery_failed",
+                f"Das vorherige Design konnte nicht aktiviert werden: {error}",
+            )
+            return
+
+        restored_settings = {
+            **recovery["settings"],
+            "active_profile_id": recovery["active_profile_id"],
+            "theme_studio_active": recovery["theme_studio_active"],
+        }
+        await store.async_save(restored_settings)
+        await recovery_store.async_save(current_state)
 
     connection.send_result(
         msg["id"],
@@ -1833,57 +1865,58 @@ async def websocket_save_profile(
         )
         return
 
-    profiles = await async_load_profiles(hass)
-    profile_id = msg.get("profile_id")
-    existing_profile = next(
-        (
-            profile
-            for profile in profiles
-            if profile["id"] == profile_id
-        ),
-        None,
-    )
-
-    if profile_id and existing_profile is None:
-        connection.send_error(
-            msg["id"],
-            "profile_not_found",
-            "Das gewählte Profil wurde nicht gefunden.",
-        )
-        return
-
-    if existing_profile is None and len(profiles) >= MAX_PROFILES:
-        connection.send_error(
-            msg["id"],
-            "profile_limit_reached",
+    async with get_storage_lock(hass):
+        profiles = await async_load_profiles(hass)
+        profile_id = msg.get("profile_id")
+        existing_profile = next(
             (
-                "Es können höchstens "
-                f"{MAX_PROFILES} Profile gespeichert werden."
+                profile
+                for profile in profiles
+                if profile["id"] == profile_id
             ),
+            None,
         )
-        return
 
-    now = datetime.now(UTC).isoformat()
+        if profile_id and existing_profile is None:
+            connection.send_error(
+                msg["id"],
+                "profile_not_found",
+                "Das gewählte Profil wurde nicht gefunden.",
+            )
+            return
 
-    if existing_profile is None:
-        saved_profile = {
-            "id": uuid4().hex,
-            "name": name,
-            "created_at": now,
-            "updated_at": now,
-            "settings": settings,
-        }
-        profiles.append(saved_profile)
-    else:
-        existing_profile["name"] = name
-        existing_profile["settings"] = settings
-        existing_profile["updated_at"] = now
-        saved_profile = existing_profile
+        if existing_profile is None and len(profiles) >= MAX_PROFILES:
+            connection.send_error(
+                msg["id"],
+                "profile_limit_reached",
+                (
+                    "Es können höchstens "
+                    f"{MAX_PROFILES} Profile gespeichert werden."
+                ),
+            )
+            return
 
-    profiles.sort(
-        key=lambda profile: profile["name"].casefold()
-    )
-    await async_save_profiles(hass, profiles)
+        now = datetime.now(UTC).isoformat()
+
+        if existing_profile is None:
+            saved_profile = {
+                "id": uuid4().hex,
+                "name": name,
+                "created_at": now,
+                "updated_at": now,
+                "settings": settings,
+            }
+            profiles.append(saved_profile)
+        else:
+            existing_profile["name"] = name
+            existing_profile["settings"] = settings
+            existing_profile["updated_at"] = now
+            saved_profile = existing_profile
+
+        profiles.sort(
+            key=lambda profile: profile["name"].casefold()
+        )
+        await async_save_profiles(hass, profiles)
 
     connection.send_result(
         msg["id"],
@@ -1912,25 +1945,43 @@ async def websocket_delete_profile(
 ) -> None:
     """Delete one saved design profile."""
 
-    profiles = await async_load_profiles(hass)
-    remaining_profiles = [
-        profile
-        for profile in profiles
-        if profile["id"] != msg["profile_id"]
-    ]
+    async with get_storage_lock(hass):
+        profiles = await async_load_profiles(hass)
+        remaining_profiles = [
+            profile
+            for profile in profiles
+            if profile["id"] != msg["profile_id"]
+        ]
 
-    if len(remaining_profiles) == len(profiles):
-        connection.send_error(
-            msg["id"],
-            "profile_not_found",
-            "Das gewählte Profil wurde nicht gefunden.",
+        if len(remaining_profiles) == len(profiles):
+            connection.send_error(
+                msg["id"],
+                "profile_not_found",
+                "Das gewählte Profil wurde nicht gefunden.",
+            )
+            return
+
+        await async_save_profiles(
+            hass,
+            remaining_profiles,
         )
-        return
 
-    await async_save_profiles(
-        hass,
-        remaining_profiles,
-    )
+        # Clear a dangling reference so the UI/recovery never point at a
+        # profile that no longer exists.
+        settings_store = get_store(hass)
+        saved_settings = await settings_store.async_load()
+
+        if (
+            isinstance(saved_settings, dict)
+            and saved_settings.get("active_profile_id") == msg["profile_id"]
+        ):
+            await settings_store.async_save(
+                {
+                    **saved_settings,
+                    "active_profile_id": "",
+                }
+            )
+
     connection.send_result(
         msg["id"],
         {
@@ -2107,11 +2158,28 @@ async def websocket_import_gallery_design(
         "updated_at": now,
         "settings": settings,
     }
-    profiles.append(saved_profile)
-    profiles.sort(
-        key=lambda profile: profile["name"].casefold()
-    )
-    await async_save_profiles(hass, profiles)
+
+    # The gallery download above can take several seconds; only the final
+    # read-modify-write against the profile store needs to be serialized.
+    async with get_storage_lock(hass):
+        profiles = await async_load_profiles(hass)
+
+        if len(profiles) >= MAX_PROFILES:
+            connection.send_error(
+                msg["id"],
+                "profile_limit_reached",
+                (
+                    "Es können höchstens "
+                    f"{MAX_PROFILES} Profile gespeichert werden."
+                ),
+            )
+            return
+
+        profiles.append(saved_profile)
+        profiles.sort(
+            key=lambda profile: profile["name"].casefold()
+        )
+        await async_save_profiles(hass, profiles)
 
     connection.send_result(
         msg["id"],
@@ -2177,37 +2245,38 @@ async def websocket_rename_background(
         )
         return
 
-    backgrounds, _ = await async_load_backgrounds(hass)
-    background = next(
-        (
-            item
-            for item in backgrounds
-            if item["id"] == msg["background_id"]
-        ),
-        None,
-    )
-
-    if background is None:
-        connection.send_error(
-            msg["id"],
-            "background_not_found",
-            "Das Hintergrundbild wurde nicht gefunden.",
+    async with get_storage_lock(hass):
+        backgrounds, _ = await async_load_backgrounds(hass)
+        background = next(
+            (
+                item
+                for item in backgrounds
+                if item["id"] == msg["background_id"]
+            ),
+            None,
         )
-        return
 
-    background["name"] = name
-    backgrounds.sort(
-        key=lambda item: item["name"].casefold()
-    )
-    await async_save_backgrounds(hass, backgrounds)
-    directory = Path(
-        hass.config.path("www", BACKGROUND_DIRECTORY)
-    )
-    results = await hass.async_add_executor_job(
-        background_results,
-        directory,
-        backgrounds,
-    )
+        if background is None:
+            connection.send_error(
+                msg["id"],
+                "background_not_found",
+                "Das Hintergrundbild wurde nicht gefunden.",
+            )
+            return
+
+        background["name"] = name
+        backgrounds.sort(
+            key=lambda item: item["name"].casefold()
+        )
+        await async_save_backgrounds(hass, backgrounds)
+        directory = Path(
+            hass.config.path("www", BACKGROUND_DIRECTORY)
+        )
+        results = await hass.async_add_executor_job(
+            background_results,
+            directory,
+            backgrounds,
+        )
 
     connection.send_result(
         msg["id"],
@@ -2235,78 +2304,79 @@ async def websocket_delete_background(
 ) -> None:
     """Delete an unused background image and its metadata."""
 
-    backgrounds, _ = await async_load_backgrounds(hass)
-    background = next(
-        (
+    async with get_storage_lock(hass):
+        backgrounds, _ = await async_load_backgrounds(hass)
+        background = next(
+            (
+                item
+                for item in backgrounds
+                if item["id"] == msg["background_id"]
+            ),
+            None,
+        )
+
+        if background is None:
+            connection.send_error(
+                msg["id"],
+                "background_not_found",
+                "Das Hintergrundbild wurde nicht gefunden.",
+            )
+            return
+
+        settings_store = get_store(hass)
+        raw_settings = await settings_store.async_load()
+
+        try:
+            settings = normalize_settings(raw_settings or {})
+        except (vol.Invalid, TypeError, ValueError):
+            settings = default_settings()
+
+        profiles = await async_load_profiles(hass)
+
+        if background_is_referenced(
+            background["filename"],
+            settings,
+            profiles,
+        ):
+            connection.send_error(
+                msg["id"],
+                "background_in_use",
+                (
+                    "Das Bild wird vom aktiven Design oder von einem "
+                    "gespeicherten Profil verwendet und kann nicht "
+                    "gelöscht werden."
+                ),
+            )
+            return
+
+        directory = Path(
+            hass.config.path("www", BACKGROUND_DIRECTORY)
+        )
+
+        try:
+            await hass.async_add_executor_job(
+                delete_background_file,
+                directory / background["filename"],
+            )
+        except OSError as error:
+            connection.send_error(
+                msg["id"],
+                "background_delete_failed",
+                f"Das Bild konnte nicht gelöscht werden: {error}",
+            )
+            return
+
+        remaining = [
             item
             for item in backgrounds
-            if item["id"] == msg["background_id"]
-        ),
-        None,
-    )
-
-    if background is None:
-        connection.send_error(
-            msg["id"],
-            "background_not_found",
-            "Das Hintergrundbild wurde nicht gefunden.",
+            if item["id"] != background["id"]
+        ]
+        await async_save_backgrounds(hass, remaining)
+        results = await hass.async_add_executor_job(
+            background_results,
+            directory,
+            remaining,
         )
-        return
-
-    settings_store = get_store(hass)
-    raw_settings = await settings_store.async_load()
-
-    try:
-        settings = normalize_settings(raw_settings or {})
-    except (vol.Invalid, TypeError, ValueError):
-        settings = default_settings()
-
-    profiles = await async_load_profiles(hass)
-
-    if background_is_referenced(
-        background["filename"],
-        settings,
-        profiles,
-    ):
-        connection.send_error(
-            msg["id"],
-            "background_in_use",
-            (
-                "Das Bild wird vom aktiven Design oder von einem "
-                "gespeicherten Profil verwendet und kann nicht "
-                "gelöscht werden."
-            ),
-        )
-        return
-
-    directory = Path(
-        hass.config.path("www", BACKGROUND_DIRECTORY)
-    )
-
-    try:
-        await hass.async_add_executor_job(
-            delete_background_file,
-            directory / background["filename"],
-        )
-    except OSError as error:
-        connection.send_error(
-            msg["id"],
-            "background_delete_failed",
-            f"Das Bild konnte nicht gelöscht werden: {error}",
-        )
-        return
-
-    remaining = [
-        item
-        for item in backgrounds
-        if item["id"] != background["id"]
-    ]
-    await async_save_backgrounds(hass, remaining)
-    results = await hass.async_add_executor_job(
-        background_results,
-        directory,
-        remaining,
-    )
 
     connection.send_result(
         msg["id"],
@@ -2343,21 +2413,6 @@ async def websocket_upload_background(
 
     mime_type = msg["mime_type"]
     extension = MIME_EXTENSIONS[mime_type]
-    backgrounds, _ = await async_load_backgrounds(hass)
-
-    if len(backgrounds) >= MAX_BACKGROUNDS:
-        connection.send_error(
-            msg["id"],
-            "background_limit_reached",
-            (
-                "Es können höchstens "
-                f"{MAX_BACKGROUNDS} Hintergrundbilder gespeichert werden."
-            ),
-        )
-        return
-
-    background_id = uuid4().hex
-    filename = f"image_{background_id}.{extension}"
 
     try:
         name = normalize_background_name(
@@ -2371,62 +2426,79 @@ async def websocket_upload_background(
         )
         return
 
-    target_path = Path(
-        hass.config.path(
-            "www",
-            BACKGROUND_DIRECTORY,
-            filename,
-        )
-    )
+    async with get_storage_lock(hass):
+        backgrounds, _ = await async_load_backgrounds(hass)
 
-    try:
-        await hass.async_add_executor_job(
-            decode_and_write_background,
-            target_path,
-            msg["content"],
-            mime_type,
-        )
-    except ValueError as error:
-        connection.send_error(
-            msg["id"],
-            "invalid_background",
-            str(error),
-        )
-        return
-    except OSError as error:
-        connection.send_error(
-            msg["id"],
-            "background_write_failed",
-            (
-                "Das Hintergrundbild konnte "
-                f"nicht gespeichert werden: {error}"
-            ),
-        )
-        return
+        if len(backgrounds) >= MAX_BACKGROUNDS:
+            connection.send_error(
+                msg["id"],
+                "background_limit_reached",
+                (
+                    "Es können höchstens "
+                    f"{MAX_BACKGROUNDS} Hintergrundbilder gespeichert werden."
+                ),
+            )
+            return
 
-    version = time.time_ns()
+        background_id = uuid4().hex
+        filename = f"image_{background_id}.{extension}"
 
-    image_url = (
-        f"/local/{BACKGROUND_DIRECTORY}/"
-        f"{filename}?v={version}"
-    )
+        target_path = Path(
+            hass.config.path(
+                "www",
+                BACKGROUND_DIRECTORY,
+                filename,
+            )
+        )
 
-    background = {
-        "id": background_id,
-        "name": name,
-        "filename": filename,
-        "created_at": datetime.now(UTC).isoformat(),
-    }
-    backgrounds.append(background)
-    backgrounds.sort(
-        key=lambda item: item["name"].casefold()
-    )
-    await async_save_backgrounds(hass, backgrounds)
-    results = await hass.async_add_executor_job(
-        background_results,
-        target_path.parent,
-        backgrounds,
-    )
+        try:
+            await hass.async_add_executor_job(
+                decode_and_write_background,
+                target_path,
+                msg["content"],
+                mime_type,
+            )
+        except ValueError as error:
+            connection.send_error(
+                msg["id"],
+                "invalid_background",
+                str(error),
+            )
+            return
+        except OSError as error:
+            connection.send_error(
+                msg["id"],
+                "background_write_failed",
+                (
+                    "Das Hintergrundbild konnte "
+                    f"nicht gespeichert werden: {error}"
+                ),
+            )
+            return
+
+        version = time.time_ns()
+
+        image_url = (
+            f"/local/{BACKGROUND_DIRECTORY}/"
+            f"{filename}?v={version}"
+        )
+
+        background = {
+            "id": background_id,
+            "name": name,
+            "filename": filename,
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        backgrounds.append(background)
+        backgrounds.sort(
+            key=lambda item: item["name"].casefold()
+        )
+        await async_save_backgrounds(hass, backgrounds)
+        results = await hass.async_add_executor_job(
+            background_results,
+            target_path.parent,
+            backgrounds,
+        )
 
     connection.send_result(
         msg["id"],
