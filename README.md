@@ -52,7 +52,7 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 
 ### Theme Studio with Community Gallery and dashboard preview
 
-![Theme Studio 0.4.7 with Community Gallery, design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v047.png)
+![Theme Studio 0.5.2 with Community Gallery, design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v052.png)
 
 ### Fine-tuning
 
