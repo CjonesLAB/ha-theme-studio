@@ -132,7 +132,7 @@ def _integer(
 
 
 def _preview_mode(value: Any, light: bool) -> dict[str, Any]:
-    """Return one validated light or dark gallery preview mode."""
+    """Return a preview mode using the same bounds as imported profiles."""
 
     raw = value if isinstance(value, dict) else {}
     defaults = {
@@ -158,10 +158,10 @@ def _preview_mode(value: Any, light: bool) -> dict[str, Any]:
         key: _color(raw.get(key), fallback)
         for key, fallback in defaults.items()
     } | {
-        "opacity": _integer(raw.get("opacity"), 20, 100, 96 if light else 92),
+        "opacity": _integer(raw.get("opacity"), 30, 100, 96 if light else 92),
         "border_width": _integer(raw.get("border_width"), 0, 6, 1 if light else 0),
         "shadow": _integer(raw.get("shadow"), 0, 50, 16 if light else 28),
-        "radius": _integer(raw.get("radius"), 0, 40, 18),
+        "radius": _integer(raw.get("radius"), 0, 36, 18),
         "darkening": _integer(raw.get("darkening"), 0, 80, 10 if light else 30),
         "background_type": background_type,
     }
@@ -268,14 +268,14 @@ def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
             ),
             "opacity": _integer(
                 preview.get("opacity"),
-                20,
+                30,
                 100,
                 92,
             ),
             "radius": _integer(
                 preview.get("radius"),
                 0,
-                40,
+                36,
                 18,
             ),
             "border_width": _integer(

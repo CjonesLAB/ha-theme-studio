@@ -20,6 +20,7 @@ PANEL_ELEMENT = "theme-studio-panel"
 STATIC_URL = "/theme_studio_files"
 
 DATA_WEBSOCKET_REGISTERED = "websocket_registered"
+DATA_STATIC_PATH_REGISTERED = "static_path_registered"
 
 
 async def async_setup_entry(
@@ -30,17 +31,19 @@ async def async_setup_entry(
 
     hass.data.setdefault(DOMAIN, {})
 
-    frontend_path = Path(__file__).parent / "frontend"
+    if not hass.data[DOMAIN].get(DATA_STATIC_PATH_REGISTERED):
+        frontend_path = Path(__file__).parent / "frontend"
 
-    await hass.http.async_register_static_paths(
-        [
-            StaticPathConfig(
-                STATIC_URL,
-                str(frontend_path),
-                cache_headers=False,
-            )
-        ]
-    )
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    STATIC_URL,
+                    str(frontend_path),
+                    cache_headers=True,
+                )
+            ]
+        )
+        hass.data[DOMAIN][DATA_STATIC_PATH_REGISTERED] = True
 
     if PANEL_URL not in hass.data.get("frontend_panels", {}):
         await panel_custom.async_register_panel(

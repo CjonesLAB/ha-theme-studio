@@ -80,6 +80,35 @@ def test_gallery_rejects_invalid_list_items(item: Any) -> None:
     assert gallery._normalize_gallery_item(item) is None
 
 
+def test_gallery_preview_uses_profile_bounds() -> None:
+    """Preview values match the limits applied during profile import."""
+
+    normalized = gallery._normalize_gallery_item(
+        {
+            "id": PUBLIC_ID,
+            "title": "Grenzwerte",
+            "preview": {
+                "opacity": 1,
+                "radius": 999,
+                "modes": {
+                    "light": {"opacity": 1, "radius": 999},
+                    "dark": {"opacity": 1, "radius": 999},
+                },
+            },
+        }
+    )
+
+    assert normalized is not None
+
+    for values in (
+        normalized["preview"],
+        normalized["preview"]["modes"]["light"],
+        normalized["preview"]["modes"]["dark"],
+    ):
+        assert 30 <= values["opacity"] <= 100
+        assert 0 <= values["radius"] <= 36
+
+
 async def test_gallery_list_is_validated_and_cached(monkeypatch: Any) -> None:
     """Only valid designs are cached and repeated requests avoid the network."""
 

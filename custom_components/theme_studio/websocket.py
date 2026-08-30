@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import json
 import time
 from datetime import UTC, datetime
+from functools import wraps
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -33,6 +35,7 @@ BACKGROUND_STORAGE_VERSION = 1
 BACKGROUND_STORAGE_KEY = f"{DOMAIN}.backgrounds"
 RECOVERY_STORAGE_VERSION = 1
 RECOVERY_STORAGE_KEY = f"{DOMAIN}.recovery"
+DATA_STORAGE_LOCK = "storage_lock"
 
 MAX_PROFILES = 32
 MAX_PROFILE_NAME_LENGTH = 48
@@ -312,6 +315,30 @@ def get_recovery_store(
         RECOVERY_STORAGE_VERSION,
         RECOVERY_STORAGE_KEY,
     )
+
+
+def get_storage_lock(hass: HomeAssistant) -> asyncio.Lock:
+    """Return the shared lock for storage read-modify-write operations."""
+
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    lock = domain_data.get(DATA_STORAGE_LOCK)
+
+    if not isinstance(lock, asyncio.Lock):
+        lock = asyncio.Lock()
+        domain_data[DATA_STORAGE_LOCK] = lock
+
+    return lock
+
+
+def storage_locked(handler):
+    """Serialize a mutating WebSocket handler with other storage writes."""
+
+    @wraps(handler)
+    async def locked_handler(hass, connection, msg):
+        async with get_storage_lock(hass):
+            await handler(hass, connection, msg)
+
+    return locked_handler
 
 
 def recovery_state_from_settings(
@@ -1430,6 +1457,7 @@ async def websocket_get_settings(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_save_settings(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1534,6 +1562,7 @@ async def websocket_save_settings(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_restore_default_theme(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1662,6 +1691,7 @@ async def websocket_get_info(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_restore_last_design(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1815,6 +1845,7 @@ async def websocket_preview_profile_import(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_save_profile(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1905,6 +1936,7 @@ async def websocket_save_profile(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_delete_profile(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1931,6 +1963,21 @@ async def websocket_delete_profile(
         hass,
         remaining_profiles,
     )
+
+    settings_store = get_store(hass)
+    saved_settings = await settings_store.async_load()
+
+    if (
+        isinstance(saved_settings, dict)
+        and saved_settings.get("active_profile_id") == msg["profile_id"]
+    ):
+        await settings_store.async_save(
+            {
+                **saved_settings,
+                "active_profile_id": "",
+            }
+        )
+
     connection.send_result(
         msg["id"],
         {
@@ -2040,6 +2087,41 @@ def sanitize_gallery_settings(
     return sanitized
 
 
+async def async_store_gallery_profile(
+    hass: HomeAssistant,
+    requested_name: Any,
+    fallback_name: Any,
+    settings: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+    """Store an imported gallery profile without losing concurrent writes."""
+
+    async with get_storage_lock(hass):
+        profiles = await async_load_profiles(hass)
+
+        if len(profiles) >= MAX_PROFILES:
+            return None
+
+        now = datetime.now(UTC).isoformat()
+        saved_profile = {
+            "id": uuid4().hex,
+            "name": gallery_profile_name(
+                requested_name,
+                fallback_name,
+                profiles,
+            ),
+            "created_at": now,
+            "updated_at": now,
+            "settings": settings,
+        }
+        profiles.append(saved_profile)
+        profiles.sort(
+            key=lambda profile: profile["name"].casefold()
+        )
+        await async_save_profiles(hass, profiles)
+
+    return saved_profile, profiles
+
+
 @websocket_api.websocket_command(
     {
         vol.Required(
@@ -2058,19 +2140,6 @@ async def websocket_import_gallery_design(
 ) -> None:
     """Import one approved gallery design as a local profile."""
 
-    profiles = await async_load_profiles(hass)
-
-    if len(profiles) >= MAX_PROFILES:
-        connection.send_error(
-            msg["id"],
-            "profile_limit_reached",
-            (
-                "Es können höchstens "
-                f"{MAX_PROFILES} Profile gespeichert werden."
-            ),
-        )
-        return
-
     try:
         downloaded = await async_download_gallery_profile(
             hass,
@@ -2078,11 +2147,6 @@ async def websocket_import_gallery_design(
         )
         settings = normalize_settings(
             sanitize_gallery_settings(downloaded["settings"])
-        )
-        name = gallery_profile_name(
-            msg.get("name"),
-            downloaded["name"],
-            profiles,
         )
     except GalleryError as error:
         connection.send_error(
@@ -2099,19 +2163,25 @@ async def websocket_import_gallery_design(
         )
         return
 
-    now = datetime.now(UTC).isoformat()
-    saved_profile = {
-        "id": uuid4().hex,
-        "name": name,
-        "created_at": now,
-        "updated_at": now,
-        "settings": settings,
-    }
-    profiles.append(saved_profile)
-    profiles.sort(
-        key=lambda profile: profile["name"].casefold()
+    stored = await async_store_gallery_profile(
+        hass,
+        msg.get("name"),
+        downloaded["name"],
+        settings,
     )
-    await async_save_profiles(hass, profiles)
+
+    if stored is None:
+        connection.send_error(
+            msg["id"],
+            "profile_limit_reached",
+            (
+                "Es können höchstens "
+                f"{MAX_PROFILES} Profile gespeichert werden."
+            ),
+        )
+        return
+
+    saved_profile, profiles = stored
 
     connection.send_result(
         msg["id"],
@@ -2160,6 +2230,7 @@ async def websocket_get_backgrounds(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_rename_background(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -2228,6 +2299,7 @@ async def websocket_rename_background(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_delete_background(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -2334,6 +2406,7 @@ async def websocket_delete_background(
 )
 @websocket_api.require_admin
 @websocket_api.async_response
+@storage_locked
 async def websocket_upload_background(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
