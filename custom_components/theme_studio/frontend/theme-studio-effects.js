@@ -18,6 +18,7 @@ const DEFAULT_ALERT_BATTERY_LOW = 20;
 
 const EFFECT_CHECK_INTERVAL = 1200;
 const MAX_PIXEL_RATIO = 2;
+const CARD_INDEX_TTL = 30000;
 
 
 class ThemeStudioEffects {
@@ -53,6 +54,9 @@ class ThemeStudioEffects {
     this.animationFrame = null;
     this.lastFrameTime = 0;
     this.stars = [];
+    this.pollIntervalId = null;
+    this.cardIndex = new Map();
+    this.cardIndexBuiltAt = 0;
 
     this.reduceMotionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -110,6 +114,7 @@ class ThemeStudioEffects {
       "location-changed",
       () => {
         this.stateSnapshot.clear();
+        this._invalidateCardIndex();
         this._readThemeSettings();
       }
     );
@@ -119,13 +124,47 @@ class ThemeStudioEffects {
       () => this._readThemeSettings()
     );
 
-    window.setInterval(
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.hidden) {
+          this._stopPolling();
+          return;
+        }
+
+        this._readThemeSettings();
+        this._checkCardStates();
+        this._startPolling();
+      }
+    );
+
+    this._startPolling();
+  }
+
+  _startPolling() {
+    if (
+      this.pollIntervalId !== null
+      || document.hidden
+    ) {
+      return;
+    }
+
+    this.pollIntervalId = window.setInterval(
       () => {
         this._readThemeSettings();
         this._checkCardStates();
       },
       EFFECT_CHECK_INTERVAL
     );
+  }
+
+  _stopPolling() {
+    if (this.pollIntervalId === null) {
+      return;
+    }
+
+    window.clearInterval(this.pollIntervalId);
+    this.pollIntervalId = null;
   }
 
   _themeElements() {
@@ -407,42 +446,16 @@ class ThemeStudioEffects {
   }
 
   _checkCardStates() {
+    if (this.cardEffects.length === 0) {
+      this.stateSnapshot.clear();
+      return;
+    }
+
     const hass = this._getHass();
 
     if (!hass?.states) {
       return;
     }
-
-    const nextSnapshot = new Map();
-    const changedEntities = [];
-
-    for (
-      const [entityId, stateObject]
-      of Object.entries(hass.states)
-    ) {
-      const revision =
-        stateObject.last_updated
-        || stateObject.last_changed
-        || stateObject.state;
-
-      nextSnapshot.set(entityId, revision);
-
-      const previousRevision =
-        this.stateSnapshot.get(entityId);
-
-      if (
-        this.stateSnapshot.size > 0
-        && previousRevision !== undefined
-        && previousRevision !== revision
-      ) {
-        changedEntities.push([
-          entityId,
-          stateObject,
-        ]);
-      }
-    }
-
-    this.stateSnapshot = nextSnapshot;
 
     if (this.cardEffects.includes("energy-flow")) {
       this._updateEnergyFlow(hass);
@@ -463,24 +476,51 @@ class ThemeStudioEffects {
     }
 
     if (!this.cardEffects.includes("status-pulse")) {
+      this.stateSnapshot.clear();
       return;
     }
 
-    const pulseEntities = new Set(this.pulseEntities);
-
-    for (const [entityId, stateObject] of changedEntities) {
-      if (
-        pulseEntities.size > 0
-        && !pulseEntities.has(entityId)
-      ) {
-        continue;
-      }
-
+    for (
+      const [entityId, stateObject]
+      of this._collectChangedPulseEntities(hass)
+    ) {
       this._pulseEntityCards(
         entityId,
         stateObject
       );
     }
+  }
+
+  _collectChangedPulseEntities(hass) {
+    const entries = this.pulseEntities.length === 0
+      ? Object.entries(hass.states)
+      : this.pulseEntities
+          .map((entityId) => [entityId, hass.states[entityId]])
+          .filter(([, stateObject]) => Boolean(stateObject));
+    const nextSnapshot = new Map();
+    const changedEntities = [];
+
+    for (const [entityId, stateObject] of entries) {
+      const revision =
+        stateObject.last_updated
+        || stateObject.last_changed
+        || stateObject.state;
+
+      nextSnapshot.set(entityId, revision);
+
+      const previousRevision = this.stateSnapshot.get(entityId);
+
+      if (
+        this.stateSnapshot.size > 0
+        && previousRevision !== undefined
+        && previousRevision !== revision
+      ) {
+        changedEntities.push([entityId, stateObject]);
+      }
+    }
+
+    this.stateSnapshot = nextSnapshot;
+    return changedEntities;
   }
 
   _pulseEntityCards(entityId, stateObject) {
@@ -1144,29 +1184,59 @@ class ThemeStudioEffects {
   }
 
   _findCardsForEntity(entityId) {
-    const cards = new Set();
+    this._ensureCardIndex();
+    return this.cardIndex.get(entityId) || new Set();
+  }
+
+  _invalidateCardIndex() {
+    this.cardIndex.clear();
+    this.cardIndexBuiltAt = 0;
+  }
+
+  _ensureCardIndex() {
+    const now = Date.now();
+
+    if (
+      this.cardIndexBuiltAt !== 0
+      && now - this.cardIndexBuiltAt < CARD_INDEX_TTL
+    ) {
+      return;
+    }
+
+    this._buildCardIndex();
+    this.cardIndexBuiltAt = now;
+  }
+
+  _buildCardIndex() {
+    this.cardIndex.clear();
 
     this._visitElements(
       document,
       (element) => {
-        if (
-          !this._elementUsesEntity(
-            element,
-            entityId
-          )
-        ) {
+        const entityIds = this._entityIdsForElement(element);
+
+        if (entityIds.size === 0) {
           return;
         }
 
         const card = this._findOwningCard(element);
 
-        if (card) {
+        if (!card) {
+          return;
+        }
+
+        for (const entityId of entityIds) {
+          let cards = this.cardIndex.get(entityId);
+
+          if (!cards) {
+            cards = new Set();
+            this.cardIndex.set(entityId, cards);
+          }
+
           cards.add(card);
         }
       }
     );
-
-    return cards;
   }
 
   _visitElements(root, callback) {
@@ -1186,9 +1256,14 @@ class ThemeStudioEffects {
     }
   }
 
-  _elementUsesEntity(element, entityId) {
-    if (element.entity === entityId) {
-      return true;
+  _entityIdsForElement(element) {
+    const entityIds = new Set();
+
+    if (
+      typeof element.entity === "string"
+      && /^[a-z0-9_]+\.[a-z0-9_]+$/.test(element.entity)
+    ) {
+      entityIds.add(element.entity);
     }
 
     const candidates = [];
@@ -1205,18 +1280,23 @@ class ThemeStudioEffects {
       // Some custom elements expose guarded properties.
     }
 
-    return candidates.some((candidate) =>
-      this._configUsesEntity(
+    for (const candidate of candidates) {
+      this._collectConfigEntityIds(
         candidate,
-        entityId,
-        0
-      )
-    );
+        0,
+        entityIds
+      );
+    }
+
+    return entityIds;
   }
 
-  _configUsesEntity(value, entityId, depth) {
-    if (value === entityId) {
-      return true;
+  _collectConfigEntityIds(value, depth, into) {
+    if (typeof value === "string") {
+      if (/^[a-z0-9_]+\.[a-z0-9_]+$/.test(value)) {
+        into.add(value);
+      }
+      return;
     }
 
     if (
@@ -1224,21 +1304,22 @@ class ThemeStudioEffects {
       || value === undefined
       || depth > 3
     ) {
-      return false;
+      return;
     }
 
     if (Array.isArray(value)) {
-      return value.some((item) =>
-        this._configUsesEntity(
+      for (const item of value) {
+        this._collectConfigEntityIds(
           item,
-          entityId,
-          depth + 1
-        )
-      );
+          depth + 1,
+          into
+        );
+      }
+      return;
     }
 
     if (typeof value !== "object") {
-      return false;
+      return;
     }
 
     const keys = [
@@ -1249,14 +1330,15 @@ class ThemeStudioEffects {
       "card",
     ];
 
-    return keys.some((key) =>
-      key in value
-      && this._configUsesEntity(
-        value[key],
-        entityId,
-        depth + 1
-      )
-    );
+    for (const key of keys) {
+      if (key in value) {
+        this._collectConfigEntityIds(
+          value[key],
+          depth + 1,
+          into
+        );
+      }
+    }
   }
 
   _findOwningCard(element) {
