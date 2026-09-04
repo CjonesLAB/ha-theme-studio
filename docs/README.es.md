@@ -189,6 +189,10 @@ La descarga de diagnóstico disponible en Home Assistant no contiene deliberadam
 
 Informa de errores y sugerencias en el [seguimiento de incidencias de GitHub](https://github.com/CjonesLAB/ha-theme-studio/issues). Incluye, cuando sea posible, las versiones de Home Assistant y Theme Studio, la plataforma y los mensajes de registro relevantes.
 
+## Transparencia del desarrollo
+
+Partes del desarrollo, la revisión, las pruebas y la documentación se realizaron con la ayuda de OpenAI Codex. Los commits creados con esta ayuda incluyen la indicación `Assisted-by: OpenAI Codex`. Esta indicación no representa una cuenta colaboradora de GitHub ni concede acceso al repositorio.
+
 ## Licencia
 
 Theme Studio se publica bajo la [licencia MIT](../LICENSE).
