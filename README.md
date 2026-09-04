@@ -206,6 +206,10 @@ Report bugs and improvement suggestions through the [GitHub issue tracker](https
 
 Whenever possible, include your Home Assistant version, Theme Studio version, platform, and relevant log messages.
 
+## Development transparency
+
+Parts of the development, review, testing, and documentation were assisted by OpenAI Codex. Commits created with this assistance use the trailer `Assisted-by: OpenAI Codex`. This notice does not represent a GitHub collaborator account or grant repository access.
+
 ## License
 
 Theme Studio is released under the [MIT License](LICENSE).
