@@ -4,9 +4,16 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Entwicklungsversion: **0.5.2**
+> Aktuelle Entwicklungsversion: **0.5.3**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
+
+## Änderungen in 0.5.3
+
+- Die HACS-Prüfung umfasst jetzt auch das Branding ohne übersprungene Prüfungen.
+- Drei Regressionstests prüfen die mitgelieferten Icons und die Prüfkonfiguration.
+- Aktualisierte Screenshots sind in allen vier README-Sprachen im Release enthalten. Das Hauptbild zeigt Version 0.5.2; die Oberfläche bleibt in 0.5.3 unverändert.
+- Gespeicherte Designs und das Theme-Verhalten bleiben unverändert. Die Aufnahme in den HACS-Standardkatalog ist noch nicht genehmigt.
 
 ## Funktionen
 
