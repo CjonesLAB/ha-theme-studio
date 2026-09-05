@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import re
 import time
 from typing import Any
@@ -128,6 +129,9 @@ def _integer(
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return fallback
 
+    if isinstance(value, float) and not math.isfinite(value):
+        return fallback
+
     return min(maximum, max(minimum, round(value)))
 
 
@@ -151,7 +155,7 @@ def _preview_mode(value: Any, light: bool) -> dict[str, Any]:
     }
     background_type = raw.get("background_type")
 
-    if background_type not in {"color", "waves", "aurora", "image"}:
+    if not isinstance(background_type, str) or background_type not in {"color", "waves", "aurora", "image"}:
         background_type = "color"
 
     return {
@@ -172,7 +176,7 @@ def _preview_effects(value: Any) -> dict[str, Any]:
 
     raw = value if isinstance(value, dict) else {}
     background = raw.get("background")
-    if background not in {"none", "space-command"}:
+    if not isinstance(background, str) or background not in {"none", "space-command"}:
         background = "none"
 
     allowed = {
@@ -186,7 +190,7 @@ def _preview_effects(value: Any) -> dict[str, Any]:
 
     if isinstance(raw_card_effects, list):
         for effect in raw_card_effects:
-            if effect in allowed and effect not in card_effects:
+            if isinstance(effect, str) and effect in allowed and effect not in card_effects:
                 card_effects.append(effect)
 
     return {

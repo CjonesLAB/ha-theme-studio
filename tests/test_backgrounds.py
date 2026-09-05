@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from inspect import unwrap
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
 from custom_components.theme_studio.websocket import (
     background_is_referenced,
@@ -11,6 +14,27 @@ from custom_components.theme_studio.websocket import (
     normalize_saved_backgrounds,
     sync_background_library,
 )
+from custom_components.theme_studio import websocket
+
+
+async def test_delete_protects_recovery_background(monkeypatch) -> None:
+    """An image referenced only by recovery must not be deleted."""
+    filename = "image_" + "a" * 32 + ".png"
+    recovery_settings = default_settings()
+    recovery_settings["dark"]["backgroundImage"] = f"/local/theme_studio/{filename}?v=123"
+    recovery_settings["dark"]["background"] = "image"
+    monkeypatch.setattr(websocket, "async_load_backgrounds", AsyncMock(return_value=([
+        {"id": "a" * 32, "filename": filename}], [])))
+    monkeypatch.setattr(websocket, "get_store", lambda hass: SimpleNamespace(async_load=AsyncMock(return_value=default_settings())))
+    monkeypatch.setattr(websocket, "get_recovery_store", lambda hass: SimpleNamespace(async_load=AsyncMock(return_value={"settings": recovery_settings})))
+    monkeypatch.setattr(websocket, "async_load_profiles", AsyncMock(return_value=[]))
+    delete = Mock()
+    monkeypatch.setattr(websocket, "delete_background_file", delete)
+    connection = SimpleNamespace(send_error=Mock(), send_result=Mock())
+    await unwrap(websocket.websocket_delete_background)(object(), connection, {"id": 1, "background_id": "a" * 32})
+    assert connection.send_error.call_args.args[1] == "background_in_use"
+    delete.assert_not_called()
+    connection.send_result.assert_not_called()
 
 
 def test_saved_backgrounds_ignore_invalid_and_duplicate_records() -> None:
