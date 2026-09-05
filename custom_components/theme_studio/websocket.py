@@ -2335,17 +2335,24 @@ async def websocket_delete_background(
 
     profiles = await async_load_profiles(hass)
 
+    recovery = normalize_recovery_state(
+        await get_recovery_store(hass).async_load()
+    )
+    protected_profiles = list(profiles)
+    if recovery is not None:
+        protected_profiles.append({"settings": recovery["settings"]})
+
     if background_is_referenced(
         background["filename"],
         settings,
-        profiles,
+        protected_profiles,
     ):
         connection.send_error(
             msg["id"],
             "background_in_use",
             (
-                "Das Bild wird vom aktiven Design oder von einem "
-                "gespeicherten Profil verwendet und kann nicht "
+                "Das Bild wird vom aktiven Design, einem gespeicherten "
+                "Profil oder dem Wiederherstellungspunkt verwendet und kann nicht "
                 "gelöscht werden."
             ),
         )

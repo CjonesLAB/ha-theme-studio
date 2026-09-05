@@ -14,6 +14,25 @@ from custom_components.theme_studio import gallery
 PUBLIC_ID = "12345678-1234-4123-8123-123456789abc"
 
 
+async def test_malformed_preview_does_not_break_gallery(monkeypatch: Any) -> None:
+    """Invalid preview types fall back while other designs remain visible."""
+    malformed = {
+        "id": PUBLIC_ID, "title": "Malformed preview", "downloads": float("inf"),
+        "preview": {"modes": {"light": {"background_type": [], "opacity": float("nan")}},
+                    "effects": {"background": {}, "card_effects": [{}, [], "energy-flow"]}},
+    }
+    monkeypatch.setattr(gallery, "_async_get_json", AsyncMock(return_value={
+        "success": True, "api_version": 1,
+        "designs": [malformed, {"id": PUBLIC_ID, "title": "Valid design"}],
+    }))
+    results = await gallery.async_get_gallery_designs(SimpleNamespace(data={}))
+    assert len(results) == 2
+    assert results[0]["downloads"] == 0
+    assert results[0]["preview"]["modes"]["light"]["background_type"] == "color"
+    assert results[0]["preview"]["modes"]["light"]["opacity"] == 96
+    assert results[0]["preview"]["effects"]["card_effects"] == ["energy-flow"]
+
+
 def test_gallery_item_validates_preview_and_effects() -> None:
     """Untrusted preview data is bounded before reaching the frontend."""
 

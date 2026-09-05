@@ -1,7 +1,7 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.5.3";
+} from "./theme-studio-locales.js?v=0.5.4";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -6122,24 +6122,30 @@ class ThemeStudioPanel extends HTMLElement {
     button.disabled = true;
     button.textContent = "Wird aktiviert …";
 
+    const submittedSettings = this._cloneSettings(this.settings);
+    const submittedProfileId = this.activeProfileId;
     try {
       const result =
         await this._hass.callWS({
           type: "theme_studio/save_settings",
-          settings: this.settings,
+          settings: submittedSettings,
           previous_theme_studio_active: this.themeStudioActive,
           ...(this._currentProfile()
             ? { active_profile_id: this.activeProfileId }
             : {}),
         });
 
-      this.settings = result.settings;
-      this.appliedSettings = this._cloneSettings(this.settings);
+      const editorChanged = JSON.stringify(this.settings) !== JSON.stringify(submittedSettings)
+        || this.activeProfileId !== submittedProfileId;
+      if (!editorChanged) {
+        this.settings = result.settings;
+        this._resetHistory();
+      }
+      this.appliedSettings = this._cloneSettings(result.settings);
       this.persistedActiveProfileId =
         result.active_profile_id || "";
       this.recoveryAvailable = result.recovery_available === true;
       this.themeStudioActive = true;
-      this._resetHistory();
       this._syncUnsavedStatus();
       this._syncRecoveryButton();
 
