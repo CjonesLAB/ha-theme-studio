@@ -8,19 +8,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
-## Änderungen in 0.5.4
-
-- Änderungen während des Anwendens bleiben als nicht angewendete Änderungen erhalten.
-- Hintergrundbilder im Wiederherstellungspunkt sind vor dem Löschen geschützt.
-- Ungültige Galerie-Vorschauwerte erhalten sichere Standardwerte, ohne die Galerie zu blockieren.
-- Regressionstests decken diese Fälle ab. Das Hauptbild zeigt weiterhin die unveränderte Oberfläche aus 0.5.2.
-
-## Änderungen in 0.5.3
-
-- Die HACS-Prüfung umfasst jetzt auch das Branding ohne übersprungene Prüfungen.
-- Drei Regressionstests prüfen die mitgelieferten Icons und die Prüfkonfiguration.
-- Aktualisierte Screenshots sind in allen vier README-Sprachen im Release enthalten. Das Hauptbild zeigt Version 0.5.2; die Oberfläche bleibt in 0.5.3 unverändert.
-- Gespeicherte Designs und das Theme-Verhalten bleiben unverändert. Die Aufnahme in den HACS-Standardkatalog ist noch nicht genehmigt.
+Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
 ## Funktionen
 
