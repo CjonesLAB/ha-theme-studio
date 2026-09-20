@@ -1,0 +1,13 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const src=fs.readFileSync(path.join(__dirname,'../custom_components/theme_studio/frontend/theme-studio-panel.js'),'utf8');
+const start=src.indexOf('  _profileDisplayLabel(profile) {');
+const end=src.indexOf('\n  _renderProfileOptions()',start);
+assert.ok(start>0&&end>start,'profile label helper missing');
+const fn=new Function('return class {'+src.slice(start,end)+'}')().prototype._profileDisplayLabel;
+const ctx={_translate:value=>value};
+assert.equal(fn.call(ctx,{name:'Azur Pastel',settings:{mode:'light'}}),'Azur Pastel · Hell');
+assert.equal(fn.call(ctx,{name:'Azur Pastel – Hell',settings:{mode:'light'}}),'Azur Pastel – Hell');
+assert.equal(fn.call(ctx,{name:'Nacht - Dunkel',settings:{mode:'dark'}}),'Nacht - Dunkel');
+assert.equal(fn.call(ctx,{name:'Mitternacht',settings:{mode:'dark'}}),'Mitternacht · Dunkel');
+assert.ok(src.includes('name: design.title.slice(0, 48)'),'gallery imports must not embed the mode in the name');
+console.log('Profile label checks passed: one mode label only and clean gallery import names.');

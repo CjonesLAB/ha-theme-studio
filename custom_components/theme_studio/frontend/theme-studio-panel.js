@@ -1,7 +1,7 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.5.4";
+} from "./theme-studio-locales.js?v=0.6.0";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -10,6 +10,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
 
     this.activeMode = "dark";
+    this.galleryMode = "dark";
+    this.appearanceMode = "auto";
+    this._appearanceSignature = null;
     this.profiles = [];
     this.profileLimit = 32;
     this.activeProfileId = "";
@@ -94,12 +97,31 @@ class ThemeStudioPanel extends HTMLElement {
     };
   }
 
+  async _newDesign() {
+    const name = this.shadowRoot.getElementById("new-design-name").value.trim();
+    const mode = this.shadowRoot.getElementById("new-design-mode").value;
+    if (!name) { this._setStatus("Bitte einen Profilnamen eingeben.", "error"); return; }
+    if (!this._confirm("Neues Design erstellen? Nicht gespeicherte Bearbeitungen werden verworfen.")) return;
+    const defaults = this._initialDesignDefaults;
+    const palette = this._cloneSettings(defaults[mode]);
+    this.activeProfileId = "";
+    this._replaceEditorSettings({mode, light: this._cloneSettings(palette), dark: palette,
+      effects: this._cloneSettings(defaults.effects)});
+    this.shadowRoot.getElementById("profile-name").value = name;
+    this._renderProfileOptions();
+    const button = this.shadowRoot.getElementById("new-design-button");
+    button.disabled = true;
+    try { await this._saveProfile(); } finally { button.disabled = false; }
+  }
+
   get profile() {
     return this.settings[this.activeMode];
   }
 
   set hass(hass) {
+    if (!this._initialDesignDefaults) this._initialDesignDefaults = this._cloneSettings(this.settings);
     this._hass = hass;
+    this._syncAppearanceFromHass();
 
     if (!this._rendered) {
       this.localizer = new ThemeStudioLocalizer(
@@ -109,6 +131,57 @@ class ThemeStudioPanel extends HTMLElement {
       this._rendered = true;
       this._loadSettings();
     }
+  }
+
+  _syncAppearanceFromHass() {
+    const dark = this._hass?.selectedTheme?.dark;
+    const mode = typeof dark === "boolean" ? (dark ? "dark" : "light") : "auto";
+    const effective = typeof dark === "boolean" ? dark : (
+      this._hass?.themes?.darkMode ?? window.matchMedia("(prefers-color-scheme: dark)").matches
+    );
+    const signature = `${mode}:${effective}`;
+    if (signature === this._appearanceSignature) return;
+    this._appearanceSignature = signature;
+    this.appearanceMode = mode;
+    // HA appearance must never change which independent design is being edited.
+    if (this._rendered) {
+      this._syncControls();
+      this._updatePreview();
+      this._renderCommunityGallery();
+    }
+  }
+
+  _setAppearance(mode) {
+    if (!["auto", "light", "dark"].includes(mode)) return;
+    const dark = mode === "auto" ? undefined : mode === "dark";
+    this.appearanceMode = mode;
+    // Same user-scoped event as HA's profile; no global theme service call.
+    this.dispatchEvent(new CustomEvent("settheme", {
+      detail: { dark, theme: "Theme Studio" }, bubbles: true, composed: true,
+    }));
+    this._syncControls();
+    this._updatePreview();
+    this._renderCommunityGallery();
+  }
+
+  _setHomeAssistantDefaultAppearance() {
+    this.appearanceMode = "auto";
+    this._appearanceSignature = null;
+    // An empty theme is Home Assistant's user-scoped "use default" setting.
+    // Clearing dark at the same time restores the native Auto/Light/Dark choice.
+    this.dispatchEvent(new CustomEvent("settheme", {
+      detail: {
+        theme: "",
+        dark: undefined,
+        primaryColor: undefined,
+        accentColor: undefined,
+      },
+      bubbles: true,
+      composed: true,
+    }));
+    this._syncControls();
+    this._updatePreview();
+    this._renderCommunityGallery();
   }
 
   set panel(panel) {
@@ -209,7 +282,7 @@ class ThemeStudioPanel extends HTMLElement {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 4px;
-          min-width: 210px;
+          min-width: 160px;
           padding: 4px;
           border-radius: 12px;
           background: var(--card-background-color, #ffffff);
@@ -219,7 +292,7 @@ class ThemeStudioPanel extends HTMLElement {
         .topbar-actions {
           display: flex;
           flex: 0 0 auto;
-          align-items: stretch;
+          align-items: center;
           gap: 9px;
         }
 
@@ -254,8 +327,8 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .top-apply-button {
-          min-height: 46px;
-          padding: 0 18px;
+          min-height: 40px;
+          padding: 0 14px;
           border: 0;
           border-radius: 12px;
           background: var(--primary-color, #03a9f4);
@@ -267,8 +340,8 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .top-pair-button {
-          min-height: 46px;
-          padding: 0 16px;
+          min-height: 40px;
+          padding: 0 12px;
           border: 1px solid var(--divider-color);
           border-radius: 12px;
           background: var(--card-background-color, #ffffff);
@@ -1110,6 +1183,18 @@ class ThemeStudioPanel extends HTMLElement {
           color: var(--primary-text-color);
           background: var(--secondary-background-color);
           font-size: 11px;
+        }
+
+        select option {
+          background-color: #ffffff !important;
+          color: #111111 !important;
+        }
+
+        select option:checked,
+        select option:hover,
+        select option:focus {
+          background-color: #1565c0 !important;
+          color: #ffffff !important;
         }
 
         .effect-field {
@@ -2394,46 +2479,17 @@ class ThemeStudioPanel extends HTMLElement {
               >↷</button>
             </div>
 
-            <div
-              class="mode-switcher"
-              role="group"
-              aria-label="Vorschaumodus"
-            >
-              <button
-                class="mode-button"
-                data-mode="light"
-                type="button"
-                aria-pressed="false"
-              >
-                ☀ Hell
-              </button>
-
-              <button
-                class="mode-button active"
-                data-mode="dark"
-                type="button"
-                aria-pressed="true"
-              >
-                ☾ Dunkel
-              </button>
-            </div>
+            <span id="design-mode-label" class="version-badge">Dunkles Design</span>
 
             <button
               id="apply-button"
               class="top-apply-button"
+              title="Aktiviert dieses Design mit seinem festgelegten Modus."
               type="button"
             >
-              Beide Modi anwenden
+              Design anwenden
             </button>
 
-            <button
-              id="generate-counterpart-button"
-              class="top-pair-button"
-              type="button"
-              title="Erzeugt aus dem gewählten Modus einen farblich passenden Gegenmodus"
-            >
-              Passenden Hellmodus erzeugen
-            </button>
 
             <button
               id="restore-last-button"
@@ -2510,6 +2566,9 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
 
             <div class="community-heading-actions">
+              <label>Galerie-Modus
+                <select id="gallery-mode"><option value="dark">Dunkel</option><option value="light">Hell</option></select>
+              </label>
               <button
                 id="community-refresh-button"
                 class="profile-button"
@@ -2579,6 +2638,15 @@ class ThemeStudioPanel extends HTMLElement {
           </div>
 
           <div class="profile-content">
+            <div class="profile-field">
+              <label for="new-design-name">Name des neuen Designs</label>
+              <input id="new-design-name" maxlength="48" autocomplete="off">
+            </div>
+            <div class="profile-field">
+              <label for="new-design-mode">Modus des neuen Designs</label>
+              <select id="new-design-mode"><option value="light">Hell</option><option value="dark">Dunkel</option></select>
+            </div>
+            <div class="profile-actions"><button id="new-design-button" class="profile-button primary" type="button">Neues Design erstellen</button></div>
             <div class="profile-field">
               <label for="profile-select">
                 Gespeichertes Profil
@@ -2659,7 +2727,7 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
 
             <p class="profile-hint">
-              Es können bis zu 32 Profile gespeichert werden.
+              Es können bis zu 64 eigenständige Designs gespeichert werden.
               Eigene Hintergrundbilder werden als lokaler Pfad,
               nicht als Bilddatei exportiert.
             </p>
@@ -2672,7 +2740,7 @@ class ThemeStudioPanel extends HTMLElement {
             <div class="panel-heading">
               <h2>Feineinstellungen</h2>
               <p>
-                Einstellungen für den oben gewählten Modus.
+                Einstellungen für dieses Design.
               </p>
             </div>
 
@@ -3901,19 +3969,15 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".mode-button")
       .forEach((button) => {
         button.addEventListener("click", () => {
-          this.activeMode = button.dataset.mode;
-          this._clearStatus();
-          this._syncControls();
-          this._updatePreview();
-          this._renderCommunityGallery();
+          this._setAppearance(button.dataset.mode);
         });
       });
 
-    this.shadowRoot
-      .getElementById("generate-counterpart-button")
-      .addEventListener("click", () => {
-        this._generateCounterpartMode();
-      });
+    this.shadowRoot.getElementById("new-design-button").addEventListener("click", () => this._newDesign());
+    this.shadowRoot.getElementById("gallery-mode").addEventListener("change", (event) => {
+      this.galleryMode = event.target.value;
+      this._renderCommunityGallery();
+    });
 
     this.shadowRoot
       .querySelectorAll(".color-preset")
@@ -4218,10 +4282,16 @@ class ThemeStudioPanel extends HTMLElement {
 
   _replaceEditorSettings(settings) {
     this.settings = this._cloneSettings(settings);
+    this.activeMode = settings.mode || this.activeMode;
+    this.galleryMode = this.activeMode;
+    this.settings.mode = this.activeMode;
+    const galleryModeSelect = this.shadowRoot.getElementById("gallery-mode");
+    if (galleryModeSelect) galleryModeSelect.value = this.galleryMode;
     this._resetHistory();
     this._syncControls();
     this._updatePreview();
     this._syncUnsavedStatus();
+    if (this.communityGalleryLoaded) this._renderCommunityGallery();
   }
 
   _finishSettingsChange() {
@@ -4328,91 +4398,6 @@ class ThemeStudioPanel extends HTMLElement {
     return portable;
   }
 
-  _generateCounterpartMode() {
-    const sourceMode = this.activeMode;
-    const targetMode = sourceMode === "dark" ? "light" : "dark";
-    const sourceLabel = sourceMode === "dark" ? "Dunkelmodus" : "Hellmodus";
-    const targetLabel = targetMode === "dark" ? "Dunkelmodus" : "Hellmodus";
-
-    if (
-      !this._confirm(
-        `${targetLabel} aus dem aktuellen ${sourceLabel} erzeugen? ` +
-        `Die bisherigen Einstellungen des ${targetLabel} werden ersetzt.`
-      )
-    ) {
-      return;
-    }
-
-    this._recordHistory();
-    this.settings[targetMode] = this._deriveCounterpartMode(
-      this.settings[sourceMode],
-      targetMode
-    );
-    this.activeMode = targetMode;
-    this._syncControls();
-    this._updatePreview();
-    this._renderCommunityGallery();
-    this._setStatus(
-      `${targetLabel} wurde passend aus dem ${sourceLabel} erzeugt. ` +
-      "Profil anschließend speichern oder aktualisieren.",
-      "success"
-    );
-  }
-
-  _deriveCounterpartMode(source, targetMode) {
-    const light = targetMode === "light";
-    const white = "#ffffff";
-    const black = "#000000";
-    const primary = light
-      ? this._mixColors(source.primaryColor, white, 0.08)
-      : this._mixColors(source.primaryColor, white, 0.14);
-    const backgroundColor = light
-      ? this._mixColors(source.backgroundColor, white, 0.72)
-      : this._mixColors(source.backgroundColor, black, 0.78);
-    const cardColor = light
-      ? this._mixColors(source.cardColor, white, 0.76)
-      : this._mixColors(source.cardColor, black, 0.72);
-    const headerBackgroundColor = light
-      ? this._mixColors(source.headerBackgroundColor, white, 0.8)
-      : this._mixColors(source.headerBackgroundColor, black, 0.8);
-    const sidebarBackgroundColor = light
-      ? this._mixColors(source.sidebarBackgroundColor, white, 0.78)
-      : this._mixColors(source.sidebarBackgroundColor, black, 0.8);
-    const textColor = light
-      ? this._mixColors(source.primaryColor, black, 0.72)
-      : "#f5f7fa";
-    const secondaryTextColor = light
-      ? this._mixColors(source.primaryColor, black, 0.58)
-      : this._mixColors(source.primaryColor, white, 0.7);
-
-    return {
-      primaryColor: primary,
-      backgroundColor,
-      cardColor,
-      cardTextColor: textColor,
-      cardIconColor: primary,
-      cardBorderColor: light
-        ? this._mixColors(primary, white, 0.3)
-        : primary,
-      headerBackgroundColor,
-      headerTextColor: textColor,
-      sidebarBackgroundColor,
-      sidebarTextColor: textColor,
-      sidebarIconColor: secondaryTextColor,
-      sidebarSelectedColor: primary,
-      cardOpacity: light
-        ? Math.max(82, Number(source.cardOpacity) || 92)
-        : Math.max(78, Number(source.cardOpacity) || 92),
-      cardBorderWidth: Number(source.cardBorderWidth) || 0,
-      cardShadow: Number(source.cardShadow) || 0,
-      borderRadius: Number(source.borderRadius) || 0,
-      darkening: light
-        ? Math.round((Number(source.darkening) || 0) * 0.35)
-        : Math.max(24, Number(source.darkening) || 0),
-      background: source.background,
-      backgroundImage: source.backgroundImage || "",
-    };
-  }
 
   _communityPreviewBackground(mode) {
     if (mode.background_type === "waves") {
@@ -4445,30 +4430,22 @@ class ThemeStudioPanel extends HTMLElement {
     return mode.background;
   }
 
+  _galleryDesignMode(design) {
+    const explicitMode = design?.preview?.mode;
+    if (explicitMode === "light" || explicitMode === "dark") return explicitMode;
+
+    const category = String(design?.category || "").trim().toLocaleLowerCase();
+    if (["hell", "light", "clair", "claro"].includes(category)) return "light";
+    if (["dunkel", "dark", "sombre", "oscuro"].includes(category)) return "dark";
+    return null;
+  }
+
   _communityCardMarkup(design) {
     const preview = design.preview || {};
     const modes = preview.modes || {};
-    const fallbackMode = {
-      primary: preview.primary || "#26b2b3",
-      background: preview.background || "#101719",
-      card: preview.card || "#182326",
-      text: preview.text || "#ffffff",
-      icon: preview.primary || "#26b2b3",
-      border: preview.border || "#26b2b3",
-      header_background: preview.background || "#101719",
-      header_text: preview.text || "#ffffff",
-      sidebar_background: preview.background || "#101719",
-      sidebar_text: preview.text || "#ffffff",
-      sidebar_icon: preview.text || "#b8c4c7",
-      sidebar_selected: preview.primary || "#26b2b3",
-      opacity: Number(preview.opacity) || 92,
-      border_width: Number(preview.border_width) || 0,
-      shadow: 20,
-      radius: Number(preview.radius) || 18,
-      darkening: 0,
-      background_type: "color",
-    };
-    const mode = modes[this.activeMode] || fallbackMode;
+    const designMode = this._galleryDesignMode(design);
+    const mode = designMode ? modes[designMode] : null;
+    if (!mode) return "";
     const effects = preview.effects || {};
     const cardEffects = Array.isArray(effects.card_effects)
       ? effects.card_effects
@@ -4591,7 +4568,7 @@ class ThemeStudioPanel extends HTMLElement {
                 </div>
               </div>
               <span class="community-mode-label">
-                ${this.activeMode === "light" ? "Hell" : "Dunkel"}
+                ${designMode === "light" ? "Hell" : "Dunkel"}
               </span>
             </section>
           </div>
@@ -4649,7 +4626,7 @@ class ThemeStudioPanel extends HTMLElement {
       1,
       Math.round((usableWidth + gap) / step)
     );
-    const count = this.communityDesigns.length;
+    const count = grid.querySelectorAll(".community-card").length;
     const maximumIndex = Math.max(0, count - visible);
     const index = Math.min(
       maximumIndex,
@@ -4745,10 +4722,13 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    if (this.communityDesigns.length === 0) {
+    const visibleDesigns = this.communityDesigns.filter(
+      (design) => this._galleryDesignMode(design) === this.galleryMode
+    );
+    if (visibleDesigns.length === 0) {
       state.className = "community-state";
       state.textContent = this.communityGalleryLoaded
-        ? "Aktuell sind keine veröffentlichten Designs verfügbar."
+        ? `Aktuell sind keine veröffentlichten ${this.galleryMode === "light" ? "hellen" : "dunklen"} Designs verfügbar.`
         : "Galerie wird geladen …";
       state.hidden = false;
       sliderControls.hidden = true;
@@ -4757,7 +4737,7 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     state.hidden = true;
-    grid.innerHTML = this.communityDesigns
+    grid.innerHTML = visibleDesigns
       .map((design) => this._communityCardMarkup(design))
       .join("");
     grid.hidden = false;
@@ -4809,6 +4789,19 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
+    const designMode = this._galleryDesignMode(design);
+    if (!designMode) {
+      this._setStatus(
+        "Das Design ist keinem eindeutigen Hell- oder Dunkelmodus zugeordnet.",
+        "error"
+      );
+      return;
+    }
+
+    this.galleryMode = designMode;
+    const galleryModeSelect = this.shadowRoot.getElementById("gallery-mode");
+    if (galleryModeSelect) galleryModeSelect.value = designMode;
+
     const originalText = button.textContent;
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
@@ -4818,7 +4811,8 @@ class ThemeStudioPanel extends HTMLElement {
       const result = await this._hass.callWS({
         type: "theme_studio/import_gallery_design",
         design_id: design.id,
-        name: design.title,
+        mode: designMode,
+        name: design.title.slice(0, 48),
       });
 
       this.profiles = result.profiles;
@@ -4852,6 +4846,20 @@ class ThemeStudioPanel extends HTMLElement {
       .replace(/\s+/g, " ");
   }
 
+  _profileDisplayLabel(profile) {
+    const name = String(profile?.name || "").trim();
+    const modeLabel = this._translate(
+      profile?.settings?.mode === "light" ? "Hell" : "Dunkel"
+    );
+    const escapedMode = modeLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const alreadyContainsMode = new RegExp(
+      `[–—-]\\s*${escapedMode}$`,
+      "i"
+    ).test(name);
+
+    return alreadyContainsMode ? name : `${name} · ${modeLabel}`;
+  }
+
   _renderProfileOptions() {
     const select =
       this.shadowRoot.getElementById("profile-select");
@@ -4863,7 +4871,7 @@ class ThemeStudioPanel extends HTMLElement {
       <option value="">Neues Profil anlegen</option>
       ${this.profiles.map((profile) => `
         <option value="${this._escapeHtml(profile.id)}">
-          ${this._escapeHtml(profile.name)}
+          ${this._escapeHtml(this._profileDisplayLabel(profile))}
         </option>
       `).join("")}
     `;
@@ -4929,7 +4937,7 @@ class ThemeStudioPanel extends HTMLElement {
 
     this._syncProfileControls();
     this._setStatus(
-      `${profile.name} geladen. Zum Aktivieren „Beide Modi anwenden“ drücken.`,
+      `${profile.name} geladen. Zum Aktivieren „Design anwenden“ drücken.`,
       "success"
     );
   }
@@ -4949,7 +4957,7 @@ class ThemeStudioPanel extends HTMLElement {
         this._hass.themes?.theme === "Theme Studio";
       const persistedProfile = currentThemeIsThemeStudio
         ? this.profiles.find(
-          (profile) => profile.id === this.persistedActiveProfileId
+          (profile) => profile.id === this.persistedActiveProfileId && profile.settings.mode === this.settings.mode
         )
         : null;
       const matchingProfile = currentThemeIsThemeStudio
@@ -5094,10 +5102,13 @@ class ThemeStudioPanel extends HTMLElement {
 
     const exportData = {
       format: "theme-studio-profile",
-      version: 1,
+      version: 2,
       name: profile.name,
       exported_at: new Date().toISOString(),
-      settings: this._portableProfileSettings(profile.settings),
+      settings: {
+        mode: profile.settings.mode,
+        design: this._portableProfileSettings(profile.settings)[profile.settings.mode],
+      },
     };
     const blob = new Blob(
       [JSON.stringify(exportData, null, 2)],
@@ -5194,14 +5205,10 @@ class ThemeStudioPanel extends HTMLElement {
       `„${pending.name}“ aus ${pending.filename}`;
     body.innerHTML = `
       <div class="import-preview-modes">
-        ${this._importPreviewMode(
-          "Hellmodus",
-          pending.settings.light
-        )}
-        ${this._importPreviewMode(
-          "Dunkelmodus",
-          pending.settings.dark
-        )}
+        ${pending.settings.mode ? this._importPreviewMode(pending.settings.mode === "light" ? "Hellmodus" : "Dunkelmodus", pending.settings[pending.settings.mode]) : `
+          <label>Zu importierende Variante <select id="import-design-mode"><option value="light">Hell</option><option value="dark">Dunkel</option></select></label>
+          ${this._importPreviewMode("Hellmodus", pending.settings.light)}
+          ${this._importPreviewMode("Dunkelmodus", pending.settings.dark)}`}
       </div>
       <div class="import-preview-facts">
         <div class="import-preview-fact">
@@ -5356,8 +5363,8 @@ class ThemeStudioPanel extends HTMLElement {
     try {
       const result = await this._hass.callWS({
         type: "theme_studio/save_profile",
-        name: pending.name,
-        settings: pending.settings,
+        name: pending.settings.mode ? pending.name : `${pending.name.slice(0, 36)} – ${this._translate(this.shadowRoot.getElementById("import-design-mode").value === "light" ? "Hell" : "Dunkel")}`,
+        settings: {...pending.settings, mode: pending.settings.mode || this.shadowRoot.getElementById("import-design-mode").value},
       });
 
       this.profiles = result.profiles;
@@ -5366,7 +5373,7 @@ class ThemeStudioPanel extends HTMLElement {
       this._renderProfileOptions();
       this._closeImportPreview();
       this._setStatus(
-        `${result.profile.name} wurde geprüft und importiert. Zum Aktivieren „Beide Modi anwenden“ drücken.`,
+        `${result.profile.name} wurde geprüft und importiert. Zum Aktivieren „Design anwenden“ drücken.`,
         "success"
       );
     } catch (error) {
@@ -5711,6 +5718,7 @@ class ThemeStudioPanel extends HTMLElement {
       this.themeStudioActive = saved.theme_studio_active !== false;
 
       this.settings = {
+        mode: saved.mode || (this._hass.themes?.darkMode === false ? "light" : "dark"),
         light: {
           ...this.settings.light,
           ...saved.light,
@@ -5726,11 +5734,21 @@ class ThemeStudioPanel extends HTMLElement {
       };
 
       this.appliedSettings = this._cloneSettings(this.settings);
+      this.activeMode = this.settings.mode;
       this._resetHistory();
 
       this._syncControls();
       this._updatePreview();
       this._syncRecoveryButton();
+
+      // Repair installations affected by older builds which restored the
+      // backend default but left "Theme Studio" selected in this user profile.
+      if (
+        !this.themeStudioActive
+        && this._hass?.selectedTheme?.theme === "Theme Studio"
+      ) {
+        this._setHomeAssistantDefaultAppearance();
+      }
     } catch (error) {
       this._setStatus(
         "Die Einstellungen konnten nicht geladen werden.",
@@ -5882,7 +5900,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._syncControls();
     this._updatePreview();
     this._setStatus(
-      `${background.name} ausgewählt. Bitte beide Modi anwenden.`,
+      `${background.name} ausgewählt. Bitte Design anwenden.`,
       "success"
     );
     this._finishSettingsChange();
@@ -6146,6 +6164,7 @@ class ThemeStudioPanel extends HTMLElement {
         result.active_profile_id || "";
       this.recoveryAvailable = result.recovery_available === true;
       this.themeStudioActive = true;
+      this._setAppearance(result.settings.mode || this.activeMode);
       this._syncUnsavedStatus();
       this._syncRecoveryButton();
 
@@ -6166,7 +6185,7 @@ class ThemeStudioPanel extends HTMLElement {
 
     window.setTimeout(() => {
       button.disabled = false;
-      button.textContent = "Beide Modi anwenden";
+      button.textContent = "Design anwenden";
     }, 2200);
   }
 
@@ -6213,6 +6232,13 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
       this.settings = this._cloneSettings(result.settings);
+      this.settings.mode ||= this.activeMode;
+      this.activeMode = this.settings.mode;
+      if (result.theme_studio_active) {
+        this._setAppearance(this.settings.mode);
+      } else {
+        this._setHomeAssistantDefaultAppearance();
+      }
       this.appliedSettings = this._cloneSettings(result.settings);
       this.persistedActiveProfileId = result.active_profile_id || "";
       this.activeProfileId = this.persistedActiveProfileId;
@@ -6271,6 +6297,7 @@ class ThemeStudioPanel extends HTMLElement {
       this.activeProfileId = "";
       this.recoveryAvailable = result.recovery_available === true;
       this.themeStudioActive = false;
+      this._setHomeAssistantDefaultAppearance();
       this._renderProfileOptions();
       this._syncRecoveryButton();
 
@@ -6307,14 +6334,9 @@ class ThemeStudioPanel extends HTMLElement {
         button.setAttribute("aria-pressed", String(active));
       });
 
-    const counterpartButton = this.shadowRoot.getElementById(
-      "generate-counterpart-button"
-    );
-
-    counterpartButton.textContent =
-      this.activeMode === "dark"
-        ? "Passenden Hellmodus erzeugen"
-        : "Passenden Dunkelmodus erzeugen";
+    this.activeMode = this.settings.mode || this.activeMode;
+    this.shadowRoot.getElementById("design-mode-label").textContent =
+      this._translate(this.activeMode === "light" ? "Helles Design" : "Dunkles Design");
 
     const colors = {
       "primary-color": "primaryColor",

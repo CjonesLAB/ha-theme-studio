@@ -4,7 +4,7 @@
 
 Theme Studio is a custom Home Assistant integration for creating, previewing, and directly applying your own interface designs.
 
-> Current development version: **0.5.4**
+> Current development version: **0.6.0**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
@@ -12,8 +12,16 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 
 ## Features
 
-- separate settings for light and dark mode
-- generate a matching light or dark mode from the mode currently being edited
+Each profile is one independent **Light** or **Dark** design. Enter its name and mode under **Create new design**, then edit it directly. **Apply design** activates its palette and fixed mode. There is no mode switch or automatic counterpart generation inside a design.
+
+Legacy profiles are split into two named profiles using their saved colors, without recoloring. Up to 64 designs are supported. The original profile storage is backed up before the first migration write; create a full HA backup before installing or updating.
+
+New JSON exports use single-design format v2. Old v1 imports let you choose one variant. The gallery accepts both formats. Imported designs retain their fixed light/dark mode, and gallery previews are filtered accordingly.
+
+Gallery imports keep the design title as the profile name. The separate mode label is shown only once; older imported names already ending in “Light” or “Dark” are not given a duplicate label.
+
+The gallery automatically follows the mode of the loaded profile. It strictly shows only designs assigned to that mode and imports using the design’s authoritative mode. No missing light or dark palette is generated or recolored. Legacy gallery categories without a clear light/dark assignment remain hidden until they are reclassified.
+
 - save, load, rename, duplicate, and delete custom design profiles
 - correct design changes with Undo and Redo
 - visible notice for unapplied changes
@@ -22,7 +30,7 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 - automatic user interface in German, English, French, or Spanish
 - keyboard-accessible controls, visible focus indicators, and an accessible import dialog
 - privacy-preserving Home Assistant diagnostics containing technical status and counts only
-- action bar remains visible while scrolling for applying changes and switching modes
+- action bar remains visible while scrolling for applying changes
 - export portable JSON profiles without local entity assignments or background-image paths
 - validate and sanitize JSON files on the server before importing them
 - clear import preview showing retained design settings and removed local content
@@ -54,7 +62,7 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 
 ### Theme Studio with Community Gallery and dashboard preview
 
-![Theme Studio 0.5.2 with Community Gallery, design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v052.png)
+![Theme Studio 0.6.0 with mode-filtered Community Gallery, independent design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v060.png)
 
 ### Fine-tuning
 
@@ -116,18 +124,20 @@ Theme Studio will then appear in the sidebar.
 
 1. Open **Theme Studio** from the sidebar.
 2. Choose a verified design in the **Community Gallery** and select **Import with one click**, or load one of your own profiles.
-3. Switch between light and dark mode at the top.
+3. Choose a saved design, or create a new design with a name and a fixed Light/Dark mode.
 4. Adjust colors, cards, navigation, and the background in the fine-tuning section.
 5. Enable the desired effects under **Dashboard effects**.
 6. Filter entity lists by name, entity ID, or device class and select multiple suitable entities.
 7. Optionally enter a name under **My design profiles** and save the complete design as a reusable profile.
-8. Use the permanently visible **Apply both modes** button to save the settings and activate the theme.
+8. Use the permanently visible **Apply design** button to save the settings and activate the theme.
 
-**Restore Home Assistant default** disables Theme Studio for light and dark mode and activates the original Home Assistant design. Saved design profiles and background images are retained.
+**Restore Home Assistant default** disables Theme Studio and also resets the current user's appearance selection to Home Assistant's default in Auto mode. The native Auto/Light/Dark choices are then available again. Saved design profiles and background images are retained. Older installations left with Theme Studio selected after a restore are repaired automatically when the panel opens.
 
 Before applying a changed design, Theme Studio automatically saves the currently active state. **Restore last design** can reactivate this state even after a restart. The state replaced during restoration becomes the new recovery point, allowing you to switch between both states.
 
-Saved profiles can be loaded, updated, renamed, duplicated, or deleted. The profile most recently activated with **Apply both modes** is selected automatically the next time Theme Studio opens. **Export JSON** saves the portable visual settings, which can be loaded into another Theme Studio installation with **Import JSON**. Installation-specific dashboard effects, entity assignments, and local background-image paths are intentionally excluded.
+Saved profiles can be loaded, updated, renamed, duplicated, or deleted. The profile most recently activated with **Apply design** is selected automatically the next time Theme Studio opens. **Export JSON** saves the portable visual settings, which can be loaded into another Theme Studio installation with **Import JSON**. Installation-specific dashboard effects, entity assignments, and local background-image paths are intentionally excluded.
+
+Dropdown entries use a fixed high-contrast selection color so profile names remain readable even when a very light design is active.
 
 The integrated Community Gallery only displays previously reviewed and published designs from [ha-theme-studio.com](https://ha-theme-studio.com). Every preview represents a complete compact Home Assistant dashboard with header, sidebar, cards, navigation, background, and active card effects. Preview cards follow the light/dark selection at the top. During import, Home Assistant validates the profile again and then stores it in the local design profiles. The creator's background-image paths are not imported because the corresponding local image does not exist on your system.
 
