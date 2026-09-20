@@ -4,7 +4,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Entwicklungsversion: **0.5.4**
+> Aktuelle Entwicklungsversion: **0.6.0**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -12,8 +12,16 @@ Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio
 
 ## Funktionen
 
-- getrennte Einstellungen für hellen und dunklen Modus
-- farblich passenden Hell- oder Dunkelmodus aus dem aktuell gestalteten Modus erzeugen
+Jedes Profil ist genau ein eigenständiges **helles** oder **dunkles Design**. Unter **Neues Design erstellen** Name und Modus festlegen, danach direkt gestalten. **Design anwenden** aktiviert dessen Farben und festgelegten Modus. Innerhalb eines Designs gibt es keine Umschaltung und keine automatische Gegenmodus-Erzeugung mehr.
+
+Alte Profile werden anhand ihrer gespeicherten Farben in zwei benannte Profile getrennt, ohne Umfärbung. Es sind bis zu 64 Designs möglich. Vor dem ersten Schreiben der Umstellung wird der alte Profilspeicher zusätzlich gesichert. Vor der Installation oder einem Update sollte trotzdem ein vollständiges HA-Backup erstellt werden.
+
+Neue JSON-Exporte verwenden Einzelprofilformat v2. Beim Import alter v1-Dateien wird eine Variante ausgewählt. Die Galerie akzeptiert beide Formate. Importierte Designs behalten ihren festen Hell-/Dunkelmodus; die Vorschauen werden entsprechend gefiltert.
+
+Galerie-Importe übernehmen nur den Designtitel als Profilnamen. Der getrennte Modushinweis erscheint genau einmal; auch bei älteren importierten Namen mit der Endung „Hell“ oder „Dunkel“ wird er nicht doppelt angezeigt.
+
+Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschließlich passend zugeordnete Designs und importiert immer mit dem verbindlichen Modus des Designs. Eine fehlende helle oder dunkle Palette wird weder erzeugt noch umgefärbt. Alte Galeriekategorien ohne eindeutige Hell-/Dunkelzuordnung bleiben ausgeblendet, bis sie neu eingeordnet wurden.
+
 - eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
 - Designänderungen mit Rückgängig und Wiederholen korrigieren
 - sichtbarer Hinweis auf noch nicht angewendete Änderungen
@@ -54,7 +62,7 @@ Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio
 
 ### Theme Studio mit Community-Galerie und Dashboard-Vorschau
 
-![Theme Studio 0.5.2 mit Community-Galerie, Designprofilen, Feineinstellungen und Dashboard-Vorschau](images/theme-studio-community-overview-v052.png)
+![Theme Studio 0.6.0 mit gefilterter Community-Galerie, eigenständigen Designprofilen, Feineinstellungen und Dashboard-Vorschau](images/theme-studio-community-overview-v060.png)
 
 ### Feineinstellungen
 
@@ -107,18 +115,20 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
 
 1. In der Seitenleiste **Theme Studio** öffnen.
 2. In der **Community-Galerie** ein geprüftes Design mit **Mit einem Klick importieren** übernehmen oder ein eigenes Profil laden.
-3. Oben zwischen hellem und dunklem Modus wechseln.
+3. Ein gespeichertes Design wählen oder ein neues Design mit Name und festem Modus Hell/Dunkel erstellen.
 4. Farben, Karten, Navigation und Hintergrund anpassen.
 5. Unter **Dashboard-Effekte** die gewünschten Effekte aktivieren.
 6. Entitätslisten nach Name, Entitäts-ID oder Geräteklasse filtern und mehrere Entitäten auswählen.
 7. Optional das komplette Design unter **Eigene Designprofile** speichern.
-8. Mit **Beide Modi anwenden** die Einstellungen speichern und das Theme aktivieren.
+8. Mit **Design anwenden** die Einstellungen speichern und das Theme aktivieren.
 
-Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio für beide Modi deaktiviert und das originale Home-Assistant-Design aktiviert. Profile und Hintergrundbilder bleiben erhalten.
+Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio deaktiviert und die Darstellung des aktuellen Benutzers auf das Home-Assistant-Standarddesign im Modus **Auto** zurückgesetzt. Danach sind die nativen Optionen **Auto / Hell / Dunkel** wieder verfügbar. Profile und Hintergrundbilder bleiben erhalten. Ältere Installationen, bei denen nach einer Wiederherstellung noch Theme Studio ausgewählt ist, werden beim Öffnen des Panels automatisch repariert.
 
 Vor dem Anwenden speichert Theme Studio den bisher aktiven Stand automatisch. **Letztes Design wiederherstellen** kann diesen Stand auch nach einem Neustart aktivieren. Der dabei abgelöste Stand wird zum neuen Wiederherstellungspunkt.
 
 Profile können geladen, aktualisiert, umbenannt, dupliziert oder gelöscht werden. Das zuletzt aktivierte Profil wird beim nächsten Öffnen automatisch ausgewählt. **JSON exportieren** sichert die portablen Gestaltungseinstellungen; **JSON importieren** lädt sie auf einer anderen Installation. Dashboard-Effekte, Entitätszuordnungen und lokale Hintergrundbild-Pfade werden bewusst nicht exportiert.
+
+Dropdown-Einträge verwenden eine feste kontrastreiche Auswahlfarbe, damit Profilnamen auch bei einem sehr hellen Design lesbar bleiben.
 
 Die Community-Galerie zeigt ausschließlich geprüfte Designs von [ha-theme-studio.com](https://ha-theme-studio.com). Jede Vorschau stellt ein kompaktes Home-Assistant-Dashboard dar und folgt der Auswahl für hellen oder dunklen Modus. Importierte Profile werden erneut durch Home Assistant validiert. Lokale Hintergrundbild-Pfade des Erstellers werden nicht übernommen.
 

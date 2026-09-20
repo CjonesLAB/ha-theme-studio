@@ -20,6 +20,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN, VERSION
+from .single_design import select_design, split_profiles
 from .gallery import (
     GalleryError,
     async_download_gallery_profile,
@@ -37,7 +38,7 @@ RECOVERY_STORAGE_VERSION = 1
 RECOVERY_STORAGE_KEY = f"{DOMAIN}.recovery"
 DATA_STORAGE_LOCK = "storage_lock"
 
-MAX_PROFILES = 32
+MAX_PROFILES = 64
 MAX_PROFILE_NAME_LENGTH = 48
 MAX_BACKGROUNDS = 24
 MAX_BACKGROUND_NAME_LENGTH = 48
@@ -253,6 +254,7 @@ EFFECT_SCHEMA = vol.Schema(
 
 SETTINGS_SCHEMA = vol.Schema(
     {
+        vol.Optional("mode"): vol.In(("light", "dark")),
         vol.Required("light"): PROFILE_SCHEMA,
         vol.Required("dark"): PROFILE_SCHEMA,
         vol.Required("effects"): EFFECT_SCHEMA,
@@ -517,6 +519,17 @@ def normalize_settings(
     if not isinstance(settings, dict):
         raise vol.Invalid("Die Designeinstellungen müssen ein Objekt sein.")
 
+    if "mode" in settings:
+        mode = settings["mode"]
+        if mode not in ("light", "dark"):
+            raise vol.Invalid("Ungültiger Designmodus.")
+        palette = settings.get("design", settings.get(mode))
+        if not isinstance(palette, dict):
+            raise vol.Invalid("Die Designfarben fehlen.")
+        normalized = normalize_profile(palette, DEFAULT_LIGHT_PROFILE if mode == "light" else DEFAULT_DARK_PROFILE)
+        return select_design({"light": normalized, "dark": normalized,
+                              "effects": normalize_effects(settings.get("effects"))}, mode)
+
     if (
         isinstance(settings.get("light"), dict)
         and isinstance(settings.get("dark"), dict)
@@ -576,7 +589,7 @@ def portable_import_settings(
         or supported_profile_keys - set(settings["dark"])
     )
     has_unsupported_fields = bool(
-        set(settings) - {"light", "dark", "effects"}
+        set(settings) - {"light", "dark", "effects", "mode"}
         or set(settings["light"]) - supported_profile_keys
         or set(settings["dark"]) - supported_profile_keys
         or (
@@ -703,7 +716,7 @@ async def async_load_profiles(
 
     store = get_profile_store(hass)
     saved = await store.async_load()
-    return normalize_saved_profiles(saved)
+    return split_profiles(normalize_saved_profiles(saved))
 
 
 async def async_save_profiles(
@@ -713,6 +726,14 @@ async def async_save_profiles(
     """Persist all normalized profiles."""
 
     store = get_profile_store(hass)
+    previous = await store.async_load()
+    if isinstance(previous, dict) and isinstance(previous.get("profiles"), list) and any(
+        isinstance(p, dict) and isinstance(p.get("settings"), dict)
+        and "mode" not in p["settings"] for p in previous["profiles"]
+    ):
+        backup = Store(hass, 1, f"{DOMAIN}.profiles_paired_backup")
+        if await backup.async_load() is None:
+            await backup.async_save(previous)
     await store.async_save({"profiles": profiles})
 
 
@@ -1218,7 +1239,7 @@ def build_theme_file(
 
     lines.append("  modes:")
 
-    for mode in ("light", "dark"):
+    for mode in ((settings["mode"],) if "mode" in settings else ("light", "dark")):
         lines.append(f"    {mode}:")
 
         values = build_mode_values(
@@ -1673,7 +1694,7 @@ async def websocket_get_info(
         {
             "version": VERSION,
             "profile_format": "theme-studio-profile",
-            "profile_format_version": 1,
+            "profile_format_version": 2,
         },
     )
 
@@ -1795,7 +1816,7 @@ async def websocket_preview_profile_import(
             raise vol.Invalid("Die Profildatei ist größer als 1 MB.")
         if imported.get("format") != "theme-studio-profile":
             raise vol.Invalid("Unbekanntes Dateiformat.")
-        if type(imported.get("version")) is not int or imported["version"] != 1:
+        if type(imported.get("version")) is not int or imported["version"] not in (1, 2):
             raise vol.Invalid("Diese Profilversion wird nicht unterstützt.")
 
         name = normalize_profile_name(imported.get("name"))
@@ -1803,7 +1824,11 @@ async def websocket_preview_profile_import(
         if not isinstance(raw_settings, dict):
             raise vol.Invalid("Die Designeinstellungen fehlen.")
 
+        if imported["version"] == 2:
+            raw_settings = normalize_settings(raw_settings)
         settings, notices = portable_import_settings(raw_settings)
+        if "mode" in raw_settings:
+            settings = select_design(settings, raw_settings["mode"])
     except (vol.Invalid, TypeError, ValueError) as error:
         connection.send_error(
             msg["id"],
@@ -1818,7 +1843,7 @@ async def websocket_preview_profile_import(
             "valid": True,
             "name": name,
             "format": "theme-studio-profile",
-            "format_version": 1,
+            "format_version": imported["version"],
             "settings": settings,
             "notices": notices,
             "summary": {
@@ -1856,6 +1881,8 @@ async def websocket_save_profile(
     try:
         name = normalize_profile_name(msg["name"])
         settings = normalize_settings(msg["settings"])
+        if "mode" not in settings:
+            raise vol.Invalid("Bitte ein eigenständiges helles oder dunkles Design auswählen.")
     except (vol.Invalid, TypeError, ValueError) as error:
         connection.send_error(
             msg["id"],
@@ -1881,6 +1908,10 @@ async def websocket_save_profile(
             "profile_not_found",
             "Das gewählte Profil wurde nicht gefunden.",
         )
+        return
+
+    if existing_profile and existing_profile["settings"].get("mode") != settings["mode"]:
+        connection.send_error(msg["id"], "invalid_profile", "Der Modus eines gespeicherten Designs ist unveränderlich.")
         return
 
     if existing_profile is None and len(profiles) >= MAX_PROFILES:
@@ -2074,7 +2105,7 @@ def sanitize_gallery_settings(
 
     sanitized = json.loads(json.dumps(settings))
 
-    for mode in ("light", "dark"):
+    for mode in ("light", "dark", "design"):
         profile = sanitized.get(mode)
         if not isinstance(profile, dict):
             continue
@@ -2128,6 +2159,7 @@ async def async_store_gallery_profile(
             "type"
         ): "theme_studio/import_gallery_design",
         vol.Required("design_id"): str,
+        vol.Required("mode"): vol.In(("light", "dark")),
         vol.Optional("name"): str,
     }
 )
@@ -2141,13 +2173,44 @@ async def websocket_import_gallery_design(
     """Import one approved gallery design as a local profile."""
 
     try:
+        gallery_designs = await async_get_gallery_designs(hass)
+        gallery_design = next(
+            (
+                design
+                for design in gallery_designs
+                if design.get("id") == msg["design_id"]
+            ),
+            None,
+        )
+        gallery_mode = (
+            gallery_design.get("preview", {}).get("mode")
+            if isinstance(gallery_design, dict)
+            else None
+        )
+        if gallery_mode not in ("light", "dark"):
+            raise GalleryError(
+                "Das Galerie-Design ist keinem eindeutigen Modus zugeordnet."
+            )
         downloaded = await async_download_gallery_profile(
             hass,
             msg["design_id"],
         )
+        if (
+            downloaded["version"] == 2
+            and downloaded["settings"]["mode"] != gallery_mode
+        ):
+            raise GalleryError(
+                "Modus der Galerie und Profildatei stimmen nicht überein."
+            )
+        import_mode = (
+            downloaded["settings"]["mode"]
+            if downloaded["version"] == 2
+            else gallery_mode
+        )
         settings = normalize_settings(
             sanitize_gallery_settings(downloaded["settings"])
         )
+        settings = select_design(settings, import_mode)
     except GalleryError as error:
         connection.send_error(
             msg["id"],

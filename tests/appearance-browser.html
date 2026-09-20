@@ -1,0 +1,13 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><title>Theme Studio Umschaltung – lokaler Test</title><body><p id="result">Start …</p><div id="mount"></div><script type="module">
+const result=document.getElementById('result');
+window.addEventListener('error',e=>{result.textContent='FEHLER: '+e.message;});
+window.addEventListener('unhandledrejection',e=>{result.textContent='FEHLER: '+e.reason;});
+await import('../custom_components/theme_studio/frontend/theme-studio-panel.js?v=0.5.5');
+const cls=customElements.get('theme-studio-panel');
+cls.prototype._loadSettings=async function(){};
+const p=document.createElement('theme-studio-panel');
+let hass={language:'de',locale:{language:'de'},user:{id:'local-test'},states:{},config:{time_zone:'Europe/Berlin'},selectedTheme:{dark:false,theme:'Theme Studio',primaryColor:'#abcdef'},themes:{darkMode:false,themes:{}},callWS:async()=>{throw Error('Unexpected backend write in appearance test');}};
+document.getElementById('mount').addEventListener('settheme',e=>{hass={...hass,selectedTheme:{...hass.selectedTheme,...e.detail},themes:{...hass.themes,darkMode:e.detail.dark??matchMedia('(prefers-color-scheme: dark)').matches}};p.hass=hass;result.textContent=`Modus: ${p.appearanceMode} · Editor: ${p.activeMode} · Design unverändert: ${JSON.stringify(p.settings)===snapshot}`;});
+document.getElementById('mount').append(p);p.hass=hass;
+const snapshot=JSON.stringify(p.settings);result.textContent='Start OK · Hell · kein Speichern';
+</script></body></html>

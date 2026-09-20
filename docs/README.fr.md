@@ -4,7 +4,7 @@
 
 Theme Studio est une intégration personnalisée pour Home Assistant permettant de créer, prévisualiser et appliquer directement vos propres designs d’interface.
 
-> Version de développement actuelle : **0.5.4**
+> Version de développement actuelle : **0.6.0**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 
@@ -12,8 +12,16 @@ Historique des versions : [Notes de version](https://github.com/CjonesLAB/ha-the
 
 ## Fonctionnalités
 
-- réglages séparés pour les modes clair et sombre
-- génération d’un mode clair ou sombre assorti à partir du mode en cours de modification
+Chaque profil est un thème indépendant **clair** ou **sombre**. Définissez son nom et son mode avec **Créer un thème**, puis personnalisez-le. **Appliquer le thème** active ses couleurs et son mode fixe. Il n’y a plus de bascule ni de génération automatique du mode opposé dans un thème.
+
+Les anciens profils sont séparés en deux profils nommés, sans modifier leurs couleurs enregistrées. Jusqu’à 64 thèmes sont possibles. Le stockage original est sauvegardé avant la première écriture de migration. Créez tout de même une sauvegarde complète de Home Assistant avant l’installation ou une mise à jour.
+
+Les nouveaux exports JSON utilisent le format v2 à un seul thème. Les imports v1 permettent de choisir une variante. La galerie accepte les deux formats. Les thèmes importés conservent leur mode clair/sombre fixe et les aperçus sont filtrés en conséquence.
+
+Les imports de la galerie conservent uniquement le titre comme nom du profil. L’indication séparée du mode n’apparaît qu’une fois ; elle n’est pas répétée pour les anciens noms se terminant déjà par « Clair » ou « Sombre ».
+
+La galerie suit automatiquement le mode du profil chargé. Elle affiche uniquement les thèmes affectés à ce mode et utilise leur mode officiel lors de l’importation. Aucune palette claire ou sombre manquante n’est générée ni recolorée. Les anciennes catégories sans affectation claire/sombre restent masquées jusqu’à leur reclassement.
+
 - enregistrement, chargement, renommage, duplication et suppression de profils personnalisés
 - annulation et rétablissement des modifications
 - indication visible des modifications non appliquées
@@ -54,7 +62,7 @@ Historique des versions : [Notes de version](https://github.com/CjonesLAB/ha-the
 
 ### Theme Studio avec galerie communautaire et aperçu du tableau de bord
 
-![Theme Studio 0.5.2 avec galerie, profils, réglages et aperçu](images/theme-studio-community-overview-v052.png)
+![Theme Studio 0.6.0 avec galerie communautaire filtrée, profils indépendants, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v060.png)
 
 ### Réglages avancés
 
@@ -107,18 +115,20 @@ Theme Studio apparaît ensuite dans la barre latérale.
 
 1. Ouvrez **Theme Studio** depuis la barre latérale.
 2. Choisissez un design vérifié dans la **Galerie communautaire** et utilisez **Importer en un clic**, ou chargez votre propre profil.
-3. Basculez entre les modes clair et sombre en haut de la page.
+3. Choisissez un thème enregistré ou créez un thème avec un nom et un mode fixe clair/sombre.
 4. Ajustez les couleurs, cartes, éléments de navigation et arrière-plans.
 5. Activez les effets souhaités sous **Effets du tableau de bord**.
 6. Filtrez les entités par nom, identifiant ou classe d’appareil et sélectionnez-en plusieurs.
 7. Enregistrez éventuellement le design complet comme profil réutilisable.
-8. Sélectionnez **Appliquer les deux modes** pour enregistrer et activer le thème.
+8. Sélectionnez **Appliquer le thème** pour enregistrer et activer le thème.
 
-**Restaurer le thème Home Assistant par défaut** désactive Theme Studio pour les deux modes et réactive le design d’origine. Les profils et images enregistrés sont conservés.
+**Restaurer le thème Home Assistant par défaut** désactive Theme Studio et réinitialise l’apparence de l’utilisateur actuel sur le thème Home Assistant par défaut en mode **Auto**. Les options natives **Auto / Clair / Sombre** redeviennent disponibles. Les profils et images enregistrés sont conservés. Les anciennes installations restées sur Theme Studio après une restauration sont réparées automatiquement à l’ouverture du panneau.
 
 Avant chaque application, Theme Studio sauvegarde automatiquement l’état actif. **Restaurer le dernier design** permet de le réactiver même après un redémarrage. L’état remplacé devient à son tour le nouveau point de restauration.
 
 Les profils peuvent être chargés, mis à jour, renommés, dupliqués ou supprimés. Le dernier profil activé est sélectionné automatiquement à la prochaine ouverture. **Exporter le JSON** enregistre les réglages visuels portables ; **Importer le JSON** les charge dans une autre installation. Les effets, associations d’entités et chemins d’images locaux sont volontairement exclus.
+
+Les entrées des listes déroulantes utilisent une couleur de sélection fixe et fortement contrastée afin que les noms de profils restent lisibles, même avec un design très clair.
 
 La galerie intégrée affiche uniquement les designs vérifiés et publiés sur [ha-theme-studio.com](https://ha-theme-studio.com). Chaque aperçu reproduit un tableau de bord compact et suit le mode clair ou sombre sélectionné. Home Assistant valide de nouveau chaque profil importé. Les chemins d’images locaux du créateur ne sont pas importés.
 

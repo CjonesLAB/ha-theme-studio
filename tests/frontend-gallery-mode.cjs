@@ -1,0 +1,15 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const src=fs.readFileSync(path.join(__dirname,'../custom_components/theme_studio/frontend/theme-studio-panel.js'),'utf8');
+const start=src.indexOf('  _galleryDesignMode(design) {');
+const end=src.indexOf('\n  _communityCardMarkup(design)',start);
+assert.ok(start>0&&end>start,'gallery mode helper missing');
+const fn=new Function('return class {'+src.slice(start,end)+'}')().prototype._galleryDesignMode;
+assert.equal(fn({preview:{mode:'light'},category:'Dunkel'}),'light');
+assert.equal(fn({preview:{},category:'Hell'}),'light');
+assert.equal(fn({preview:{},category:'Dunkel'}),'dark');
+assert.equal(fn({preview:{},category:'Farbig'}),null);
+assert.ok(src.includes('(design) => this._galleryDesignMode(design) === this.galleryMode'),'gallery must filter strictly');
+assert.ok(src.includes('mode: designMode'),'import must use the design mode');
+assert.ok(!src.includes('const mode = modes[this.galleryMode] || fallbackMode'),'preview must not convert an unavailable mode');
+assert.ok(src.includes('this.galleryMode = this.activeMode'),'gallery must follow the loaded profile mode');
+console.log('Gallery mode checks passed: strict filtering, exact preview and automatic import mode.');

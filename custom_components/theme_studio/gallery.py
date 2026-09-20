@@ -200,6 +200,17 @@ def _preview_effects(value: Any) -> dict[str, Any]:
     }
 
 
+def _gallery_mode(value: Any) -> str | None:
+    """Map the public category to one explicit design mode."""
+
+    category = _text(value, 80).casefold()
+    if category in ("hell", "light", "clair", "claro"):
+        return "light"
+    if category in ("dunkel", "dark", "sombre", "oscuro"):
+        return "dark"
+    return None
+
+
 def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
     """Validate one gallery list record before sending it to the UI."""
 
@@ -208,6 +219,7 @@ def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
 
     public_id = _text(item.get("id"), 36).lower()
     title = _text(item.get("title"), 80)
+    category = _text(item.get("category"), 80) or "Design"
 
     if not PUBLIC_ID_PATTERN.fullmatch(public_id) or not title:
         return None
@@ -216,6 +228,9 @@ def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
     preview = raw_preview if isinstance(raw_preview, dict) else {}
     raw_modes = preview.get("modes")
     modes = raw_modes if isinstance(raw_modes, dict) else {}
+    fixed_mode = preview.get("mode")
+    if fixed_mode not in ("light", "dark"):
+        fixed_mode = _gallery_mode(category)
 
     legacy_dark = {
         "background": preview.get("background"),
@@ -238,7 +253,7 @@ def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
         "title": title,
         "summary": _text(item.get("summary"), 280),
         "author": _text(item.get("author"), 39),
-        "category": _text(item.get("category"), 80) or "Design",
+        "category": category,
         "license": _text(item.get("license"), 24),
         "version": _integer(item.get("version"), 1, 9999, 1),
         "downloads": _integer(
@@ -248,6 +263,7 @@ def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
             0,
         ),
         "preview": {
+            "mode": fixed_mode,
             "background": _color(
                 preview.get("background"),
                 "#101719",
@@ -288,7 +304,7 @@ def _normalize_gallery_item(item: Any) -> dict[str, Any] | None:
                 6,
                 1,
             ),
-            "modes": {
+            "modes": {fixed_mode: _preview_mode(modes.get(fixed_mode), fixed_mode == "light")} if fixed_mode else {
                 "light": _preview_mode(
                     modes.get("light", legacy_light),
                     True,
@@ -368,7 +384,8 @@ async def async_download_gallery_profile(
     if (
         not isinstance(profile, dict)
         or profile.get("format") != "theme-studio-profile"
-        or profile.get("version") != 1
+        or type(profile.get("version")) is not int
+        or profile.get("version") not in (1, 2)
         or not isinstance(profile.get("name"), str)
         or not isinstance(profile.get("settings"), dict)
     ):
@@ -376,4 +393,10 @@ async def async_download_gallery_profile(
             "Das gewählte Design ist kein gültiges Theme-Studio-Profil."
         )
 
+    if profile["version"] == 2:
+        settings = profile["settings"]
+        if (set(settings) != {"mode", "design"}
+            or settings.get("mode") not in ("light", "dark")
+            or not isinstance(settings.get("design"), dict)):
+            raise GalleryError("Das Einzel-Design besitzt kein gültiges Datenformat.")
     return profile

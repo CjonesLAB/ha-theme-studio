@@ -64,7 +64,7 @@ def _profile(profile_id: str, name: str) -> dict[str, object]:
         "name": name,
         "created_at": "2026-08-18T10:00:00+00:00",
         "updated_at": "2026-08-18T11:00:00+00:00",
-        "settings": default_settings(),
+        "settings": websocket.select_design(default_settings(), "dark"),
     }
 
 

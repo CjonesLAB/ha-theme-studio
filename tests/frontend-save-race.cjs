@@ -18,7 +18,7 @@ async function scenario(change, fail = false) {
     } },
     _currentProfile: () => null, _cloneSettings: structuredClone,
     _resetHistory() { this.resets++; }, _syncUnsavedStatus() {},
-    _syncRecoveryButton() {}, _setStatus() {}, _errorMessage: String,
+    _syncRecoveryButton() {}, _setStatus() {}, _errorMessage: String, _setAppearance() {},
   };
   const saving = method.call(panel);
   if (change === 'color') panel.settings.dark.primaryColor = '#222222';

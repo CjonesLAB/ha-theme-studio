@@ -1,0 +1,23 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><title>Theme Studio – Einzelprofile Test</title><body style="font-family:Arial"><p id="result">Start</p><div id="mount"></div><script type="module">
+const result=document.getElementById('result');
+window.addEventListener('error',e=>result.textContent='FEHLER '+e.message);
+window.addEventListener('unhandledrejection',e=>result.textContent='FEHLER '+e.reason);
+await import('../custom_components/theme_studio/frontend/theme-studio-panel.js?v=0.6.0');
+const p=document.createElement('theme-studio-panel');
+const clone=structuredClone;
+let settings={...clone(p.settings),mode:'dark'},profiles=[];
+function normalized(s){return {mode:s.mode,light:clone(s[s.mode]),dark:clone(s[s.mode]),effects:clone(s.effects)}}
+let hass={language:'de',locale:{language:'de'},user:{id:'test'},states:{},config:{time_zone:'Europe/Berlin'},selectedTheme:{dark:true},themes:{darkMode:true,theme:'Theme Studio',themes:{}},
+async callWS(m){switch(m.type){
+case 'theme_studio/get_info':return {version:'0.6.0'};
+case 'theme_studio/get_settings':return clone(settings);
+case 'theme_studio/get_profiles':return {profiles:clone(profiles)};
+case 'theme_studio/get_backgrounds':return {backgrounds:[]};
+case 'theme_studio/get_gallery_designs':return {designs:[]};
+case 'theme_studio/save_profile':{const profile={id:m.profile_id||String(profiles.length+1).padStart(32,'0'),name:m.name,settings:normalized(m.settings)};profiles=profiles.filter(x=>x.id!==profile.id);profiles.push(profile); result.textContent='Gespeichert: '+profiles.map(x=>x.name+' ('+x.settings.mode+')').join(', ');return {profile:clone(profile),profiles:clone(profiles)}}
+case 'theme_studio/save_settings':settings=normalized(m.settings);result.textContent='Aktiviert: '+settings.mode+' · Profile: '+profiles.length;return {settings:clone(settings),active_profile_id:m.active_profile_id||'',recovery_available:true};
+default:throw Error('Unexpected '+m.type);
+}}};
+document.getElementById('mount').addEventListener('settheme',e=>{hass={...hass,selectedTheme:e.detail,themes:{...hass.themes,darkMode:e.detail.dark}};p.hass=hass;result.textContent+=' · HA-Modus: '+(e.detail.dark?'dark':'light')});
+document.getElementById('mount').append(p);p.hass=hass;
+</script></body></html>
