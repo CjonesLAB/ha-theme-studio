@@ -1,7 +1,7 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.6.0";
+} from "./theme-studio-locales.js?v=0.6.1";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -27,6 +27,8 @@ class ThemeStudioPanel extends HTMLElement {
     this.historyLimit = 50;
     this.historyCoalesceKey = "";
     this.appliedSettings = null;
+    this.profileEditBaseline = null;
+    this.profileSaveReminderTimer = null;
     this.integrationVersion = "";
     this.pendingProfileImport = null;
     this.importPreviewReturnFocus = null;
@@ -497,6 +499,42 @@ class ThemeStudioPanel extends HTMLElement {
           border-color: transparent;
           background: var(--primary-color);
           color: var(--text-primary-color, white);
+        }
+
+        #profile-save-button.profile-save-reminder:not(:disabled) {
+          animation: profile-save-reminder 680ms ease-in-out 3;
+        }
+
+        #profile-save-button.profile-save-success:not(:disabled) {
+          animation: profile-save-success 680ms ease-in-out 1;
+        }
+
+        @keyframes profile-save-reminder {
+          0%,
+          100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 transparent;
+          }
+
+          50% {
+            transform: scale(1.055);
+            box-shadow:
+              0 0 0 5px var(--warning-color, #f9a825);
+          }
+        }
+
+        @keyframes profile-save-success {
+          0%,
+          100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 transparent;
+          }
+
+          50% {
+            transform: scale(1.055);
+            box-shadow:
+              0 0 0 5px #43a047;
+          }
         }
 
         .profile-button.danger {
@@ -1912,6 +1950,18 @@ class ThemeStudioPanel extends HTMLElement {
 
           .preview-card.alert-focus-demo {
             animation: none !important;
+          }
+
+          #profile-save-button.profile-save-reminder:not(:disabled) {
+            animation: none;
+            outline: 2px solid var(--warning-color, #f9a825);
+            outline-offset: 2px;
+          }
+
+          #profile-save-button.profile-save-success:not(:disabled) {
+            animation: none;
+            outline: 2px solid #43a047;
+            outline-offset: 2px;
           }
         }
 
@@ -3433,7 +3483,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._setupStickyOffsets();
     this._syncControls();
     this._updatePreview();
-    this._renderProfileOptions();
+    this._renderProfileOptions(false);
     this._renderBackgroundLibrary();
     this.localizer?.observe(this.shadowRoot);
   }
@@ -3910,6 +3960,12 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
+      .getElementById("profile-name")
+      .addEventListener("input", () => {
+        this._syncProfileSaveReminder();
+      });
+
+    this.shadowRoot
       .getElementById("profile-rename-button")
       .addEventListener("click", () => {
         this._renameProfile();
@@ -4358,10 +4414,117 @@ class ThemeStudioPanel extends HTMLElement {
     if (indicator) {
       indicator.hidden = !this._hasUnsavedSettings();
     }
+
+    this._syncProfileSaveReminder();
+  }
+
+  _hasUnsavedProfileChanges() {
+    if (!this.profileEditBaseline) {
+      return false;
+    }
+
+    const nameInput = this.shadowRoot?.getElementById("profile-name");
+    const editedName = nameInput
+      ? nameInput.value.trim().replace(/\s+/g, " ")
+      : "";
+
+    return editedName !== this.profileEditBaseline.name
+      || !this._settingsEqual(
+        this.settings,
+        this.profileEditBaseline.settings
+      );
+  }
+
+  _setProfileEditBaseline() {
+    const nameInput = this.shadowRoot?.getElementById("profile-name");
+    this.profileEditBaseline = {
+      name: nameInput
+        ? nameInput.value.trim().replace(/\s+/g, " ")
+        : "",
+      settings: this._cloneSettings(this.settings),
+    };
+  }
+
+  _syncProfileSaveReminder() {
+    const saveButton = this.shadowRoot?.getElementById(
+      "profile-save-button"
+    );
+
+    if (!saveButton) {
+      return;
+    }
+
+    const needsSave = this._hasUnsavedProfileChanges();
+    const wasNeedsSave =
+      saveButton.dataset.profileNeedsSave === "true";
+    saveButton.dataset.profileNeedsSave = String(needsSave);
+
+    if (!needsSave) {
+      window.clearTimeout(this.profileSaveReminderTimer);
+      this.profileSaveReminderTimer = null;
+      saveButton.classList.remove("profile-save-reminder");
+    } else if (!wasNeedsSave) {
+      saveButton.classList.remove("profile-save-reminder");
+      void saveButton.offsetWidth;
+      saveButton.classList.add("profile-save-reminder");
+      window.clearTimeout(this.profileSaveReminderTimer);
+      this.profileSaveReminderTimer = window.setTimeout(() => {
+        saveButton.classList.remove("profile-save-reminder");
+        this.profileSaveReminderTimer = null;
+      }, 2200);
+    }
+
+    saveButton.title = needsSave
+      ? this._translate("Änderungen im Profil speichern")
+      : "";
+  }
+
+  _stopProfileSaveReminderPulse() {
+    window.clearTimeout(this.profileSaveReminderTimer);
+    this.profileSaveReminderTimer = null;
+    this.shadowRoot
+      ?.getElementById("profile-save-button")
+      ?.classList.remove("profile-save-reminder");
+  }
+
+  _showProfileSaveSuccess() {
+    const saveButton = this.shadowRoot?.getElementById(
+      "profile-save-button"
+    );
+
+    if (!saveButton) {
+      return;
+    }
+
+    saveButton.classList.remove("profile-save-success");
+    void saveButton.offsetWidth;
+    saveButton.classList.add("profile-save-success");
+
+    window.setTimeout(() => {
+      saveButton.classList.remove("profile-save-success");
+    }, 750);
   }
 
   _settingsEqual(first, second) {
-    return JSON.stringify(first) === JSON.stringify(second);
+    const stableValue = (value) => {
+      if (Array.isArray(value)) {
+        return value.map((item) => stableValue(item));
+      }
+
+      if (value && typeof value === "object") {
+        return Object.keys(value)
+          .sort()
+          .reduce((result, key) => {
+            result[key] = stableValue(value[key]);
+            return result;
+          }, {});
+      }
+
+      return value;
+    };
+
+    return JSON.stringify(stableValue(first))
+      === JSON.stringify(stableValue(second));
   }
 
   _portableProfileSettings(settings) {
@@ -4860,7 +5023,7 @@ class ThemeStudioPanel extends HTMLElement {
     return alreadyContainsMode ? name : `${name} · ${modeLabel}`;
   }
 
-  _renderProfileOptions() {
+  _renderProfileOptions(establishBaseline = true) {
     const select =
       this.shadowRoot.getElementById("profile-select");
     const nameInput =
@@ -4884,6 +5047,9 @@ class ThemeStudioPanel extends HTMLElement {
       select.value = "";
     }
 
+    if (establishBaseline) {
+      this._setProfileEditBaseline();
+    }
     this._syncProfileControls();
   }
 
@@ -4913,9 +5079,11 @@ class ThemeStudioPanel extends HTMLElement {
       busy;
     this.shadowRoot.getElementById("profile-import-file").disabled =
       busy;
+    this._syncProfileSaveReminder();
   }
 
   _loadProfileSelection(profileId) {
+    this.profileEditBaseline = null;
     this.activeProfileId = profileId;
     const profile = this._currentProfile();
     const nameInput =
@@ -4924,6 +5092,7 @@ class ThemeStudioPanel extends HTMLElement {
     if (!profile) {
       this.activeProfileId = "";
       nameInput.value = "";
+      this._setProfileEditBaseline();
       this._syncProfileControls();
       this._setStatus(
         "Name eingeben und das aktuelle Design als neues Profil speichern.",
@@ -4935,6 +5104,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._replaceEditorSettings(profile.settings);
     nameInput.value = profile.name;
 
+    this._setProfileEditBaseline();
     this._syncProfileControls();
     this._setStatus(
       `${profile.name} geladen. Zum Aktivieren „Design anwenden“ drücken.`,
@@ -4974,6 +5144,8 @@ class ThemeStudioPanel extends HTMLElement {
       )?.id || "";
       this._renderProfileOptions();
     } catch (error) {
+      this._setProfileEditBaseline();
+      this._syncProfileSaveReminder();
       this._setStatus(
         `Designprofile konnten nicht geladen werden: ${this._errorMessage(error)}`,
         "error"
@@ -5007,6 +5179,7 @@ class ThemeStudioPanel extends HTMLElement {
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
       this._renderProfileOptions();
+      this._showProfileSaveSuccess();
       this._setStatus(
         currentProfile
           ? `${result.profile.name} wurde aktualisiert.`
@@ -6090,6 +6263,8 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   async _saveAndApplySettings() {
+    this._stopProfileSaveReminderPulse();
+
     if (
       this.settings.effects.cardEffects.includes("status-pulse")
       && this.settings.effects.pulseEntities.length === 0
@@ -6158,6 +6333,7 @@ class ThemeStudioPanel extends HTMLElement {
       if (!editorChanged) {
         this.settings = result.settings;
         this._resetHistory();
+        this._setProfileEditBaseline();
       }
       this.appliedSettings = this._cloneSettings(result.settings);
       this.persistedActiveProfileId =

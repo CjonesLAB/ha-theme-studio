@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'../custom_components/theme_studio/frontend/theme-studio-panel.js'),'utf8');
 const start=src.indexOf('  _profileDisplayLabel(profile) {');
-const end=src.indexOf('\n  _renderProfileOptions()',start);
+const end=src.indexOf('\n  _renderProfileOptions(',start);
 assert.ok(start>0&&end>start,'profile label helper missing');
 const fn=new Function('return class {'+src.slice(start,end)+'}')().prototype._profileDisplayLabel;
 const ctx={_translate:value=>value};

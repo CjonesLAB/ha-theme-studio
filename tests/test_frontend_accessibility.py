@@ -42,3 +42,24 @@ def test_file_inputs_remain_keyboard_focusable() -> None:
     assert "position: absolute" in hidden_input_rule
     assert "display: none" not in hidden_input_rule
 
+
+def test_profile_save_reminder_respects_reduced_motion() -> None:
+    """Unsaved profile changes get a visible, motion-safe reminder."""
+
+    assert "#profile-save-button.profile-save-reminder:not(:disabled)" in PANEL_SOURCE
+    assert "@keyframes profile-save-reminder" in PANEL_SOURCE
+    assert "@media (prefers-reduced-motion: reduce)" in PANEL_SOURCE
+    assert 'saveButton.dataset.profileNeedsSave = String(needsSave)' in PANEL_SOURCE
+    assert 'saveButton.classList.add("profile-save-reminder")' in PANEL_SOURCE
+    assert '"Änderungen im Profil speichern"' in PANEL_SOURCE
+
+
+def test_profile_save_success_pulses_once() -> None:
+    """A completed profile save receives one green confirmation pulse."""
+
+    assert "#profile-save-button.profile-save-success:not(:disabled)" in PANEL_SOURCE
+    assert "@keyframes profile-save-success" in PANEL_SOURCE
+    assert "animation: profile-save-success 680ms ease-in-out 1" in PANEL_SOURCE
+    assert "0 0 0 5px #43a047" in PANEL_SOURCE
+    assert "this._showProfileSaveSuccess();" in PANEL_SOURCE
+
