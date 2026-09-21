@@ -4,7 +4,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Entwicklungsversion: **0.6.0**
+> Aktuelle Entwicklungsversion: **0.6.1**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -25,6 +25,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - eigene Designprofile speichern, laden, umbenennen, duplizieren und löschen
 - Designänderungen mit Rückgängig und Wiederholen korrigieren
 - sichtbarer Hinweis auf noch nicht angewendete Änderungen
+- kurze visuelle Erinnerung bei ungespeicherten Profiländerungen und einmaliges grünes Bestätigungspulsieren nach dem Speichern
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
 - automatische Bedienoberfläche auf Deutsch, Englisch, Französisch oder Spanisch
