@@ -4,7 +4,7 @@
 
 Theme Studio is a custom Home Assistant integration for creating, previewing, and directly applying your own interface designs.
 
-> Current development version: **0.6.1**
+> Current development version: **0.6.2**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
@@ -26,6 +26,9 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - correct design changes with Undo and Redo
 - visible notice for unapplied changes
 - brief visual reminder for unsaved profile changes and one green confirmation pulse after saving
+- Space Command background effect with stars and light accents, without a visible grid overlay
+- optional Liquid Glass card style with a dedicated 0–100% transparency control, backdrop blur, saturation, and reflections; conflicting card material controls are set automatically and locked while glass is active
+- dashboard effects are automatically disabled in Home Assistant settings under `/config` and in overlay dialogs
 - automatic recovery point before applying a design
 - restore the last active design with one click, even after a restart
 - automatic user interface in German, English, French, or Spanish
@@ -63,13 +66,13 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 
 ### Theme Studio with Community Gallery and dashboard preview
 
-![Theme Studio 0.6.0 with mode-filtered Community Gallery, independent design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v060.png)
+![Theme Studio 0.6.2 with mode-filtered Community Gallery, independent design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v062.png)
 
 ### Fine-tuning
 
 | Colors and cards | Navigation |
 | --- | --- |
-| ![Color and card settings](docs/images/fine-settings-colors-cards-v044.png) | ![Customize header, sidebar, and active navigation](docs/images/fine-settings-navigation-v044.png) |
+| ![Card settings with the Liquid Glass material](docs/images/fine-settings-cards-liquid-glass-v062.png) | ![Customize header, sidebar, and active navigation](docs/images/fine-settings-navigation-v044.png) |
 
 | Background and image library | Dashboard effects and entity selection |
 | --- | --- |
@@ -107,7 +110,7 @@ Theme Studio will then appear in the sidebar.
    frontend:
      themes: !include_dir_merge_named themes
      extra_module_url:
-       - /theme_studio_files/theme-studio-effects.js
+       - /theme_studio_files/theme-studio-effects.js?v=0.6.2
    ```
 
 3. Check the configuration and restart Home Assistant:

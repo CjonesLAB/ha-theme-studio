@@ -16,6 +16,7 @@ from custom_components.theme_studio.websocket import (
     portable_import_settings,
     recovery_state_from_settings,
     sanitize_gallery_settings,
+    build_mode_values,
 )
 
 
@@ -140,3 +141,78 @@ def test_legacy_effect_fields_are_migrated_and_deduplicated() -> None:
     ]
     assert migrated["effects"]["energyWarning"] == 500
     assert migrated["effects"]["energyCritical"] == 501
+
+
+def test_liquid_glass_defaults_keep_existing_designs_unchanged() -> None:
+    """Older profiles gain disabled, safe Liquid Glass defaults."""
+
+    legacy_profile = {
+        key: value
+        for key, value in DEFAULT_LIGHT_PROFILE.items()
+        if not key.startswith("glass") and key != "liquidGlass"
+    }
+    settings = default_settings()
+    settings["light"] = legacy_profile
+
+    normalized = normalize_settings(settings)
+
+    assert normalized["light"]["liquidGlass"] is False
+    assert normalized["light"]["glassTransparency"] == 56
+    assert normalized["light"]["glassBlur"] == 22
+    assert normalized["light"]["glassSaturation"] == 145
+    assert normalized["light"]["glassHighlight"] == 42
+
+
+def test_liquid_glass_theme_values_include_material_controls() -> None:
+    """The active mode publishes bounded material settings to the frontend."""
+
+    profile = deepcopy(DEFAULT_LIGHT_PROFILE)
+    profile["liquidGlass"] = True
+    profile["glassTransparency"] = 70
+    profile["glassBlur"] = 20
+    profile["glassSaturation"] = 150
+    profile["glassHighlight"] = 40
+
+    values = build_mode_values(profile, "light")
+
+    assert values["theme-studio-liquid-glass"] == "1"
+    assert values["theme-studio-glass-blur"] == "20"
+    assert values["theme-studio-glass-saturation"] == "150"
+    assert values["theme-studio-glass-highlight"] == "40"
+    assert values["theme-studio-overlay-background"] == "#ffffff"
+    assert "inset 0 1px 0" in values["ha-card-box-shadow"]
+
+
+def test_liquid_glass_normalization_prevents_conflicting_card_settings() -> None:
+    """Liquid Glass uses one coherent material instead of opaque card values."""
+
+    profile = deepcopy(DEFAULT_DARK_PROFILE)
+    profile.update(
+        {
+            "liquidGlass": True,
+            "cardColor": "#ff0000",
+            "cardOpacity": 100,
+            "glassTransparency": 100,
+            "cardBorderColor": "#00ff00",
+            "cardBorderWidth": 6,
+            "cardShadow": 50,
+            "borderRadius": 5,
+            "glassBlur": 0,
+        }
+    )
+
+    settings = default_settings()
+    settings["dark"] = profile
+    normalized = normalize_settings(settings)["dark"]
+
+    assert normalized["cardColor"] == "#253642"
+    assert normalized["glassTransparency"] == 100
+    assert normalized["cardOpacity"] == 0
+    assert normalized["cardBorderColor"] == "#ffffff"
+    assert normalized["cardBorderWidth"] == 1
+    assert normalized["cardShadow"] == 24
+    assert normalized["borderRadius"] == 5
+    assert normalized["glassBlur"] == 0
+    assert build_mode_values(normalized, "dark")["ha-card-background"] == (
+        "rgba(37, 54, 66, 0.00)"
+    )

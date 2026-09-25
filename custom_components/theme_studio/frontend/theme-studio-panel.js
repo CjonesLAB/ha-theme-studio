@@ -1,7 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.6.1";
+} from "./theme-studio-locales.js?v=0.6.2";
+import "./theme-studio-effects.js?v=0.6.2-material3";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -54,6 +55,11 @@ class ThemeStudioPanel extends HTMLElement {
         cardBorderWidth: 1,
         cardShadow: 16,
         borderRadius: 18,
+        liquidGlass: false,
+        glassTransparency: 56,
+        glassBlur: 22,
+        glassSaturation: 145,
+        glassHighlight: 42,
         darkening: 10,
         background: "color",
         backgroundImage: "",
@@ -75,6 +81,11 @@ class ThemeStudioPanel extends HTMLElement {
         cardBorderWidth: 0,
         cardShadow: 28,
         borderRadius: 18,
+        liquidGlass: false,
+        glassTransparency: 66,
+        glassBlur: 22,
+        glassSaturation: 145,
+        glassHighlight: 42,
         darkening: 30,
         background: "color",
         backgroundImage: "",
@@ -238,7 +249,7 @@ class ThemeStudioPanel extends HTMLElement {
         .page {
           max-width: 1260px;
           margin: 0 auto;
-          padding: 18px 22px 30px;
+          padding: 18px 24px 30px;
         }
 
         .topbar {
@@ -249,10 +260,21 @@ class ThemeStudioPanel extends HTMLElement {
           justify-content: space-between;
           align-items: center;
           gap: 24px;
-          margin-bottom: 8px;
-          padding: 10px 0;
+          margin: 0;
+          padding: 10px 20px;
           background: var(--primary-background-color);
           box-shadow: 0 10px 18px -18px rgba(0, 0, 0, 0.7);
+        }
+
+        .topbar::after {
+          position: absolute;
+          right: 0;
+          bottom: -20px;
+          left: 0;
+          height: 20px;
+          background: var(--primary-background-color);
+          content: "";
+          pointer-events: none;
         }
 
         .topbar h1 {
@@ -280,6 +302,22 @@ class ThemeStudioPanel extends HTMLElement {
           font-weight: 700;
         }
 
+        .design-mode-indicator {
+          display: inline-flex;
+          flex: 0 0 36px;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border: 1px solid var(--divider-color);
+          border-radius: 50%;
+          background: var(--card-background-color, #ffffff);
+          color: var(--primary-text-color, #1c1c1c);
+          font-size: 20px;
+          line-height: 1;
+          box-shadow: var(--ha-card-box-shadow);
+        }
+
         .mode-switcher {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -299,24 +337,25 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .history-actions {
-          display: grid;
-          grid-template-columns: 38px 38px;
-          gap: 4px;
-          padding: 4px;
-          border-radius: 12px;
-          background: var(--card-background-color, #ffffff);
-          box-shadow: var(--ha-card-box-shadow);
+          display: flex;
+          gap: 7px;
+          padding: 0;
         }
 
         .history-button {
-          min-height: 38px;
+          flex: 0 0 36px;
+          width: 36px;
+          height: 36px;
+          min-height: 36px;
           padding: 0;
-          border: 0;
-          border-radius: 9px;
-          background: transparent;
+          border: 1px solid var(--divider-color);
+          border-radius: 50%;
+          background: var(--card-background-color, #ffffff);
           color: var(--primary-text-color, #1c1c1c);
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
+          line-height: 1;
+          box-shadow: var(--ha-card-box-shadow);
         }
 
         .history-button:hover:not(:disabled) {
@@ -381,8 +420,11 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .status {
+          position: relative;
+          z-index: 131;
           min-height: 18px;
-          margin: -7px 0 12px;
+          margin: 0 20px 12px;
+          padding-top: 2px;
           color: var(--secondary-text-color);
           font-size: 12px;
         }
@@ -413,9 +455,18 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .builder-controls {
+          position: sticky;
+          top: var(--theme-studio-preview-sticky-top, 82px);
           display: grid;
           min-width: 0;
+          max-height:
+            calc(100vh - var(--theme-studio-preview-sticky-top, 82px) - 20px);
           gap: 18px;
+          align-self: start;
+          overflow-y: auto;
+          border-radius: 17px;
+          scrollbar-gutter: stable;
+          scrollbar-width: thin;
         }
 
         .panel {
@@ -477,6 +528,25 @@ class ThemeStudioPanel extends HTMLElement {
           display: flex;
           flex-wrap: wrap;
           gap: 7px;
+        }
+
+        .profile-sticky-actions {
+          position: sticky;
+          top: var(--theme-studio-profile-sticky-top, 82px);
+          z-index: 120;
+          padding: 0 0 18px;
+          background: var(--primary-background-color, #101719);
+        }
+
+        .profile-sticky-surface {
+          display: grid;
+          gap: 9px;
+          padding: 12px 20px;
+          border: 1px solid var(--divider-color);
+          border-radius: 17px;
+          background: var(--card-background-color, #ffffff);
+          box-shadow: 0 28px 26px -22px rgba(0, 0, 0, 0.42);
+          backdrop-filter: none;
         }
 
         .profile-button,
@@ -566,7 +636,6 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .profile-hint {
-          grid-column: 1 / -1;
           margin: 0;
           color: var(--secondary-text-color);
           font-size: 10px;
@@ -758,6 +827,107 @@ class ThemeStudioPanel extends HTMLElement {
           gap: 7px;
         }
 
+        .gallery-mode-control {
+          display: grid;
+          min-width: 170px;
+          gap: 4px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .gallery-mode-picker {
+          position: relative;
+          color: var(--primary-text-color);
+        }
+
+        .gallery-mode-picker summary {
+          display: flex;
+          min-height: 39px;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 0 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          background: var(--secondary-background-color);
+          cursor: pointer;
+          list-style: none;
+        }
+
+        .gallery-mode-picker summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .gallery-mode-picker summary::after {
+          content: "⌄";
+          color: var(--secondary-text-color);
+          font-size: 14px;
+        }
+
+        .gallery-mode-picker[open] summary::after {
+          transform: rotate(180deg);
+        }
+
+        .gallery-mode-menu {
+          position: absolute;
+          z-index: 160;
+          top: calc(100% + 4px);
+          right: 0;
+          left: 0;
+          display: grid;
+          gap: 3px;
+          padding: 5px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          background: #101719;
+          background:
+            rgb(
+              from var(--primary-background-color, #101719)
+              r g b
+            );
+          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+          backdrop-filter: none;
+          isolation: isolate;
+        }
+
+        .gallery-mode-option,
+        .new-design-mode-option {
+          display: flex;
+          min-height: 34px;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 9px;
+          border: 0;
+          border-radius: 6px;
+          background: transparent;
+          color: var(--primary-text-color);
+          text-align: left;
+        }
+
+        .gallery-mode-option.selected,
+        .new-design-mode-option.selected {
+          background: var(--secondary-background-color);
+        }
+
+        .gallery-mode-option:hover,
+        .gallery-mode-option:focus-visible,
+        .new-design-mode-option:hover,
+        .new-design-mode-option:focus-visible {
+          background: var(--primary-color);
+          color: var(--text-primary-color, #ffffff);
+          outline: none;
+        }
+
+        .gallery-mode-check {
+          visibility: hidden;
+          font-weight: 700;
+        }
+
+        .gallery-mode-option.selected .gallery-mode-check,
+        .new-design-mode-option.selected .gallery-mode-check {
+          visibility: visible;
+        }
+
         .community-link {
           text-decoration: none;
         }
@@ -922,18 +1092,6 @@ class ThemeStudioPanel extends HTMLElement {
           z-index: 0;
           inset: 0;
           background: rgba(0, 0, 0, var(--community-darkening));
-          content: "";
-          pointer-events: none;
-        }
-
-        .community-mini-dashboard.space-command::before {
-          position: absolute;
-          z-index: 1;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(80, 225, 255, 0.09) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(80, 225, 255, 0.09) 1px, transparent 1px);
-          background-size: 16px 16px;
           content: "";
           pointer-events: none;
         }
@@ -1339,6 +1497,28 @@ class ThemeStudioPanel extends HTMLElement {
           margin-bottom: 0;
         }
 
+        .glass-setting-locked {
+          opacity: 0.42;
+          transition: opacity 160ms ease;
+        }
+
+        .glass-setting-locked input {
+          cursor: not-allowed;
+        }
+
+        .glass-lock-hint {
+          margin: 12px 0;
+          padding: 9px 11px;
+          border-left: 3px solid var(--primary-color);
+          border-radius: 7px;
+          background: color-mix(
+            in srgb,
+            var(--primary-color) 9%,
+            transparent
+          );
+          font-size: 10px;
+        }
+
         .range-head {
           display: flex;
           justify-content: space-between;
@@ -1456,6 +1636,21 @@ class ThemeStudioPanel extends HTMLElement {
             linear-gradient(135deg, #252a31, #111418);
         }
 
+        .effect-liquid-glass {
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.62),
+              rgba(190, 222, 240, 0.22) 45%,
+              rgba(90, 118, 140, 0.34)
+            ),
+            linear-gradient(135deg, #4c7187, #152733);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.75),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+            0 9px 22px rgba(0, 0, 0, 0.28);
+        }
+
         .effect-space-command {
           background:
             radial-gradient(
@@ -1467,16 +1662,6 @@ class ThemeStudioPanel extends HTMLElement {
               circle at 66% 67%,
               rgba(255, 255, 255, 0.75) 0 1px,
               transparent 2px
-            ),
-            repeating-linear-gradient(
-              90deg,
-              transparent 0 23px,
-              rgba(80, 225, 255, 0.08) 24px
-            ),
-            repeating-linear-gradient(
-              0deg,
-              transparent 0 23px,
-              rgba(80, 225, 255, 0.08) 24px
             ),
             linear-gradient(135deg, #06121d, #0b2639);
         }
@@ -1890,16 +2075,6 @@ class ThemeStudioPanel extends HTMLElement {
               circle at 88% 66%,
               rgba(80, 225, 255, 0.85) 0 1px,
               transparent 2px
-            ),
-            repeating-linear-gradient(
-              90deg,
-              transparent 0 63px,
-              rgba(80, 225, 255, 0.07) 64px
-            ),
-            repeating-linear-gradient(
-              0deg,
-              transparent 0 63px,
-              rgba(80, 225, 255, 0.07) 64px
             );
         }
 
@@ -1998,14 +2173,16 @@ class ThemeStudioPanel extends HTMLElement {
           min-height: 150px;
           padding: 15px;
           color: var(--preview-card-text);
-          background: var(--preview-card);
+          background-color: var(--preview-card);
+          background-image: var(--preview-glass-highlight, none);
           border:
             var(--preview-border-width)
             solid
             var(--preview-border-color);
           border-radius: var(--preview-radius);
           box-shadow: var(--preview-shadow);
-          backdrop-filter: blur(12px);
+          backdrop-filter: var(--preview-backdrop-filter, none);
+          -webkit-backdrop-filter: var(--preview-backdrop-filter, none);
         }
 
         .preview-card.status-pulse-demo {
@@ -2191,8 +2368,8 @@ class ThemeStudioPanel extends HTMLElement {
         @media (max-width: 900px) {
           .topbar {
             top: 56px;
-            margin: 0 -2px 12px;
-            padding: 7px 2px;
+            margin: 0;
+            padding: 7px 20px;
           }
 
           .topbar-intro {
@@ -2247,6 +2424,14 @@ class ThemeStudioPanel extends HTMLElement {
             grid-template-columns: 1fr;
           }
 
+          .builder-controls {
+            position: relative;
+            top: auto;
+            max-height: none;
+            overflow-y: visible;
+            scrollbar-gutter: auto;
+          }
+
           .preview-panel {
             z-index: 90;
             order: -1;
@@ -2269,13 +2454,13 @@ class ThemeStudioPanel extends HTMLElement {
 
         @media (max-width: 620px) {
           .page {
-            padding: 13px;
+            padding: 13px 20px 24px;
           }
 
           .topbar {
             top: 56px;
-            margin: 0 -1px 10px;
-            padding: 6px 1px;
+            margin: 0;
+            padding: 6px 20px;
           }
 
           .mode-switcher {
@@ -2290,14 +2475,20 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .history-actions {
-            grid-template-columns: 30px 30px;
-            flex: 0 0 68px;
-            padding: 3px;
+            flex: 0 0 auto;
+            gap: 6px;
+            padding: 0;
           }
 
           .history-button,
           .mode-button {
             min-height: 32px;
+          }
+
+          .history-button {
+            flex-basis: 32px;
+            width: 32px;
+            height: 32px;
           }
 
           .mode-button {
@@ -2529,7 +2720,13 @@ class ThemeStudioPanel extends HTMLElement {
               >↷</button>
             </div>
 
-            <span id="design-mode-label" class="version-badge">Dunkles Design</span>
+            <span
+              id="design-mode-label"
+              class="design-mode-indicator"
+              role="img"
+              title="Dunkles Design"
+              aria-label="Dunkles Design"
+            >☾</span>
 
             <button
               id="apply-button"
@@ -2616,9 +2813,32 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
 
             <div class="community-heading-actions">
-              <label>Galerie-Modus
-                <select id="gallery-mode"><option value="dark">Dunkel</option><option value="light">Hell</option></select>
-              </label>
+              <div class="gallery-mode-control">
+                <span>Galerie-Modus</span>
+                <details id="gallery-mode-picker" class="gallery-mode-picker">
+                  <summary id="gallery-mode-value">Dunkel</summary>
+                  <div class="gallery-mode-menu" role="listbox" aria-label="Galerie-Modus">
+                    <button
+                      class="gallery-mode-option selected"
+                      type="button"
+                      role="option"
+                      aria-selected="true"
+                      data-gallery-mode="dark"
+                    >
+                      <span>Dunkel</span><span class="gallery-mode-check" aria-hidden="true">✓</span>
+                    </button>
+                    <button
+                      class="gallery-mode-option"
+                      type="button"
+                      role="option"
+                      aria-selected="false"
+                      data-gallery-mode="light"
+                    >
+                      <span>Hell</span><span class="gallery-mode-check" aria-hidden="true">✓</span>
+                    </button>
+                  </div>
+                </details>
+              </div>
               <button
                 id="community-refresh-button"
                 class="profile-button"
@@ -2693,8 +2913,31 @@ class ThemeStudioPanel extends HTMLElement {
               <input id="new-design-name" maxlength="48" autocomplete="off">
             </div>
             <div class="profile-field">
-              <label for="new-design-mode">Modus des neuen Designs</label>
-              <select id="new-design-mode"><option value="light">Hell</option><option value="dark">Dunkel</option></select>
+              <label id="new-design-mode-label">Modus des neuen Designs</label>
+              <input id="new-design-mode" type="hidden" value="light">
+              <details id="new-design-mode-picker" class="gallery-mode-picker">
+                <summary id="new-design-mode-value" aria-labelledby="new-design-mode-label">Hell</summary>
+                <div class="gallery-mode-menu" role="listbox" aria-labelledby="new-design-mode-label">
+                  <button
+                    class="new-design-mode-option selected"
+                    type="button"
+                    role="option"
+                    aria-selected="true"
+                    data-new-design-mode="light"
+                  >
+                    <span>Hell</span><span class="gallery-mode-check" aria-hidden="true">✓</span>
+                  </button>
+                  <button
+                    class="new-design-mode-option"
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    data-new-design-mode="dark"
+                  >
+                    <span>Dunkel</span><span class="gallery-mode-check" aria-hidden="true">✓</span>
+                  </button>
+                </div>
+              </details>
             </div>
             <div class="profile-actions"><button id="new-design-button" class="profile-button primary" type="button">Neues Design erstellen</button></div>
             <div class="profile-field">
@@ -2721,7 +2964,12 @@ class ThemeStudioPanel extends HTMLElement {
               >
             </div>
 
-            <div class="profile-actions">
+          </div>
+        </section>
+
+        <section id="profile-sticky-actions" class="profile-sticky-actions">
+          <div class="profile-sticky-surface">
+            <div id="profile-edit-actions" class="profile-actions">
               <button
                 id="profile-save-button"
                 class="profile-button primary"
@@ -2820,6 +3068,67 @@ class ThemeStudioPanel extends HTMLElement {
             <details>
               <summary>Karten</summary>
               <div class="details-content">
+                <div class="effect-options">
+                  <button
+                    class="effect-option glass-style-option effect-none"
+                    data-glass-style="standard"
+                    type="button"
+                    aria-pressed="true"
+                  >
+                    <span class="effect-option-title">Standard</span>
+                    <span class="effect-option-description">
+                      Klassische Karten ohne Glasfilter.
+                    </span>
+                  </button>
+
+                  <button
+                    class="effect-option glass-style-option effect-liquid-glass"
+                    data-glass-style="liquid-glass"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="effect-option-title">Liquid Glass</span>
+                    <span class="effect-option-description">
+                      Transparenz, Unschärfe und Lichtreflexe.
+                    </span>
+                  </button>
+                </div>
+
+                <div id="glass-controls" hidden>
+                  ${this._rangeField(
+                    "glass-transparency",
+                    "Glas-Transparenz",
+                    0,
+                    100
+                  )}
+
+                  ${this._rangeField(
+                    "glass-blur",
+                    "Glas-Unschärfe",
+                    0,
+                    30
+                  )}
+
+                  ${this._rangeField(
+                    "glass-saturation",
+                    "Farbsättigung hinter dem Glas",
+                    100,
+                    180
+                  )}
+
+                  ${this._rangeField(
+                    "glass-highlight",
+                    "Glasreflexion",
+                    0,
+                    70
+                  )}
+                </div>
+
+                <p id="glass-lock-hint" class="effect-hint glass-lock-hint" hidden>
+                  Liquid Glass steuert Kartenfarbe, Deckkraft, Rahmen
+                  und Schatten automatisch.
+                </p>
+
                 ${this._colorField(
                   "card-color",
                   "Kartenfarbe"
@@ -3050,7 +3359,7 @@ class ThemeStudioPanel extends HTMLElement {
                       Space Command
                     </span>
                     <span class="effect-option-description">
-                      Sternenfeld, Raster und Lichtakzente
+                      Sternenfeld und Lichtakzente
                     </span>
                   </button>
 
@@ -3490,11 +3799,13 @@ class ThemeStudioPanel extends HTMLElement {
 
   disconnectedCallback() {
     this.localizer?.disconnect();
+    this._stickyOffsetObserver?.disconnect();
   }
 
   connectedCallback() {
     if (this._rendered) {
       this.localizer?.observe(this.shadowRoot);
+      this._setupStickyOffsets();
     }
   }
 
@@ -3866,8 +4177,11 @@ class ThemeStudioPanel extends HTMLElement {
 
   _setupStickyOffsets() {
     const topbar = this.shadowRoot.querySelector(".topbar");
+    const profileActions = this.shadowRoot.getElementById(
+      "profile-sticky-actions"
+    );
 
-    if (!topbar) {
+    if (!topbar || !profileActions) {
       return;
     }
 
@@ -3875,19 +4189,27 @@ class ThemeStudioPanel extends HTMLElement {
       const stickyTop = Number.parseFloat(
         getComputedStyle(topbar).top
       ) || 0;
-      const previewTop = Math.ceil(
-        stickyTop + topbar.getBoundingClientRect().height + 8
+      const profileStickyTop = Math.ceil(
+        stickyTop + topbar.getBoundingClientRect().height
+      ) + 20;
+      const previewStickyTop = Math.ceil(
+        profileStickyTop + profileActions.getBoundingClientRect().height
       );
 
       this.style.setProperty(
+        "--theme-studio-profile-sticky-top",
+        `${profileStickyTop}px`
+      );
+      this.style.setProperty(
         "--theme-studio-preview-sticky-top",
-        `${previewTop}px`
+        `${previewStickyTop}px`
       );
     };
 
     this._stickyOffsetObserver?.disconnect();
     this._stickyOffsetObserver = new ResizeObserver(updateOffset);
     this._stickyOffsetObserver.observe(topbar);
+    this._stickyOffsetObserver.observe(profileActions);
     requestAnimationFrame(updateOffset);
   }
 
@@ -4030,10 +4352,59 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot.getElementById("new-design-button").addEventListener("click", () => this._newDesign());
-    this.shadowRoot.getElementById("gallery-mode").addEventListener("change", (event) => {
-      this.galleryMode = event.target.value;
-      this._renderCommunityGallery();
-    });
+    this.shadowRoot
+      .querySelectorAll(".new-design-mode-option")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const input = this.shadowRoot.getElementById("new-design-mode");
+          const picker = this.shadowRoot.getElementById(
+            "new-design-mode-picker"
+          );
+
+          input.value = button.dataset.newDesignMode;
+          picker.removeAttribute("open");
+          this._syncNewDesignModeControl();
+          picker.querySelector("summary")?.focus();
+        });
+      });
+
+    this.shadowRoot
+      .getElementById("new-design-mode-picker")
+      .addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") {
+          return;
+        }
+
+        event.currentTarget.removeAttribute("open");
+        event.currentTarget.querySelector("summary")?.focus();
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".gallery-mode-option")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this.galleryMode = button.dataset.galleryMode;
+          const picker = this.shadowRoot.getElementById(
+            "gallery-mode-picker"
+          );
+
+          picker.removeAttribute("open");
+          this._syncGalleryModeControl();
+          this._renderCommunityGallery();
+          picker.querySelector("summary")?.focus();
+        });
+      });
+
+    this.shadowRoot
+      .getElementById("gallery-mode-picker")
+      .addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") {
+          return;
+        }
+
+        event.currentTarget.removeAttribute("open");
+        event.currentTarget.querySelector("summary")?.focus();
+      });
 
     this.shadowRoot
       .querySelectorAll(".color-preset")
@@ -4095,7 +4466,53 @@ class ThemeStudioPanel extends HTMLElement {
       "borderRadius",
       "px"
     );
+    this._bindRange(
+      "glass-transparency",
+      "glassTransparency",
+      "%"
+    );
+    this._bindRange("glass-blur", "glassBlur", "px");
+    this._bindRange(
+      "glass-saturation",
+      "glassSaturation",
+      "%"
+    );
+    this._bindRange(
+      "glass-highlight",
+      "glassHighlight",
+      "%"
+    );
     this._bindRange("darkening", "darkening", "%");
+
+    this.shadowRoot
+      .querySelectorAll(".glass-style-option")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const enabled =
+            button.dataset.glassStyle === "liquid-glass";
+
+          if (enabled === this.profile.liquidGlass) {
+            return;
+          }
+
+          this._recordHistory();
+          this.profile.liquidGlass = enabled;
+
+          if (enabled) {
+            this.profile.glassTransparency =
+              this.activeMode === "light" ? 56 : 66;
+            this.profile.glassBlur = 22;
+            this.profile.glassSaturation = 145;
+            this.profile.glassHighlight = 32;
+            this.profile.borderRadius = 26;
+            this._applyLiquidGlassMaterial();
+          }
+
+          this._syncControls();
+          this._updatePreview();
+          this._finishSettingsChange();
+        });
+      });
 
     this.shadowRoot
       .querySelectorAll(".background-effect-option")
@@ -4341,8 +4758,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.activeMode = settings.mode || this.activeMode;
     this.galleryMode = this.activeMode;
     this.settings.mode = this.activeMode;
-    const galleryModeSelect = this.shadowRoot.getElementById("gallery-mode");
-    if (galleryModeSelect) galleryModeSelect.value = this.galleryMode;
+    this._syncGalleryModeControl();
     this._resetHistory();
     this._syncControls();
     this._updatePreview();
@@ -4962,8 +5378,7 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     this.galleryMode = designMode;
-    const galleryModeSelect = this.shadowRoot.getElementById("gallery-mode");
-    if (galleryModeSelect) galleryModeSelect.value = designMode;
+    this._syncGalleryModeControl();
 
     const originalText = button.textContent;
     button.disabled = true;
@@ -5458,9 +5873,10 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   _importPreviewMode(label, mode) {
+    const minimumOpacity = mode.liquidGlass ? 0 : 0.3;
     const opacity = Math.min(
       1,
-      Math.max(0.3, Number(mode.cardOpacity) / 100)
+      Math.max(minimumOpacity, Number(mode.cardOpacity) / 100)
     );
     const borderWidth = Math.max(
       0,
@@ -5629,6 +6045,9 @@ class ThemeStudioPanel extends HTMLElement {
       const value = Number(event.target.value);
 
       this.profile[settingName] = value;
+      if (settingName === "glassTransparency") {
+        this._applyLiquidGlassMaterial();
+      }
       output.textContent = suffix
         ? `${value} ${suffix}`
         : `${value}`;
@@ -6500,6 +6919,68 @@ class ThemeStudioPanel extends HTMLElement {
     }, 2600);
   }
 
+  _applyLiquidGlassMaterial() {
+    if (!this.profile?.liquidGlass) {
+      return;
+    }
+
+    const lightMode = this.activeMode === "light";
+
+    Object.assign(this.profile, {
+      cardColor: lightMode ? "#ffffff" : "#253642",
+      cardOpacity: 100 - Math.min(
+        100,
+        Math.max(0, Number(this.profile.glassTransparency) || 0)
+      ),
+      cardBorderColor: "#ffffff",
+      cardBorderWidth: 1,
+      cardShadow: 24,
+    });
+  }
+
+  _syncGalleryModeControl() {
+    const value = this.shadowRoot.getElementById("gallery-mode-value");
+
+    if (!value) {
+      return;
+    }
+
+    value.textContent = this._translate(
+      this.galleryMode === "light" ? "Hell" : "Dunkel"
+    );
+
+    this.shadowRoot
+      .querySelectorAll(".gallery-mode-option")
+      .forEach((option) => {
+        const selected = option.dataset.galleryMode === this.galleryMode;
+
+        option.classList.toggle("selected", selected);
+        option.setAttribute("aria-selected", String(selected));
+      });
+  }
+
+  _syncNewDesignModeControl() {
+    const input = this.shadowRoot.getElementById("new-design-mode");
+    const value = this.shadowRoot.getElementById("new-design-mode-value");
+
+    if (!input || !value) {
+      return;
+    }
+
+    value.textContent = this._translate(
+      input.value === "dark" ? "Dunkel" : "Hell"
+    );
+
+    this.shadowRoot
+      .querySelectorAll(".new-design-mode-option")
+      .forEach((option) => {
+        const selected = option.dataset.newDesignMode === input.value;
+
+        option.classList.toggle("selected", selected);
+        option.setAttribute("aria-selected", String(selected));
+      });
+  }
+
   _syncControls() {
     this.shadowRoot
       .querySelectorAll(".mode-button")
@@ -6511,8 +6992,18 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.activeMode = this.settings.mode || this.activeMode;
-    this.shadowRoot.getElementById("design-mode-label").textContent =
-      this._translate(this.activeMode === "light" ? "Helles Design" : "Dunkles Design");
+    this._applyLiquidGlassMaterial();
+    const designModeLabel = this.shadowRoot.getElementById(
+      "design-mode-label"
+    );
+    const designModeText = this._translate(
+      this.activeMode === "light" ? "Helles Design" : "Dunkles Design"
+    );
+
+    designModeLabel.textContent = this.activeMode === "light" ? "☀" : "☾";
+    designModeLabel.title = designModeText;
+    designModeLabel.setAttribute("aria-label", designModeText);
+    this._syncGalleryModeControl();
 
     const colors = {
       "primary-color": "primaryColor",
@@ -6541,6 +7032,10 @@ class ThemeStudioPanel extends HTMLElement {
       "card-border-width": ["cardBorderWidth", "px"],
       "card-shadow": ["cardShadow", ""],
       "border-radius": ["borderRadius", "px"],
+      "glass-transparency": ["glassTransparency", "%"],
+      "glass-blur": ["glassBlur", "px"],
+      "glass-saturation": ["glassSaturation", "%"],
+      "glass-highlight": ["glassHighlight", "%"],
       "darkening": ["darkening", "%"],
     };
 
@@ -6558,6 +7053,39 @@ class ThemeStudioPanel extends HTMLElement {
             : `${value}`;
       }
     );
+
+    this.shadowRoot
+      .querySelectorAll(".glass-style-option")
+      .forEach((button) => {
+        const active = button.dataset.glassStyle ===
+          (this.profile.liquidGlass ? "liquid-glass" : "standard");
+
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+
+    this.shadowRoot.getElementById("glass-controls").hidden =
+      !this.profile.liquidGlass;
+
+    const glassLockedControls = [
+      "card-color",
+      "card-border-color",
+      "card-opacity",
+      "card-border-width",
+      "card-shadow",
+    ];
+
+    glassLockedControls.forEach((id) => {
+      const control = this.shadowRoot.getElementById(id);
+      const locked = Boolean(this.profile.liquidGlass);
+
+      control.disabled = locked;
+      control.closest(".field, .range-group")
+        ?.classList.toggle("glass-setting-locked", locked);
+    });
+
+    this.shadowRoot.getElementById("glass-lock-hint").hidden =
+      !this.profile.liquidGlass;
 
     const selectedBackground = this.backgrounds.find(
       (background) => this._backgroundPath(background.url)
@@ -6831,6 +7359,7 @@ class ThemeStudioPanel extends HTMLElement {
       "role",
       type === "error" ? "alert" : "status"
     );
+
     status.setAttribute(
       "aria-live",
       type === "error" ? "assertive" : "polite"
@@ -6928,7 +7457,7 @@ class ThemeStudioPanel extends HTMLElement {
   _cardShadow() {
     const strength = this.profile.cardShadow;
 
-    if (strength === 0) {
+    if (strength === 0 && !this.profile.liquidGlass) {
       return "none";
     }
 
@@ -6938,9 +7467,24 @@ class ThemeStudioPanel extends HTMLElement {
     const opacity =
       Math.min(0.45, 0.12 + strength / 150);
 
-    return (
+    const shadow = (
       `0 ${offset}px ${strength}px ` +
       `rgba(0, 0, 0, ${opacity})`
+    );
+
+    if (!this.profile.liquidGlass) {
+      return shadow;
+    }
+
+    const highlight = Math.min(
+      0.7,
+      this.profile.glassHighlight / 100
+    );
+
+    return (
+      `${shadow}, `
+      + `inset 0 1px 0 rgba(255, 255, 255, ${highlight}), `
+      + "inset 0 -1px 0 rgba(0, 0, 0, 0.14)"
     );
   }
 
@@ -7116,6 +7660,22 @@ class ThemeStudioPanel extends HTMLElement {
     preview.style.setProperty(
       "--preview-shadow",
       this._cardShadow()
+    );
+
+    const glassHighlight = this.profile.glassHighlight / 100;
+
+    preview.style.setProperty(
+      "--preview-backdrop-filter",
+      this.profile.liquidGlass
+        ? `blur(${this.profile.glassBlur}px) saturate(${this.profile.glassSaturation}%)`
+        : "none"
+    );
+
+    preview.style.setProperty(
+      "--preview-glass-highlight",
+      this.profile.liquidGlass
+        ? `linear-gradient(145deg, rgba(255,255,255,${glassHighlight}) 0%, rgba(255,255,255,${glassHighlight * 0.28}) 36%, rgba(255,255,255,0) 62%, rgba(0,0,0,0.08) 100%)`
+        : "none"
     );
 
     preview.style.setProperty(

@@ -1,4 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
+const THEME_STUDIO_EFFECTS_VERSION = "0.6.2-material3";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -15,14 +16,21 @@ const DEFAULT_CLIMATE_COMFORT_MAX = 24;
 const DEFAULT_CLIMATE_HOT = 28;
 const DEFAULT_ALERT_ENTITIES = [];
 const DEFAULT_ALERT_BATTERY_LOW = 20;
+const DEFAULT_LIQUID_GLASS = false;
+const DEFAULT_GLASS_BLUR = 22;
+const DEFAULT_GLASS_SATURATION = 145;
+const DEFAULT_GLASS_HIGHLIGHT = 42;
 
 const EFFECT_CHECK_INTERVAL = 1200;
+const GLASS_SCAN_INTERVAL = 3000;
+const STARTUP_SYNC_DELAYS = [0, 40, 100, 220, 450, 800, 1400];
 const MAX_PIXEL_RATIO = 2;
 const CARD_INDEX_TTL = 30000;
 
 
 class ThemeStudioEffects {
   constructor() {
+    this.version = THEME_STUDIO_EFFECTS_VERSION;
     this.effect = DEFAULT_EFFECT;
     this.motion = DEFAULT_MOTION;
     this.glow = DEFAULT_GLOW;
@@ -42,12 +50,29 @@ class ThemeStudioEffects {
     this.climateHot = DEFAULT_CLIMATE_HOT;
     this.alertEntities = [...DEFAULT_ALERT_ENTITIES];
     this.alertBatteryLow = DEFAULT_ALERT_BATTERY_LOW;
+    this.liquidGlass = DEFAULT_LIQUID_GLASS;
+    this.glassBlur = DEFAULT_GLASS_BLUR;
+    this.glassSaturation = DEFAULT_GLASS_SATURATION;
+    this.glassHighlight = DEFAULT_GLASS_HIGHLIGHT;
+    this.overlayBackground = "#182326";
+    this.effectsExcludedForConfig = false;
     this.stateSnapshot = new Map();
     this.cardAnimations = new WeakMap();
     this.energyCards = new Set();
     this.climateCards = new Set();
     this.alertCards = new Set();
     this.originalCardStyles = new WeakMap();
+    this.glassCards = new Set();
+    this.originalGlassStyles = new WeakMap();
+    this.glassHeadings = new Set();
+    this.originalGlassHeadingStyles = new WeakMap();
+    this.glassLastScan = 0;
+    this.overlaySurfaces = new Set();
+    this.originalOverlayStyles = new WeakMap();
+    this.overlayScrims = new Set();
+    this.originalOverlayScrimStyles = new WeakMap();
+    this.configSurface = null;
+    this.originalConfigStyles = null;
 
     this.canvas = null;
     this.context = null;
@@ -55,6 +80,7 @@ class ThemeStudioEffects {
     this.lastFrameTime = 0;
     this.stars = [];
     this.pollIntervalId = null;
+    this.startupSyncTimeoutIds = new Set();
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
 
@@ -66,6 +92,7 @@ class ThemeStudioEffects {
     this._bindEvents();
     this._resize();
     this._readThemeSettings();
+    this._startStartupSync();
   }
 
   _createLayer() {
@@ -115,7 +142,9 @@ class ThemeStudioEffects {
       () => {
         this.stateSnapshot.clear();
         this._invalidateCardIndex();
+        this.glassLastScan = 0;
         this._readThemeSettings();
+        this._startStartupSync();
       }
     );
 
@@ -128,11 +157,13 @@ class ThemeStudioEffects {
       "visibilitychange",
       () => {
         if (document.hidden) {
+          this._stopStartupSync();
           this._stopPolling();
           return;
         }
 
         this._readThemeSettings();
+        this._startStartupSync();
         this._checkCardStates();
         this._startPolling();
       }
@@ -165,6 +196,39 @@ class ThemeStudioEffects {
 
     window.clearInterval(this.pollIntervalId);
     this.pollIntervalId = null;
+  }
+
+  _startStartupSync() {
+    this._stopStartupSync();
+
+    if (document.hidden) {
+      return;
+    }
+
+    for (const delay of STARTUP_SYNC_DELAYS) {
+      const timeoutId = window.setTimeout(
+        () => {
+          this.startupSyncTimeoutIds.delete(timeoutId);
+          this._readThemeSettings();
+
+          if (this.liquidGlass) {
+            this.glassLastScan = 0;
+            this._syncLiquidGlassCards(true);
+          }
+        },
+        delay
+      );
+
+      this.startupSyncTimeoutIds.add(timeoutId);
+    }
+  }
+
+  _stopStartupSync() {
+    for (const timeoutId of this.startupSyncTimeoutIds) {
+      window.clearTimeout(timeoutId);
+    }
+
+    this.startupSyncTimeoutIds.clear();
   }
 
   _themeElements() {
@@ -247,6 +311,8 @@ class ThemeStudioEffects {
   }
 
   _readThemeSettings() {
+    const effectsExcludedForConfig =
+      this._isConfigPath();
     const requestedEffect =
       this._readCssVariable(
         "--theme-studio-effect"
@@ -349,16 +415,57 @@ class ThemeStudioEffects {
         100
       );
 
+    const requestedLiquidGlass =
+      this._readNumberVariable(
+        "--theme-studio-liquid-glass",
+        DEFAULT_LIQUID_GLASS ? 1 : 0,
+        0,
+        1
+      ) >= 0.5;
+
+    const requestedGlassBlur =
+      this._readNumberVariable(
+        "--theme-studio-glass-blur",
+        DEFAULT_GLASS_BLUR,
+        0,
+        30
+      );
+
+    const requestedGlassSaturation =
+      this._readNumberVariable(
+        "--theme-studio-glass-saturation",
+        DEFAULT_GLASS_SATURATION,
+        100,
+        180
+      );
+
+    const requestedGlassHighlight =
+      this._readNumberVariable(
+        "--theme-studio-glass-highlight",
+        DEFAULT_GLASS_HIGHLIGHT,
+        0,
+        70
+      );
+
+    const requestedOverlayBackground =
+      this._readCssVariable(
+        "--theme-studio-overlay-background"
+      ) || "#182326";
+
     const reduceMotion =
       this.reduceMotionQuery.matches;
 
-    const nextEffect = reduceMotion
+    const nextEffect = reduceMotion || effectsExcludedForConfig
       ? "none"
       : requestedEffect;
 
-    const nextCardEffects = reduceMotion
+    const nextCardEffects = reduceMotion || effectsExcludedForConfig
       ? []
       : requestedCardEffects;
+
+    const nextLiquidGlass = effectsExcludedForConfig
+      ? false
+      : requestedLiquidGlass;
 
     const changed =
       nextEffect !== this.effect
@@ -385,7 +492,14 @@ class ThemeStudioEffects {
       || requestedAlertEntities.join(",") !==
         this.alertEntities.join(",")
       || requestedAlertBatteryLow !==
-        this.alertBatteryLow;
+        this.alertBatteryLow
+      || nextLiquidGlass !== this.liquidGlass
+      || requestedGlassBlur !== this.glassBlur
+      || requestedGlassSaturation !== this.glassSaturation
+      || requestedGlassHighlight !== this.glassHighlight
+      || requestedOverlayBackground !== this.overlayBackground
+      || effectsExcludedForConfig !==
+        this.effectsExcludedForConfig;
 
     if (!changed) {
       return;
@@ -394,6 +508,8 @@ class ThemeStudioEffects {
     this._clearEnergyCards();
     this._clearClimateCards();
     this._clearAlertCards();
+    this._clearLiquidGlassCards();
+    this._clearOverlaySurfaces();
 
     this.effect = nextEffect;
     this.motion = requestedMotion;
@@ -420,9 +536,88 @@ class ThemeStudioEffects {
     );
     this.alertEntities = requestedAlertEntities;
     this.alertBatteryLow = requestedAlertBatteryLow;
+    this.liquidGlass = nextLiquidGlass;
+    this.glassBlur = requestedGlassBlur;
+    this.glassSaturation = requestedGlassSaturation;
+    this.glassHighlight = requestedGlassHighlight;
+    this.overlayBackground = requestedOverlayBackground;
+    this.effectsExcludedForConfig =
+      effectsExcludedForConfig;
     this.stateSnapshot.clear();
 
     this._applyEffect();
+    this._syncConfigSurface();
+    this._syncLiquidGlassCards(true);
+  }
+
+  _isConfigPath() {
+    const path = window.location?.pathname || "";
+
+    return path === "/config" || path.startsWith("/config/");
+  }
+
+  _syncConfigSurface() {
+    const surface = document.querySelector("home-assistant");
+
+    if (!this.effectsExcludedForConfig || !surface) {
+      this._restoreConfigSurface();
+      return;
+    }
+
+    if (this.configSurface && this.configSurface !== surface) {
+      this._restoreConfigSurface();
+    }
+
+    const properties = {
+      "--ha-card-background": this.overlayBackground,
+      "--card-background-color": this.overlayBackground,
+      "--ha-card-box-shadow": "none",
+      "--ha-card-border-color": "var(--divider-color)",
+      "--ha-card-border-width": "1px",
+    };
+
+    if (!this.originalConfigStyles) {
+      this.originalConfigStyles = {};
+
+      for (const property of Object.keys(properties)) {
+        this.originalConfigStyles[property] = {
+          value: surface.style.getPropertyValue(property),
+          priority: surface.style.getPropertyPriority(property),
+        };
+      }
+    }
+
+    this.configSurface = surface;
+
+    for (const [property, value] of Object.entries(properties)) {
+      surface.style.setProperty(property, value, "important");
+    }
+  }
+
+  _restoreConfigSurface() {
+    if (!this.configSurface || !this.originalConfigStyles) {
+      this.configSurface = null;
+      this.originalConfigStyles = null;
+      return;
+    }
+
+    for (
+      const [property, original]
+      of Object.entries(this.originalConfigStyles)
+    ) {
+      if (original.value) {
+        this.configSurface.style.setProperty(
+          property,
+          original.value,
+          original.priority
+        );
+      } else {
+        this.configSurface.style.removeProperty(property);
+      }
+    }
+
+    this.configSurface = null;
+    this.originalConfigStyles = null;
   }
 
   _applyEffect() {
@@ -446,6 +641,8 @@ class ThemeStudioEffects {
   }
 
   _checkCardStates() {
+    this._syncLiquidGlassCards();
+
     if (this.cardEffects.length === 0) {
       this.stateSnapshot.clear();
       return;
@@ -489,6 +686,470 @@ class ThemeStudioEffects {
         stateObject
       );
     }
+  }
+
+  _syncLiquidGlassCards(force = false) {
+    if (!this.liquidGlass) {
+      this._clearLiquidGlassCards();
+      return;
+    }
+
+    const now = Date.now();
+
+    if (
+      !force
+      && now - this.glassLastScan < GLASS_SCAN_INTERVAL
+    ) {
+      return;
+    }
+
+    this.glassLastScan = now;
+
+    const currentCards = new Set();
+    const currentHeadings = new Set();
+    const currentOverlays = new Set();
+    const currentScrims = new Set();
+
+    this._visitElements(document, (element) => {
+      if (this._isOverlayScrimElement(element)) {
+        currentScrims.add(element);
+        this._styleOverlayScrim(element);
+      }
+
+      if (this._isOverlayElement(element)) {
+        currentOverlays.add(element);
+        this._styleOverlaySurface(element);
+      }
+
+      if (element.localName !== "ha-card") {
+        return;
+      }
+
+      if (this._isInsideOverlay(element)) {
+        this._restoreLiquidGlassCard(element);
+        this._restoreLiquidGlassHeading(element);
+        return;
+      }
+
+      if (this._isHeadingCard(element)) {
+        currentHeadings.add(element);
+        this._restoreLiquidGlassCard(element);
+        this._styleLiquidGlassHeading(element);
+        return;
+      }
+
+      this._restoreLiquidGlassHeading(element);
+      currentCards.add(element);
+      this._styleLiquidGlassCard(element);
+    });
+
+    for (const card of this.glassCards) {
+      if (!currentCards.has(card) || !card.isConnected) {
+        this._restoreLiquidGlassCard(card);
+      }
+    }
+
+    this.glassCards = currentCards;
+
+    for (const heading of this.glassHeadings) {
+      if (!currentHeadings.has(heading) || !heading.isConnected) {
+        this._restoreLiquidGlassHeading(heading);
+      }
+    }
+
+    this.glassHeadings = currentHeadings;
+
+    for (const overlay of this.overlaySurfaces) {
+      if (!currentOverlays.has(overlay) || !overlay.isConnected) {
+        this._restoreOverlaySurface(overlay);
+      }
+    }
+
+    this.overlaySurfaces = currentOverlays;
+
+    for (const scrim of this.overlayScrims) {
+      if (!currentScrims.has(scrim) || !scrim.isConnected) {
+        this._restoreOverlayScrim(scrim);
+      }
+    }
+
+    this.overlayScrims = currentScrims;
+  }
+
+  _isOverlayScrimElement(element) {
+    const classes = String(element?.className || "")
+      .split(/\s+/);
+
+    return (
+      classes.includes("mdc-dialog__scrim")
+      || classes.includes("scrim")
+      || element?.getAttribute?.("part") === "scrim"
+    );
+  }
+
+  _isHeadingCard(card) {
+    let current = card;
+
+    while (current) {
+      const name = String(current.localName || "");
+
+      if (
+        name === "hui-heading-card"
+        || name === "ha-heading-card"
+        || name.endsWith("-heading-card")
+      ) {
+        return true;
+      }
+
+      let config;
+
+      try {
+        config = current._config || current.config;
+      } catch (_error) {
+        config = null;
+      }
+
+      if (config?.type === "heading") {
+        return true;
+      }
+
+      if (current.parentElement) {
+        current = current.parentElement;
+        continue;
+      }
+
+      current = current.getRootNode?.()?.host || null;
+    }
+
+    return false;
+  }
+
+  _styleOverlayScrim(element) {
+    if (!this.originalOverlayScrimStyles.has(element)) {
+      const properties = [
+        "background-color",
+        "opacity",
+        "backdrop-filter",
+        "-webkit-backdrop-filter",
+      ];
+      const originals = {};
+
+      for (const property of properties) {
+        originals[property] = {
+          value: element.style.getPropertyValue(property),
+          priority: element.style.getPropertyPriority(property),
+        };
+      }
+
+      this.originalOverlayScrimStyles.set(element, originals);
+    }
+
+    element.style.setProperty(
+      "background-color",
+      "rgba(0, 0, 0, 0.12)",
+      "important"
+    );
+    element.style.setProperty("opacity", "1", "important");
+    element.style.setProperty(
+      "backdrop-filter",
+      "blur(2px) saturate(110%)",
+      "important"
+    );
+    element.style.setProperty(
+      "-webkit-backdrop-filter",
+      "blur(2px) saturate(110%)",
+      "important"
+    );
+  }
+
+  _restoreOverlayScrim(element) {
+    const originals =
+      this.originalOverlayScrimStyles.get(element);
+
+    if (!originals) {
+      return;
+    }
+
+    for (const [property, original] of Object.entries(originals)) {
+      if (original.value) {
+        element.style.setProperty(
+          property,
+          original.value,
+          original.priority
+        );
+      } else {
+        element.style.removeProperty(property);
+      }
+    }
+
+    this.originalOverlayScrimStyles.delete(element);
+    this.overlayScrims.delete(element);
+  }
+
+  _clearOverlayScrims() {
+    for (const scrim of Array.from(this.overlayScrims)) {
+      this._restoreOverlayScrim(scrim);
+    }
+
+    this.overlayScrims.clear();
+  }
+
+  _isOverlayElement(element) {
+    const name = String(element?.localName || "");
+
+    return (
+      name === "dialog"
+      || name === "ha-dialog"
+      || name === "ha-more-info-dialog"
+      || name.startsWith("hui-dialog-")
+      || name.startsWith("more-info-")
+      || element?.getAttribute?.("role") === "dialog"
+      || element?.getAttribute?.("aria-modal") === "true"
+    );
+  }
+
+  _isInsideOverlay(element) {
+    let current = element;
+
+    while (current) {
+      if (this._isOverlayElement(current)) {
+        return true;
+      }
+
+      if (current.parentElement) {
+        current = current.parentElement;
+        continue;
+      }
+
+      current = current.getRootNode?.()?.host || null;
+    }
+
+    return false;
+  }
+
+  _styleOverlaySurface(element) {
+    const properties = [
+      "--ha-card-background",
+      "--card-background-color",
+      "--ha-dialog-surface-background",
+      "--mdc-dialog-surface-color",
+      "--mdc-theme-surface",
+    ];
+
+    if (!this.originalOverlayStyles.has(element)) {
+      const originals = {};
+
+      for (const property of properties) {
+        originals[property] = {
+          value: element.style.getPropertyValue(property),
+          priority: element.style.getPropertyPriority(property),
+        };
+      }
+
+      this.originalOverlayStyles.set(element, originals);
+    }
+
+    for (const property of properties) {
+      element.style.setProperty(
+        property,
+        this.overlayBackground,
+        "important"
+      );
+    }
+  }
+
+  _restoreOverlaySurface(element) {
+    const originals = this.originalOverlayStyles.get(element);
+
+    if (!originals) {
+      return;
+    }
+
+    for (const [property, original] of Object.entries(originals)) {
+      if (original.value) {
+        element.style.setProperty(
+          property,
+          original.value,
+          original.priority
+        );
+      } else {
+        element.style.removeProperty(property);
+      }
+    }
+
+    this.originalOverlayStyles.delete(element);
+    this.overlaySurfaces.delete(element);
+  }
+
+  _clearOverlaySurfaces() {
+    for (const overlay of Array.from(this.overlaySurfaces)) {
+      this._restoreOverlaySurface(overlay);
+    }
+
+    this.overlaySurfaces.clear();
+    this._clearOverlayScrims();
+  }
+
+  _styleLiquidGlassCard(card) {
+    if (!this.originalGlassStyles.has(card)) {
+      this.originalGlassStyles.set(card, {
+        backdropFilter: card.style.getPropertyValue("backdrop-filter"),
+        backdropFilterPriority:
+          card.style.getPropertyPriority("backdrop-filter"),
+        webkitBackdropFilter:
+          card.style.getPropertyValue("-webkit-backdrop-filter"),
+        webkitBackdropFilterPriority:
+          card.style.getPropertyPriority("-webkit-backdrop-filter"),
+        backgroundImage: card.style.getPropertyValue("background-image"),
+        backgroundImagePriority:
+          card.style.getPropertyPriority("background-image"),
+      });
+    }
+
+    const filter =
+      `blur(${this.glassBlur}px) `
+      + `saturate(${this.glassSaturation}%)`;
+    const highlight = this.glassHighlight / 100;
+    const gradient =
+      "linear-gradient(145deg, "
+      + `rgba(255, 255, 255, ${highlight}) 0%, `
+      + `rgba(255, 255, 255, ${highlight * 0.28}) 36%, `
+      + "rgba(255, 255, 255, 0) 62%, "
+      + "rgba(0, 0, 0, 0.08) 100%)";
+
+    if (
+      typeof CSS === "undefined"
+      || CSS.supports("backdrop-filter", "blur(1px)")
+    ) {
+      card.style.setProperty("backdrop-filter", filter, "important");
+    }
+
+    if (
+      typeof CSS === "undefined"
+      || CSS.supports("-webkit-backdrop-filter", "blur(1px)")
+    ) {
+      card.style.setProperty(
+        "-webkit-backdrop-filter",
+        filter,
+        "important"
+      );
+    }
+
+    card.style.setProperty("background-image", gradient, "important");
+  }
+
+  _styleLiquidGlassHeading(heading) {
+    const properties = [
+      "background",
+      "background-color",
+      "background-image",
+      "backdrop-filter",
+      "-webkit-backdrop-filter",
+      "border-color",
+      "box-shadow",
+    ];
+
+    if (!this.originalGlassHeadingStyles.has(heading)) {
+      const originals = {};
+
+      for (const property of properties) {
+        originals[property] = {
+          value: heading.style.getPropertyValue(property),
+          priority: heading.style.getPropertyPriority(property),
+        };
+      }
+
+      this.originalGlassHeadingStyles.set(heading, originals);
+    }
+
+    heading.style.setProperty("background", "transparent", "important");
+    heading.style.setProperty(
+      "background-color",
+      "transparent",
+      "important"
+    );
+    heading.style.setProperty("background-image", "none", "important");
+    heading.style.setProperty("backdrop-filter", "none", "important");
+    heading.style.setProperty(
+      "-webkit-backdrop-filter",
+      "none",
+      "important"
+    );
+    heading.style.setProperty("border-color", "transparent", "important");
+    heading.style.setProperty("box-shadow", "none", "important");
+  }
+
+  _restoreLiquidGlassHeading(heading) {
+    const originals = this.originalGlassHeadingStyles.get(heading);
+
+    if (!originals) {
+      return;
+    }
+
+    for (const [property, original] of Object.entries(originals)) {
+      if (original.value) {
+        heading.style.setProperty(
+          property,
+          original.value,
+          original.priority
+        );
+      } else {
+        heading.style.removeProperty(property);
+      }
+    }
+
+    this.originalGlassHeadingStyles.delete(heading);
+    this.glassHeadings.delete(heading);
+  }
+
+  _restoreLiquidGlassCard(card) {
+    const original = this.originalGlassStyles.get(card);
+
+    if (!original) {
+      return;
+    }
+
+    const restore = (property, value, priority) => {
+      if (value) {
+        card.style.setProperty(property, value, priority);
+      } else {
+        card.style.removeProperty(property);
+      }
+    };
+
+    restore(
+      "backdrop-filter",
+      original.backdropFilter,
+      original.backdropFilterPriority
+    );
+    restore(
+      "-webkit-backdrop-filter",
+      original.webkitBackdropFilter,
+      original.webkitBackdropFilterPriority
+    );
+    restore(
+      "background-image",
+      original.backgroundImage,
+      original.backgroundImagePriority
+    );
+
+    this.originalGlassStyles.delete(card);
+    this.glassCards.delete(card);
+  }
+
+  _clearLiquidGlassCards() {
+    for (const card of Array.from(this.glassCards)) {
+      this._restoreLiquidGlassCard(card);
+    }
+
+    this.glassCards.clear();
+
+    for (const heading of Array.from(this.glassHeadings)) {
+      this._restoreLiquidGlassHeading(heading);
+    }
+
+    this.glassHeadings.clear();
+    this._clearOverlaySurfaces();
   }
 
   _collectChangedPulseEntities(hass) {
@@ -1676,49 +2337,12 @@ class ThemeStudioEffects {
       this.height
     );
 
-    this._drawGrid(context);
     this._drawStars(
       context,
       frameTime,
       elapsed
     );
     this._drawEdgeGlow(context, frameTime);
-  }
-
-  _drawGrid(context) {
-    const gridOpacity =
-      0.015 + this.glow / 5000;
-
-    context.save();
-    context.strokeStyle =
-      `rgba(80, 225, 255, ${gridOpacity})`;
-    context.lineWidth = 1;
-
-    const gridSize = 64;
-
-    for (
-      let x = 0;
-      x <= this.width;
-      x += gridSize
-    ) {
-      context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x, this.height);
-      context.stroke();
-    }
-
-    for (
-      let y = 0;
-      y <= this.height;
-      y += gridSize
-    ) {
-      context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(this.width, y);
-      context.stroke();
-    }
-
-    context.restore();
   }
 
   _drawStars(
@@ -1843,8 +2467,22 @@ class ThemeStudioEffects {
 
 
 function startThemeStudioEffects() {
-  if (window.themeStudioEffects) {
+  const current = window.themeStudioEffects;
+
+  if (current?.version === THEME_STUDIO_EFFECTS_VERSION) {
     return;
+  }
+
+  if (current) {
+    current._stopStartupSync?.();
+    current._stopPolling?.();
+    current._stopAnimation?.();
+    current.canvas?.remove?.();
+
+    current._startPolling = () => {};
+    current._readThemeSettings = () => {};
+    current._checkCardStates = () => {};
+    current._resize = () => {};
   }
 
   window.themeStudioEffects =
