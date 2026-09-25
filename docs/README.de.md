@@ -66,13 +66,13 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 
 ### Theme Studio mit Community-Galerie und Dashboard-Vorschau
 
-![Theme Studio 0.6.0 mit gefilterter Community-Galerie, eigenständigen Designprofilen, Feineinstellungen und Dashboard-Vorschau](images/theme-studio-community-overview-v060.png)
+![Theme Studio 0.6.2 mit gefilterter Community-Galerie, eigenständigen Designprofilen, Feineinstellungen und Dashboard-Vorschau](images/theme-studio-community-overview-v062.png)
 
 ### Feineinstellungen
 
 | Farben und Karten | Navigation |
 | --- | --- |
-| ![Farben und Karteneinstellungen](images/fine-settings-colors-cards-v044.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](images/fine-settings-navigation-v044.png) |
+| ![Karteneinstellungen mit Liquid Glass](images/fine-settings-cards-liquid-glass-v062.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](images/fine-settings-navigation-v044.png) |
 
 | Hintergrund und Bildbibliothek | Dashboard-Effekte und Entitätsauswahl |
 | --- | --- |

@@ -66,13 +66,13 @@ La galerie suit automatiquement le mode du profil chargé. Elle affiche uniqueme
 
 ### Theme Studio avec galerie communautaire et aperçu du tableau de bord
 
-![Theme Studio 0.6.0 avec galerie communautaire filtrée, profils indépendants, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v060.png)
+![Theme Studio 0.6.2 avec galerie communautaire filtrée, profils indépendants, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v062.png)
 
 ### Réglages avancés
 
 | Couleurs et cartes | Navigation |
 | --- | --- |
-| ![Réglages des couleurs et des cartes](images/fine-settings-colors-cards-v044.png) | ![Personnalisation de l’en-tête, de la barre latérale et de la navigation](images/fine-settings-navigation-v044.png) |
+| ![Réglages des cartes avec Liquid Glass](images/fine-settings-cards-liquid-glass-v062.png) | ![Personnalisation de l’en-tête, de la barre latérale et de la navigation](images/fine-settings-navigation-v044.png) |
 
 | Arrière-plan et bibliothèque | Effets et sélection d’entités |
 | --- | --- |

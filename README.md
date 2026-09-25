@@ -66,13 +66,13 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 
 ### Theme Studio with Community Gallery and dashboard preview
 
-![Theme Studio 0.6.0 with mode-filtered Community Gallery, independent design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v060.png)
+![Theme Studio 0.6.2 with mode-filtered Community Gallery, independent design profiles, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v062.png)
 
 ### Fine-tuning
 
 | Colors and cards | Navigation |
 | --- | --- |
-| ![Color and card settings](docs/images/fine-settings-colors-cards-v044.png) | ![Customize header, sidebar, and active navigation](docs/images/fine-settings-navigation-v044.png) |
+| ![Card settings with the Liquid Glass material](docs/images/fine-settings-cards-liquid-glass-v062.png) | ![Customize header, sidebar, and active navigation](docs/images/fine-settings-navigation-v044.png) |
 
 | Background and image library | Dashboard effects and entity selection |
 | --- | --- |

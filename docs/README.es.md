@@ -66,13 +66,13 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 
 ### Theme Studio con galería de la comunidad y vista previa del panel
 
-![Theme Studio 0.6.0 con galería comunitaria filtrada, perfiles independientes, ajustes y vista previa del panel](images/theme-studio-community-overview-v060.png)
+![Theme Studio 0.6.2 con galería comunitaria filtrada, perfiles independientes, ajustes y vista previa del panel](images/theme-studio-community-overview-v062.png)
 
 ### Ajustes detallados
 
 | Colores y tarjetas | Navegación |
 | --- | --- |
-| ![Ajustes de colores y tarjetas](images/fine-settings-colors-cards-v044.png) | ![Personalización del encabezado, barra lateral y navegación](images/fine-settings-navigation-v044.png) |
+| ![Ajustes de tarjetas con Liquid Glass](images/fine-settings-cards-liquid-glass-v062.png) | ![Personalización del encabezado, barra lateral y navegación](images/fine-settings-navigation-v044.png) |
 
 | Fondo y biblioteca | Efectos y selección de entidades |
 | --- | --- |
