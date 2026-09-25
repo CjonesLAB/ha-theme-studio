@@ -8,6 +8,7 @@ import pytest
 import voluptuous as vol
 
 from custom_components.theme_studio.websocket import (
+    DEFAULT_DARK_PROFILE,
     DEFAULT_EFFECT_SETTINGS,
     DEFAULT_LIGHT_PROFILE,
     default_settings,
