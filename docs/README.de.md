@@ -4,7 +4,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Entwicklungsversion: **0.6.1**
+> Aktuelle Entwicklungsversion: **0.6.2**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -26,6 +26,9 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - Designänderungen mit Rückgängig und Wiederholen korrigieren
 - sichtbarer Hinweis auf noch nicht angewendete Änderungen
 - kurze visuelle Erinnerung bei ungespeicherten Profiländerungen und einmaliges grünes Bestätigungspulsieren nach dem Speichern
+- Space-Command-Hintergrundeffekt mit Sternenfeld und Lichtakzenten, ohne sichtbares Raster
+- optionaler Liquid-Glass-Kartenstil mit eigenem Transparenzregler von 0–100 %, Hintergrundunschärfe, Sättigung und Reflexionen; widersprüchliche Karten-Materialwerte werden bei aktivem Glas automatisch gesetzt und gesperrt
+- Dashboard-Effekte werden in den Home-Assistant-Einstellungen unter `/config` und in Overlay-Dialogen automatisch deaktiviert
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
 - automatische Bedienoberfläche auf Deutsch, Englisch, Französisch oder Spanisch
@@ -100,7 +103,7 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
    frontend:
      themes: !include_dir_merge_named themes
      extra_module_url:
-       - /theme_studio_files/theme-studio-effects.js
+       - /theme_studio_files/theme-studio-effects.js?v=0.6.2
    ```
 
 3. Die Konfiguration prüfen und Home Assistant neu starten:

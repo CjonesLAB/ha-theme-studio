@@ -73,6 +73,11 @@ DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
     "cardBorderWidth": 1,
     "cardShadow": 16,
     "borderRadius": 18,
+    "liquidGlass": False,
+    "glassTransparency": 56,
+    "glassBlur": 22,
+    "glassSaturation": 145,
+    "glassHighlight": 42,
     "darkening": 10,
     "background": "color",
     "backgroundImage": "",
@@ -95,6 +100,11 @@ DEFAULT_DARK_PROFILE: dict[str, Any] = {
     "cardBorderWidth": 0,
     "cardShadow": 28,
     "borderRadius": 18,
+    "liquidGlass": False,
+    "glassTransparency": 66,
+    "glassBlur": 22,
+    "glassSaturation": 145,
+    "glassHighlight": 42,
     "darkening": 30,
     "background": "color",
     "backgroundImage": "",
@@ -150,7 +160,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Required("sidebarSelectedColor"): COLOR_VALIDATOR,
         vol.Required("cardOpacity"): vol.All(
             vol.Coerce(int),
-            vol.Range(min=30, max=100),
+            vol.Range(min=0, max=100),
         ),
         vol.Required("cardBorderWidth"): vol.All(
             vol.Coerce(int),
@@ -163,6 +173,23 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Required("borderRadius"): vol.All(
             vol.Coerce(int),
             vol.Range(min=0, max=36),
+        ),
+        vol.Required("liquidGlass"): bool,
+        vol.Required("glassTransparency"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=0, max=100),
+        ),
+        vol.Required("glassBlur"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=0, max=30),
+        ),
+        vol.Required("glassSaturation"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=100, max=180),
+        ),
+        vol.Required("glassHighlight"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=0, max=70),
         ),
         vol.Required("darkening"): vol.All(
             vol.Coerce(int),
@@ -421,6 +448,20 @@ def normalize_profile(
     for key in defaults:
         if key in profile:
             normalized[key] = profile[key]
+
+    normalized = PROFILE_SCHEMA(normalized)
+
+    if normalized["liquidGlass"]:
+        is_light_mode = defaults is DEFAULT_LIGHT_PROFILE
+        normalized.update(
+            {
+                "cardColor": "#ffffff" if is_light_mode else "#253642",
+                "cardOpacity": 100 - normalized["glassTransparency"],
+                "cardBorderColor": "#ffffff",
+                "cardBorderWidth": 1,
+                "cardShadow": 24,
+            }
+        )
 
     return PROFILE_SCHEMA(normalized)
 
@@ -1071,10 +1112,12 @@ def build_background(
 
 def build_card_shadow(
     strength: int,
+    liquid_glass: bool = False,
+    highlight: int = 0,
 ) -> str:
     """Create a card shadow."""
 
-    if strength == 0:
+    if strength == 0 and not liquid_glass:
         return "none"
 
     vertical_offset = max(
@@ -1087,9 +1130,20 @@ def build_card_shadow(
         0.12 + strength / 150,
     )
 
-    return (
+    shadow = (
         f"0 {vertical_offset}px {strength}px "
         f"rgba(0, 0, 0, {opacity:.2f})"
+    )
+
+    if not liquid_glass:
+        return shadow
+
+    highlight_opacity = min(0.7, highlight / 100)
+    lower_opacity = min(0.22, 0.06 + highlight / 500)
+    return (
+        f"{shadow}, "
+        f"inset 0 1px 0 rgba(255, 255, 255, {highlight_opacity:.2f}), "
+        f"inset 0 -1px 0 rgba(0, 0, 0, {lower_opacity:.2f})"
     )
 
 
@@ -1134,8 +1188,21 @@ def build_mode_values(
             profile["cardBorderColor"]
         ),
         "ha-card-box-shadow": build_card_shadow(
-            profile["cardShadow"]
+            profile["cardShadow"],
+            profile["liquidGlass"],
+            profile["glassHighlight"],
         ),
+        "theme-studio-liquid-glass": (
+            "1" if profile["liquidGlass"] else "0"
+        ),
+        "theme-studio-glass-blur": str(profile["glassBlur"]),
+        "theme-studio-glass-saturation": str(
+            profile["glassSaturation"]
+        ),
+        "theme-studio-glass-highlight": str(
+            profile["glassHighlight"]
+        ),
+        "theme-studio-overlay-background": profile["cardColor"],
         "primary-text-color": (
             profile["cardTextColor"]
         ),

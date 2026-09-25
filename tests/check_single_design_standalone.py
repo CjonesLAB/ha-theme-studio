@@ -27,6 +27,24 @@ exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])),
 settings = env['default_settings']()
 settings['light']['primaryColor'] = '#112233'
 settings['dark']['primaryColor'] = '#336611'
+glass = deepcopy(env['DEFAULT_DARK_PROFILE'])
+glass.update({
+    'liquidGlass': True,
+    'cardColor': '#ff0000',
+    'cardOpacity': 100,
+    'glassTransparency': 100,
+    'cardBorderWidth': 6,
+    'cardShadow': 50,
+    'borderRadius': 5,
+    'glassBlur': 0,
+})
+glass = env['normalize_profile'](glass, env['DEFAULT_DARK_PROFILE'])
+assert glass['cardColor'] == '#253642' and glass['cardOpacity'] == 0
+assert glass['cardBorderWidth'] == 1 and glass['cardShadow'] == 24
+assert glass['borderRadius'] == 5 and glass['glassBlur'] == 0
+assert env['build_mode_values'](glass, 'dark')['ha-card-background'] == (
+    'rgba(37, 54, 66, 0.00)'
+)
 profiles = [{'id':f'{i:032x}', 'name':f'Theme {i}', 'settings':deepcopy(settings)} for i in range(32)]
 before = deepcopy(profiles)
 split = helpers['split_profiles'](profiles)
