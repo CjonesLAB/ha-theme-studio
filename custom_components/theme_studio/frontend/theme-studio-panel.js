@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.6.2";
-import "./theme-studio-effects.js?v=0.6.2-material3";
+} from "./theme-studio-locales.js?v=0.6.3";
+import "./theme-studio-effects.js?v=0.6.3";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -30,6 +30,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.appliedSettings = null;
     this.profileEditBaseline = null;
     this.profileSaveReminderTimer = null;
+    this.profileSaveSuccessTimer = null;
+    this.stickyOffsetFrame = 0;
+    this.communitySliderFrame = 0;
     this.integrationVersion = "";
     this.pendingProfileImport = null;
     this.importPreviewReturnFocus = null;
@@ -55,6 +58,9 @@ class ThemeStudioPanel extends HTMLElement {
         cardBorderWidth: 1,
         cardShadow: 16,
         borderRadius: 18,
+        cardShape: "standard",
+        techFrameCut: 18,
+        techFrameGlow: 35,
         liquidGlass: false,
         glassTransparency: 56,
         glassBlur: 22,
@@ -81,6 +87,9 @@ class ThemeStudioPanel extends HTMLElement {
         cardBorderWidth: 0,
         cardShadow: 28,
         borderRadius: 18,
+        cardShape: "standard",
+        techFrameCut: 18,
+        techFrameGlow: 35,
         liquidGlass: false,
         glassTransparency: 66,
         glassBlur: 22,
@@ -1591,7 +1600,7 @@ class ThemeStudioPanel extends HTMLElement {
 
         .effect-options {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
           gap: 8px;
           margin-bottom: 14px;
         }
@@ -1649,6 +1658,27 @@ class ThemeStudioPanel extends HTMLElement {
             inset 0 1px 0 rgba(255, 255, 255, 0.75),
             inset 0 -1px 0 rgba(0, 0, 0, 0.18),
             0 9px 22px rgba(0, 0, 0, 0.28);
+        }
+
+        .effect-tech-frame {
+          background:
+            linear-gradient(135deg, rgba(45, 225, 238, 0.24), transparent 44%),
+            linear-gradient(135deg, #14262f, #0b1117);
+          clip-path: polygon(
+            0 16px,
+            16px 0,
+            calc(100% - 42px) 0,
+            calc(100% - 30px) 10px,
+            100% 10px,
+            100% calc(100% - 16px),
+            calc(100% - 16px) 100%,
+            24px 100%,
+            12px calc(100% - 10px),
+            0 calc(100% - 10px)
+          );
+          border-color: rgba(45, 225, 238, 0.72);
+          border-radius: 0;
+          box-shadow: inset 0 0 20px rgba(45, 225, 238, 0.08);
         }
 
         .effect-space-command {
@@ -2183,6 +2213,57 @@ class ThemeStudioPanel extends HTMLElement {
           box-shadow: var(--preview-shadow);
           backdrop-filter: var(--preview-backdrop-filter, none);
           -webkit-backdrop-filter: var(--preview-backdrop-filter, none);
+        }
+
+        .preview.tech-frame .preview-card {
+          position: relative;
+          border-width: 0;
+          border-radius: 0;
+          clip-path: polygon(
+            0 var(--preview-tech-cut),
+            var(--preview-tech-cut) 0,
+            calc(100% - 48px) 0,
+            calc(100% - 36px) 10px,
+            100% 10px,
+            100% calc(100% - var(--preview-tech-cut)),
+            calc(100% - var(--preview-tech-cut)) 100%,
+            26px 100%,
+            12px calc(100% - 10px),
+            0 calc(100% - 10px)
+          );
+          filter:
+            drop-shadow(
+              0 var(--preview-tech-shadow-y)
+              var(--preview-tech-shadow-blur)
+              rgba(0, 0, 0, var(--preview-tech-shadow-alpha))
+            )
+            drop-shadow(
+              0 0 var(--preview-tech-glow)
+              color-mix(in srgb, var(--preview-border-color) 58%, transparent)
+            );
+        }
+
+        .preview-tech-frame-outline {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        .preview.tech-frame .preview-card::after {
+          position: absolute;
+          top: 0;
+          right: 18px;
+          width: 38%;
+          height: 2px;
+          content: "";
+          background: var(--preview-border-color);
+          box-shadow: 0 0 10px var(--preview-border-color);
+          pointer-events: none;
+          z-index: 3;
         }
 
         .preview-card.status-pulse-demo {
@@ -3092,6 +3173,18 @@ class ThemeStudioPanel extends HTMLElement {
                       Transparenz, Unschärfe und Lichtreflexe.
                     </span>
                   </button>
+
+                  <button
+                    class="effect-option glass-style-option effect-tech-frame"
+                    data-glass-style="tech-frame"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="effect-option-title">Tech Frame</span>
+                    <span class="effect-option-description">
+                      Asymmetrische Kanten und dezente Leuchtlinien.
+                    </span>
+                  </button>
                 </div>
 
                 <div id="glass-controls" hidden>
@@ -3119,6 +3212,22 @@ class ThemeStudioPanel extends HTMLElement {
                   ${this._rangeField(
                     "glass-highlight",
                     "Glasreflexion",
+                    0,
+                    70
+                  )}
+                </div>
+
+                <div id="tech-frame-controls" hidden>
+                  ${this._rangeField(
+                    "tech-frame-cut",
+                    "Eckenschnitt",
+                    6,
+                    34
+                  )}
+
+                  ${this._rangeField(
+                    "tech-frame-glow",
+                    "Leuchtstärke",
                     0,
                     70
                   )}
@@ -3800,6 +3909,12 @@ class ThemeStudioPanel extends HTMLElement {
   disconnectedCallback() {
     this.localizer?.disconnect();
     this._stickyOffsetObserver?.disconnect();
+    this._stopProfileSaveReminderPulse();
+    this._stopProfileSaveSuccess();
+    window.cancelAnimationFrame(this.stickyOffsetFrame);
+    window.cancelAnimationFrame(this.communitySliderFrame);
+    this.stickyOffsetFrame = 0;
+    this.communitySliderFrame = 0;
   }
 
   connectedCallback() {
@@ -4210,7 +4325,11 @@ class ThemeStudioPanel extends HTMLElement {
     this._stickyOffsetObserver = new ResizeObserver(updateOffset);
     this._stickyOffsetObserver.observe(topbar);
     this._stickyOffsetObserver.observe(profileActions);
-    requestAnimationFrame(updateOffset);
+    window.cancelAnimationFrame(this.stickyOffsetFrame);
+    this.stickyOffsetFrame = window.requestAnimationFrame(() => {
+      this.stickyOffsetFrame = 0;
+      updateOffset();
+    });
   }
 
   _bindEvents() {
@@ -4482,23 +4601,34 @@ class ThemeStudioPanel extends HTMLElement {
       "glassHighlight",
       "%"
     );
+    this._bindRange("tech-frame-cut", "techFrameCut", "px");
+    this._bindRange("tech-frame-glow", "techFrameGlow", "%");
     this._bindRange("darkening", "darkening", "%");
 
     this.shadowRoot
       .querySelectorAll(".glass-style-option")
       .forEach((button) => {
         button.addEventListener("click", () => {
-          const enabled =
-            button.dataset.glassStyle === "liquid-glass";
+          const selectedStyle = button.dataset.glassStyle;
 
-          if (enabled === this.profile.liquidGlass) {
+          if (selectedStyle === this._cardStyle()) {
             return;
           }
 
           this._recordHistory();
-          this.profile.liquidGlass = enabled;
+          this.profile.liquidGlass = selectedStyle === "liquid-glass";
+          this.profile.cardShape = selectedStyle === "tech-frame"
+            ? "tech-frame"
+            : "standard";
 
-          if (enabled) {
+          if (
+            selectedStyle === "tech-frame"
+            && Number(this.profile.cardBorderWidth) === 0
+          ) {
+            this.profile.cardBorderWidth = 2;
+          }
+
+          if (this.profile.liquidGlass) {
             this.profile.glassTransparency =
               this.activeMode === "light" ? 56 : 66;
             this.profile.glassBlur = 22;
@@ -4916,9 +5046,19 @@ class ThemeStudioPanel extends HTMLElement {
     void saveButton.offsetWidth;
     saveButton.classList.add("profile-save-success");
 
-    window.setTimeout(() => {
+    window.clearTimeout(this.profileSaveSuccessTimer);
+    this.profileSaveSuccessTimer = window.setTimeout(() => {
       saveButton.classList.remove("profile-save-success");
+      this.profileSaveSuccessTimer = null;
     }, 750);
+  }
+
+  _stopProfileSaveSuccess() {
+    window.clearTimeout(this.profileSaveSuccessTimer);
+    this.profileSaveSuccessTimer = null;
+    this.shadowRoot
+      ?.getElementById("profile-save-button")
+      ?.classList.remove("profile-save-success");
   }
 
   _settingsEqual(first, second) {
@@ -5321,7 +5461,11 @@ class ThemeStudioPanel extends HTMLElement {
       .join("");
     grid.hidden = false;
     grid.scrollLeft = 0;
-    requestAnimationFrame(() => this._updateCommunitySlider());
+    window.cancelAnimationFrame(this.communitySliderFrame);
+    this.communitySliderFrame = window.requestAnimationFrame(() => {
+      this.communitySliderFrame = 0;
+      this._updateCommunitySlider();
+    });
   }
 
   async _loadCommunityGallery(force = false) {
@@ -6938,6 +7082,16 @@ class ThemeStudioPanel extends HTMLElement {
     });
   }
 
+  _cardStyle() {
+    if (this.profile?.liquidGlass) {
+      return "liquid-glass";
+    }
+
+    return this.profile?.cardShape === "tech-frame"
+      ? "tech-frame"
+      : "standard";
+  }
+
   _syncGalleryModeControl() {
     const value = this.shadowRoot.getElementById("gallery-mode-value");
 
@@ -7036,6 +7190,8 @@ class ThemeStudioPanel extends HTMLElement {
       "glass-blur": ["glassBlur", "px"],
       "glass-saturation": ["glassSaturation", "%"],
       "glass-highlight": ["glassHighlight", "%"],
+      "tech-frame-cut": ["techFrameCut", "px"],
+      "tech-frame-glow": ["techFrameGlow", "%"],
       "darkening": ["darkening", "%"],
     };
 
@@ -7058,7 +7214,7 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".glass-style-option")
       .forEach((button) => {
         const active = button.dataset.glassStyle ===
-          (this.profile.liquidGlass ? "liquid-glass" : "standard");
+          this._cardStyle();
 
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
@@ -7066,6 +7222,13 @@ class ThemeStudioPanel extends HTMLElement {
 
     this.shadowRoot.getElementById("glass-controls").hidden =
       !this.profile.liquidGlass;
+
+    this.shadowRoot.getElementById("tech-frame-controls").hidden =
+      this._cardStyle() !== "tech-frame";
+
+    this.shadowRoot.getElementById("border-radius")
+      .closest(".range-group").hidden =
+        this._cardStyle() === "tech-frame";
 
     const glassLockedControls = [
       "card-color",
@@ -7370,10 +7533,6 @@ class ThemeStudioPanel extends HTMLElement {
     }
   }
 
-  _clearStatus() {
-    this._setStatus("", "");
-  }
-
   _errorMessage(error) {
     return (
       error?.message ||
@@ -7390,22 +7549,6 @@ class ThemeStudioPanel extends HTMLElement {
       green: parseInt(value.slice(2, 4), 16),
       blue: parseInt(value.slice(4, 6), 16),
     };
-  }
-
-  _mixColors(firstColor, secondColor, secondWeight) {
-    const first = this._hexToRgb(firstColor);
-    const second = this._hexToRgb(secondColor);
-    const weight = Math.min(1, Math.max(0, secondWeight));
-    const channel = (firstValue, secondValue) =>
-      Math.round(firstValue * (1 - weight) + secondValue * weight)
-        .toString(16)
-        .padStart(2, "0");
-
-    return (
-      `#${channel(first.red, second.red)}` +
-      `${channel(first.green, second.green)}` +
-      `${channel(first.blue, second.blue)}`
-    );
   }
 
   _rgba(color, opacity) {
@@ -7496,6 +7639,10 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot.getElementById("preview-effect");
 
     previewEffect.className = "preview-effect";
+    preview.classList.toggle(
+      "tech-frame",
+      this._cardStyle() === "tech-frame"
+    );
 
     if (
       this.settings.effects.effect === "space-command"
@@ -7524,6 +7671,12 @@ class ThemeStudioPanel extends HTMLElement {
       card.classList.remove("energy-flow-demo");
       card.classList.remove("climate-aura-demo");
       card.classList.remove("alert-focus-demo");
+
+      if (this._cardStyle() === "tech-frame") {
+        this._syncPreviewTechFrameOutline(card);
+      } else {
+        card.querySelector(".preview-tech-frame-outline")?.remove();
+      }
     });
 
     if (
@@ -7582,6 +7735,31 @@ class ThemeStudioPanel extends HTMLElement {
     preview.style.setProperty(
       "--preview-primary",
       this.profile.primaryColor
+    );
+
+    preview.style.setProperty(
+      "--preview-tech-cut",
+      `${this.profile.techFrameCut}px`
+    );
+
+    preview.style.setProperty(
+      "--preview-tech-glow",
+      `${Math.round(this.profile.techFrameGlow / 7)}px`
+    );
+
+    preview.style.setProperty(
+      "--preview-tech-shadow-y",
+      `${Math.round(this.profile.cardShadow / 8)}px`
+    );
+
+    preview.style.setProperty(
+      "--preview-tech-shadow-blur",
+      `${Math.round(this.profile.cardShadow / 2)}px`
+    );
+
+    preview.style.setProperty(
+      "--preview-tech-shadow-alpha",
+      this.profile.cardShadow === 0 ? 0 : 0.42
     );
 
     preview.style.setProperty(
@@ -7694,6 +7872,53 @@ class ThemeStudioPanel extends HTMLElement {
         ? "#1c1c1c"
         : "#ffffff"
     );
+  }
+
+  _syncPreviewTechFrameOutline(card) {
+    const namespace = "http://www.w3.org/2000/svg";
+    let svg = card.querySelector(".preview-tech-frame-outline");
+    let polygon = svg?.querySelector("polygon");
+
+    if (!svg || !polygon) {
+      svg = document.createElementNS(namespace, "svg");
+      polygon = document.createElementNS(namespace, "polygon");
+      svg.classList.add("preview-tech-frame-outline");
+      svg.setAttribute("aria-hidden", "true");
+      polygon.setAttribute("fill", "none");
+      polygon.setAttribute("stroke-linejoin", "round");
+      polygon.setAttribute("vector-effect", "non-scaling-stroke");
+      polygon.style.stroke = "var(--preview-border-color)";
+      svg.appendChild(polygon);
+      card.appendChild(svg);
+    }
+
+    const rect = card.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+    const borderWidth = Number(this.profile.cardBorderWidth) || 0;
+    const cut = Number(this.profile.techFrameCut) || 18;
+    const inset = Math.max(0.5, borderWidth / 2);
+    const left = inset;
+    const top = inset;
+    const right = Math.max(left, width - inset);
+    const bottom = Math.max(top, height - inset);
+    const points = [
+      [left, Math.min(bottom, cut)],
+      [Math.min(right, cut), top],
+      [Math.max(left, width - 48), top],
+      [Math.max(left, width - 36), Math.min(bottom, 10)],
+      [right, Math.min(bottom, 10)],
+      [right, Math.max(top, height - cut)],
+      [Math.max(left, width - cut), bottom],
+      [Math.min(right, 26), bottom],
+      [Math.min(right, 12), Math.max(top, height - 10)],
+      [left, Math.max(top, height - 10)],
+    ].map((point) => point.join(",")).join(" ");
+
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    polygon.setAttribute("points", points);
+    polygon.setAttribute("stroke-width", String(borderWidth));
   }
 }
 

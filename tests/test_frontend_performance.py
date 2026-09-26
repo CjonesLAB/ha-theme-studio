@@ -131,11 +131,38 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.6.2-material3";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.6.2-material3";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.6.3";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.6.3";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
+
+
+def test_effect_module_caches_style_reads_and_releases_global_listeners() -> None:
+    """Polling reuses computed styles and hot replacement removes listeners."""
+
+    effects_source = _effects_source()
+
+    assert "this.themeComputedStyles = this._themeElements().map" in effects_source
+    assert "this._readThemeSettingsFromComputedStyles();" in effects_source
+    assert "this.themeComputedStyles = null;" in effects_source
+    assert "this.resizeEventHandler = () => this._resize();" in effects_source
+    assert "this._unbindEvents();" in effects_source
+    assert 'window.removeEventListener("resize", this.resizeEventHandler);' in effects_source
+    assert "current._destroy();" in effects_source
+    assert 'data-theme-studio-tech-frame-version' in effects_source
+    assert "current._clearLiquidGlassCards?.();" in effects_source
+
+
+def test_panel_disconnect_cancels_short_lived_ui_work() -> None:
+    """Leaving the panel releases pending pulses and layout frames."""
+
+    panel_source = _panel_source()
+
+    assert "this._stopProfileSaveReminderPulse();" in panel_source
+    assert "this._stopProfileSaveSuccess();" in panel_source
+    assert "window.cancelAnimationFrame(this.stickyOffsetFrame);" in panel_source
+    assert "window.cancelAnimationFrame(this.communitySliderFrame);" in panel_source
 
 
 def test_liquid_glass_uses_fast_startup_sync() -> None:
@@ -146,7 +173,10 @@ def test_liquid_glass_uses_fast_startup_sync() -> None:
     assert "const STARTUP_SYNC_DELAYS = [0, 40, 100, 220, 450, 800, 1400];" in effects_source
     assert "this.startupSyncTimeoutIds = new Set();" in effects_source
     assert "this._startStartupSync();" in effects_source
-    assert "this._readThemeSettings();\n\n          if (this.liquidGlass)" in effects_source
+    assert (
+        'if (this.liquidGlass || this.cardShape === "tech-frame")'
+        in effects_source
+    )
     assert "this._syncLiquidGlassCards(true);" in effects_source
     assert "this._stopStartupSync();" in effects_source
     assert "current._stopStartupSync?.();" in effects_source
@@ -164,6 +194,54 @@ def test_liquid_glass_excludes_heading_cards() -> None:
     assert 'heading.style.setProperty("background", "transparent", "important")' in effects_source
     assert 'heading.style.setProperty("box-shadow", "none", "important")' in effects_source
     assert "this._restoreLiquidGlassHeading(heading);" in effects_source
+
+
+def test_tech_frame_is_selectable_restorable_and_excludes_headings() -> None:
+    """Tech Frame changes normal cards without touching headings or overlays."""
+
+    effects_source = _effects_source()
+    panel_source = _panel_source()
+
+    assert 'data-glass-style="tech-frame"' in panel_source
+    assert 'id="tech-frame-controls"' in panel_source
+    assert '"--preview-tech-cut"' in panel_source
+    assert '"--theme-studio-card-shape"' in effects_source
+    assert "this._styleTechFrameCard(element);" in effects_source
+    assert "this._restoreTechFrameCard(element);" in effects_source
+    assert "this._clearTechFrameCards();" in effects_source
+    assert "if (this._isHeadingCard(element))" in effects_source
+    assert "if (this._isInsideOverlay(element))" in effects_source
+    assert "const nextCardShape = nextLiquidGlass" in effects_source
+
+
+def test_overlay_material_sync_is_event_driven_and_bounded() -> None:
+    """Dialog styling avoids broad, persistent DOM observation."""
+
+    source = _effects_source()
+
+    assert '"hass-more-info"' in source
+    assert '"show-dialog"' in source
+    assert "new MutationObserver(" not in source
+    assert "for (const delay of [0, 80])" in source
+    assert "this._scheduleMaterialSync();" in source
+    assert "this._syncLiquidGlassCards(true);" in source
+    assert "current._stopDynamicSync?.();" in source
+
+
+def test_tech_frame_overlay_reuses_one_outline_without_surface_clipping() -> None:
+    """Repeated dialog opens neither stack outlines nor clip the dialog surface."""
+
+    source = _effects_source()
+
+    assert "if (!outline?.svg?.isConnected)" in source
+    assert "if (!outline?.isConnected)" not in source
+    assert 'duplicate !== outline.svg' in source
+    assert '":scope > svg[data-theme-studio-tech-frame-outline]"' in source
+    assert 'element.style.setProperty("clip-path", "none", "important")' in source
+    assert 'element.style.setProperty("overflow", "visible", "important")' in source
+    assert '[data-theme-studio-tech-frame-overlay]::before' in source
+    assert 'clip-path: var(--theme-studio-tech-frame-shape);' in source
+    assert 'element.style.setProperty("box-shadow", "none", "important")' in source
 
 
 def test_header_uses_compact_accessible_mode_symbol() -> None:

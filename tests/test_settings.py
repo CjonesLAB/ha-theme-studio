@@ -184,6 +184,37 @@ def test_liquid_glass_theme_values_include_material_controls() -> None:
     assert "inset 0 1px 0" in values["ha-card-box-shadow"]
 
 
+def test_tech_frame_defaults_and_theme_values_are_backward_compatible() -> None:
+    """Existing profiles stay standard while Tech Frame exports its controls."""
+
+    legacy_profile = {
+        key: value
+        for key, value in DEFAULT_DARK_PROFILE.items()
+        if not key.startswith("techFrame") and key != "cardShape"
+    }
+    normalized = normalize_profile(legacy_profile, DEFAULT_DARK_PROFILE)
+
+    assert normalized["cardShape"] == "standard"
+    assert normalized["techFrameCut"] == 18
+    assert normalized["techFrameGlow"] == 35
+
+    normalized.update(
+        {
+            "cardShape": "tech-frame",
+            "techFrameCut": 24,
+            "techFrameGlow": 48,
+        }
+    )
+    values = build_mode_values(normalized, "dark")
+
+    assert values["theme-studio-card-shape"] == "tech-frame"
+    assert values["theme-studio-tech-frame-cut"] == "24"
+    assert values["theme-studio-tech-frame-glow"] == "48"
+    assert values["theme-studio-tech-frame-border-color"] == "#26b2b3"
+    assert values["theme-studio-tech-frame-border-width"] == "0px"
+    assert values["theme-studio-tech-frame-shadow"] == "28"
+
+
 def test_liquid_glass_normalization_prevents_conflicting_card_settings() -> None:
     """Liquid Glass uses one coherent material instead of opaque card values."""
 
@@ -214,6 +245,7 @@ def test_liquid_glass_normalization_prevents_conflicting_card_settings() -> None
     assert normalized["cardShadow"] == 24
     assert normalized["borderRadius"] == 5
     assert normalized["glassBlur"] == 0
+    assert normalized["cardShape"] == "standard"
     assert build_mode_values(normalized, "dark")["ha-card-background"] == (
         "rgba(37, 54, 66, 0.00)"
     )
