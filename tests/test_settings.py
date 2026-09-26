@@ -12,6 +12,7 @@ from custom_components.theme_studio.websocket import (
     DEFAULT_EFFECT_SETTINGS,
     DEFAULT_LIGHT_PROFILE,
     default_settings,
+    normalize_profile,
     normalize_recovery_state,
     normalize_settings,
     portable_import_settings,
