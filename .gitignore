@@ -6,9 +6,13 @@ Thumbs.db
 .idea/
 .vscode/
 .venv/
+.venv-tests*/
 venv/
+.pytest_cache/
+.release-inspect/
 dist/
 build/
+outputs/
 .codex-*.png
 ha-theme-studio-v*-complete/
 ha-theme-studio-v*-complete.zip

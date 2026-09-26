@@ -2,8 +2,8 @@
 
 DOMAIN = "theme_studio"
 NAME = "Theme Studio"
-VERSION = "0.6.2"
-FRONTEND_REVISION = "0.6.2-gallery-menu3"
+VERSION = "0.6.3"
+FRONTEND_REVISION = "0.6.3"
 
 GALLERY_BASE_URL = "https://ha-theme-studio.com"
 GALLERY_LIST_URL = f"{GALLERY_BASE_URL}/api/designs"

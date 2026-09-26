@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.6.2-material3";
+const THEME_STUDIO_EFFECTS_VERSION = "0.6.3";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -17,6 +17,11 @@ const DEFAULT_CLIMATE_HOT = 28;
 const DEFAULT_ALERT_ENTITIES = [];
 const DEFAULT_ALERT_BATTERY_LOW = 20;
 const DEFAULT_LIQUID_GLASS = false;
+const DEFAULT_CARD_SHAPE = "standard";
+const DEFAULT_TECH_FRAME_CUT = 18;
+const DEFAULT_TECH_FRAME_GLOW = 35;
+const DEFAULT_TECH_FRAME_SHADOW = 28;
+const DEFAULT_TECH_FRAME_BORDER_WIDTH = 2;
 const DEFAULT_GLASS_BLUR = 22;
 const DEFAULT_GLASS_SATURATION = 145;
 const DEFAULT_GLASS_HIGHLIGHT = 42;
@@ -51,6 +56,11 @@ class ThemeStudioEffects {
     this.alertEntities = [...DEFAULT_ALERT_ENTITIES];
     this.alertBatteryLow = DEFAULT_ALERT_BATTERY_LOW;
     this.liquidGlass = DEFAULT_LIQUID_GLASS;
+    this.cardShape = DEFAULT_CARD_SHAPE;
+    this.techFrameCut = DEFAULT_TECH_FRAME_CUT;
+    this.techFrameGlow = DEFAULT_TECH_FRAME_GLOW;
+    this.techFrameShadow = DEFAULT_TECH_FRAME_SHADOW;
+    this.techFrameBorderWidth = DEFAULT_TECH_FRAME_BORDER_WIDTH;
     this.glassBlur = DEFAULT_GLASS_BLUR;
     this.glassSaturation = DEFAULT_GLASS_SATURATION;
     this.glassHighlight = DEFAULT_GLASS_HIGHLIGHT;
@@ -66,6 +76,9 @@ class ThemeStudioEffects {
     this.originalGlassStyles = new WeakMap();
     this.glassHeadings = new Set();
     this.originalGlassHeadingStyles = new WeakMap();
+    this.techFrameCards = new Set();
+    this.originalTechFrameStyles = new WeakMap();
+    this.techFrameOutlines = new WeakMap();
     this.glassLastScan = 0;
     this.overlaySurfaces = new Set();
     this.originalOverlayStyles = new WeakMap();
@@ -81,8 +94,33 @@ class ThemeStudioEffects {
     this.stars = [];
     this.pollIntervalId = null;
     this.startupSyncTimeoutIds = new Set();
+    this.overlaySyncFrame = 0;
+    this.overlaySyncTimeoutIds = new Set();
+    this.overlayEventHandler = () => this._startOverlaySync();
+    this.resizeEventHandler = () => this._resize();
+    this.locationChangedEventHandler = () => {
+      this.stateSnapshot.clear();
+      this._invalidateCardIndex();
+      this.glassLastScan = 0;
+      this._readThemeSettings();
+      this._startStartupSync();
+    };
+    this.reduceMotionEventHandler = () => this._readThemeSettings();
+    this.visibilityEventHandler = () => {
+      if (document.hidden) {
+        this._stopStartupSync();
+        this._stopPolling();
+        return;
+      }
+
+      this._readThemeSettings();
+      this._startStartupSync();
+      this._checkCardStates();
+      this._startPolling();
+    };
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
+    this.themeComputedStyles = null;
 
     this.reduceMotionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -131,7 +169,7 @@ class ThemeStudioEffects {
   _bindEvents() {
     window.addEventListener(
       "resize",
-      () => this._resize(),
+      this.resizeEventHandler,
       {
         passive: true,
       }
@@ -139,34 +177,27 @@ class ThemeStudioEffects {
 
     window.addEventListener(
       "location-changed",
-      () => {
-        this.stateSnapshot.clear();
-        this._invalidateCardIndex();
-        this.glassLastScan = 0;
-        this._readThemeSettings();
-        this._startStartupSync();
-      }
+      this.locationChangedEventHandler
+    );
+
+    window.addEventListener(
+      "hass-more-info",
+      this.overlayEventHandler
+    );
+
+    window.addEventListener(
+      "show-dialog",
+      this.overlayEventHandler
     );
 
     this.reduceMotionQuery.addEventListener(
       "change",
-      () => this._readThemeSettings()
+      this.reduceMotionEventHandler
     );
 
     document.addEventListener(
       "visibilitychange",
-      () => {
-        if (document.hidden) {
-          this._stopStartupSync();
-          this._stopPolling();
-          return;
-        }
-
-        this._readThemeSettings();
-        this._startStartupSync();
-        this._checkCardStates();
-        this._startPolling();
-      }
+      this.visibilityEventHandler
     );
 
     this._startPolling();
@@ -211,7 +242,7 @@ class ThemeStudioEffects {
           this.startupSyncTimeoutIds.delete(timeoutId);
           this._readThemeSettings();
 
-          if (this.liquidGlass) {
+          if (this.liquidGlass || this.cardShape === "tech-frame") {
             this.glassLastScan = 0;
             this._syncLiquidGlassCards(true);
           }
@@ -231,6 +262,93 @@ class ThemeStudioEffects {
     this.startupSyncTimeoutIds.clear();
   }
 
+  _startOverlaySync() {
+    this._stopOverlaySync();
+
+    for (const delay of [0, 80]) {
+      const timeoutId = window.setTimeout(
+        () => {
+          this.overlaySyncTimeoutIds.delete(timeoutId);
+          this._scheduleMaterialSync();
+        },
+        delay
+      );
+
+      this.overlaySyncTimeoutIds.add(timeoutId);
+    }
+  }
+
+  _scheduleMaterialSync() {
+    if (
+      this.overlaySyncFrame
+      || (!this.liquidGlass && this.cardShape !== "tech-frame")
+    ) {
+      return;
+    }
+
+    this.overlaySyncFrame = window.requestAnimationFrame(() => {
+      this.overlaySyncFrame = 0;
+      this.glassLastScan = 0;
+      this._syncLiquidGlassCards(true);
+    });
+  }
+
+  _stopOverlaySync() {
+    if (this.overlaySyncFrame) {
+      window.cancelAnimationFrame(this.overlaySyncFrame);
+      this.overlaySyncFrame = 0;
+    }
+
+    for (const timeoutId of this.overlaySyncTimeoutIds) {
+      window.clearTimeout(timeoutId);
+    }
+
+    this.overlaySyncTimeoutIds.clear();
+  }
+
+  _stopDynamicSync() {
+    this._stopOverlaySync();
+    window.removeEventListener(
+      "hass-more-info",
+      this.overlayEventHandler
+    );
+    window.removeEventListener(
+      "show-dialog",
+      this.overlayEventHandler
+    );
+  }
+
+  _unbindEvents() {
+    window.removeEventListener("resize", this.resizeEventHandler);
+    window.removeEventListener(
+      "location-changed",
+      this.locationChangedEventHandler
+    );
+    this.reduceMotionQuery.removeEventListener(
+      "change",
+      this.reduceMotionEventHandler
+    );
+    document.removeEventListener(
+      "visibilitychange",
+      this.visibilityEventHandler
+    );
+    this._stopDynamicSync();
+  }
+
+  _destroy() {
+    this._unbindEvents();
+    this._stopStartupSync();
+    this._stopPolling();
+    this._stopAnimation();
+    this._clearEnergyCards();
+    this._clearClimateCards();
+    this._clearAlertCards();
+    this._clearLiquidGlassCards();
+    this._clearTechFrameCards();
+    this._restoreConfigSurface();
+    this.canvas?.remove();
+  }
+
   _themeElements() {
     return [
       document.querySelector("home-assistant"),
@@ -240,9 +358,13 @@ class ThemeStudioEffects {
   }
 
   _readCssVariable(name) {
-    for (const element of this._themeElements()) {
-      const value = window
-        .getComputedStyle(element)
+    const computedStyles = this.themeComputedStyles
+      || this._themeElements().map((element) =>
+        window.getComputedStyle(element)
+      );
+
+    for (const computedStyle of computedStyles) {
+      const value = computedStyle
         .getPropertyValue(name)
         .trim()
         .replace(/^["']|["']$/g, "");
@@ -311,6 +433,18 @@ class ThemeStudioEffects {
   }
 
   _readThemeSettings() {
+    this.themeComputedStyles = this._themeElements().map((element) =>
+      window.getComputedStyle(element)
+    );
+
+    try {
+      this._readThemeSettingsFromComputedStyles();
+    } finally {
+      this.themeComputedStyles = null;
+    }
+  }
+
+  _readThemeSettingsFromComputedStyles() {
     const effectsExcludedForConfig =
       this._isConfigPath();
     const requestedEffect =
@@ -423,6 +557,41 @@ class ThemeStudioEffects {
         1
       ) >= 0.5;
 
+    const requestedCardShapeValue = this._readCssVariable(
+      "--theme-studio-card-shape"
+    );
+    const requestedCardShape = requestedCardShapeValue === "tech-frame"
+      ? "tech-frame"
+      : DEFAULT_CARD_SHAPE;
+
+    const requestedTechFrameCut = this._readNumberVariable(
+      "--theme-studio-tech-frame-cut",
+      DEFAULT_TECH_FRAME_CUT,
+      6,
+      34
+    );
+
+    const requestedTechFrameGlow = this._readNumberVariable(
+      "--theme-studio-tech-frame-glow",
+      DEFAULT_TECH_FRAME_GLOW,
+      0,
+      70
+    );
+
+    const requestedTechFrameShadow = this._readNumberVariable(
+      "--theme-studio-tech-frame-shadow",
+      DEFAULT_TECH_FRAME_SHADOW,
+      0,
+      50
+    );
+
+    const requestedTechFrameBorderWidth = this._readNumberVariable(
+      "--theme-studio-tech-frame-border-width",
+      DEFAULT_TECH_FRAME_BORDER_WIDTH,
+      0,
+      6
+    );
+
     const requestedGlassBlur =
       this._readNumberVariable(
         "--theme-studio-glass-blur",
@@ -467,6 +636,10 @@ class ThemeStudioEffects {
       ? false
       : requestedLiquidGlass;
 
+    const nextCardShape = nextLiquidGlass
+      ? "standard"
+      : requestedCardShape;
+
     const changed =
       nextEffect !== this.effect
       || requestedMotion !== this.motion
@@ -494,6 +667,11 @@ class ThemeStudioEffects {
       || requestedAlertBatteryLow !==
         this.alertBatteryLow
       || nextLiquidGlass !== this.liquidGlass
+      || nextCardShape !== this.cardShape
+      || requestedTechFrameCut !== this.techFrameCut
+      || requestedTechFrameGlow !== this.techFrameGlow
+      || requestedTechFrameShadow !== this.techFrameShadow
+      || requestedTechFrameBorderWidth !== this.techFrameBorderWidth
       || requestedGlassBlur !== this.glassBlur
       || requestedGlassSaturation !== this.glassSaturation
       || requestedGlassHighlight !== this.glassHighlight
@@ -509,7 +687,7 @@ class ThemeStudioEffects {
     this._clearClimateCards();
     this._clearAlertCards();
     this._clearLiquidGlassCards();
-    this._clearOverlaySurfaces();
+    this._clearTechFrameCards();
 
     this.effect = nextEffect;
     this.motion = requestedMotion;
@@ -537,6 +715,11 @@ class ThemeStudioEffects {
     this.alertEntities = requestedAlertEntities;
     this.alertBatteryLow = requestedAlertBatteryLow;
     this.liquidGlass = nextLiquidGlass;
+    this.cardShape = nextCardShape;
+    this.techFrameCut = requestedTechFrameCut;
+    this.techFrameGlow = requestedTechFrameGlow;
+    this.techFrameShadow = requestedTechFrameShadow;
+    this.techFrameBorderWidth = requestedTechFrameBorderWidth;
     this.glassBlur = requestedGlassBlur;
     this.glassSaturation = requestedGlassSaturation;
     this.glassHighlight = requestedGlassHighlight;
@@ -689,8 +872,11 @@ class ThemeStudioEffects {
   }
 
   _syncLiquidGlassCards(force = false) {
-    if (!this.liquidGlass) {
+    const techFrameEnabled = this.cardShape === "tech-frame";
+
+    if (!this.liquidGlass && !techFrameEnabled) {
       this._clearLiquidGlassCards();
+      this._clearTechFrameCards();
       return;
     }
 
@@ -711,12 +897,15 @@ class ThemeStudioEffects {
     const currentScrims = new Set();
 
     this._visitElements(document, (element) => {
-      if (this._isOverlayScrimElement(element)) {
+      if (this.liquidGlass && this._isOverlayScrimElement(element)) {
         currentScrims.add(element);
         this._styleOverlayScrim(element);
       }
 
-      if (this._isOverlayElement(element)) {
+      if (
+        (this.liquidGlass || techFrameEnabled)
+        && this._isOverlayElement(element)
+      ) {
         currentOverlays.add(element);
         this._styleOverlaySurface(element);
       }
@@ -728,19 +917,36 @@ class ThemeStudioEffects {
       if (this._isInsideOverlay(element)) {
         this._restoreLiquidGlassCard(element);
         this._restoreLiquidGlassHeading(element);
-        return;
+
+        if (this.liquidGlass) {
+          this._restoreTechFrameCard(element);
+          return;
+        }
       }
 
       if (this._isHeadingCard(element)) {
-        currentHeadings.add(element);
         this._restoreLiquidGlassCard(element);
-        this._styleLiquidGlassHeading(element);
+        this._restoreTechFrameCard(element);
+
+        if (this.liquidGlass) {
+          currentHeadings.add(element);
+          this._styleLiquidGlassHeading(element);
+        } else {
+          this._restoreLiquidGlassHeading(element);
+        }
         return;
       }
 
       this._restoreLiquidGlassHeading(element);
       currentCards.add(element);
-      this._styleLiquidGlassCard(element);
+
+      if (this.liquidGlass) {
+        this._restoreTechFrameCard(element);
+        this._styleLiquidGlassCard(element);
+      } else {
+        this._restoreLiquidGlassCard(element);
+        this._styleTechFrameCard(element);
+      }
     });
 
     for (const card of this.glassCards) {
@@ -749,7 +955,19 @@ class ThemeStudioEffects {
       }
     }
 
-    this.glassCards = currentCards;
+    this.glassCards = this.liquidGlass
+      ? currentCards
+      : new Set();
+
+    for (const card of this.techFrameCards) {
+      if (!currentCards.has(card) || !card.isConnected) {
+        this._restoreTechFrameCard(card);
+      }
+    }
+
+    this.techFrameCards = techFrameEnabled
+      ? currentCards
+      : new Set();
 
     for (const heading of this.glassHeadings) {
       if (!currentHeadings.has(heading) || !heading.isConnected) {
@@ -896,6 +1114,8 @@ class ThemeStudioEffects {
 
   _isOverlayElement(element) {
     const name = String(element?.localName || "");
+    const classes = String(element?.className || "")
+      .split(/\s+/);
 
     return (
       name === "dialog"
@@ -903,6 +1123,7 @@ class ThemeStudioEffects {
       || name === "ha-more-info-dialog"
       || name.startsWith("hui-dialog-")
       || name.startsWith("more-info-")
+      || classes.includes("mdc-dialog__surface")
       || element?.getAttribute?.("role") === "dialog"
       || element?.getAttribute?.("aria-modal") === "true"
     );
@@ -928,12 +1149,24 @@ class ThemeStudioEffects {
   }
 
   _styleOverlaySurface(element) {
-    const properties = [
+    const backgroundVariables = [
       "--ha-card-background",
       "--card-background-color",
       "--ha-dialog-surface-background",
       "--mdc-dialog-surface-color",
       "--mdc-theme-surface",
+    ];
+    const properties = [
+      ...backgroundVariables,
+      "position",
+      "clip-path",
+      "border-radius",
+      "overflow",
+      "isolation",
+      "background",
+      "background-color",
+      "box-shadow",
+      "--theme-studio-tech-frame-shape",
     ];
 
     if (!this.originalOverlayStyles.has(element)) {
@@ -949,13 +1182,60 @@ class ThemeStudioEffects {
       this.originalOverlayStyles.set(element, originals);
     }
 
-    for (const property of properties) {
+    for (const property of backgroundVariables) {
       element.style.setProperty(
         property,
         this.overlayBackground,
         "important"
       );
     }
+
+    if (
+      this.cardShape === "tech-frame"
+      && this._isOverlayVisualSurface(element)
+    ) {
+      this._styleTechFrameOverlaySurface(element);
+    }
+  }
+
+  _isOverlayVisualSurface(element) {
+    const classes = String(element?.className || "")
+      .split(/\s+/);
+
+    return classes.includes("mdc-dialog__surface")
+      || element?.localName === "dialog";
+  }
+
+  _styleTechFrameOverlaySurface(element) {
+    const cut = this.techFrameCut;
+    const polygon = [
+      `0 ${cut}px`,
+      `${cut}px 0`,
+      "calc(100% - 48px) 0",
+      "calc(100% - 36px) 10px",
+      "100% 10px",
+      `100% calc(100% - ${cut}px)`,
+      `calc(100% - ${cut}px) 100%`,
+      "26px 100%",
+      "12px calc(100% - 10px)",
+      "0 calc(100% - 10px)",
+    ].join(", ");
+
+    this._ensureTechFrameStyle(element.getRootNode?.());
+    element.style.setProperty("position", "relative", "important");
+    element.style.setProperty("clip-path", "none", "important");
+    element.style.setProperty("border-radius", "0", "important");
+    element.style.setProperty("overflow", "visible", "important");
+    element.style.setProperty("isolation", "isolate", "important");
+    element.style.setProperty("background", "transparent", "important");
+    element.style.setProperty("background-color", "transparent", "important");
+    element.style.setProperty("box-shadow", "none", "important");
+    element.style.setProperty(
+      "--theme-studio-tech-frame-shape",
+      `polygon(${polygon})`
+    );
+    element.setAttribute("data-theme-studio-tech-frame-overlay", "");
+    this._syncTechFrameOutline(element, cut);
   }
 
   _restoreOverlaySurface(element) {
@@ -979,6 +1259,14 @@ class ThemeStudioEffects {
 
     this.originalOverlayStyles.delete(element);
     this.overlaySurfaces.delete(element);
+    this.techFrameOutlines.get(element)?.svg?.remove();
+    this.techFrameOutlines.delete(element);
+    for (const outline of element.querySelectorAll?.(
+      ":scope > svg[data-theme-studio-tech-frame-outline]"
+    ) || []) {
+      outline.remove();
+    }
+    element.removeAttribute("data-theme-studio-tech-frame-overlay");
   }
 
   _clearOverlaySurfaces() {
@@ -1150,6 +1438,273 @@ class ThemeStudioEffects {
 
     this.glassHeadings.clear();
     this._clearOverlaySurfaces();
+  }
+
+  _styleTechFrameCard(card) {
+    const properties = [
+      "clip-path",
+      "border-radius",
+      "border-style",
+      "border-width",
+      "border-color",
+      "filter",
+      "overflow",
+      "isolation",
+      "--theme-studio-tech-frame-shape",
+      "--theme-studio-tech-frame-border-width",
+    ];
+
+    if (!this.originalTechFrameStyles.has(card)) {
+      const originals = {};
+
+      for (const property of properties) {
+        originals[property] = {
+          value: card.style.getPropertyValue(property),
+          priority: card.style.getPropertyPriority(property),
+        };
+      }
+
+      this.originalTechFrameStyles.set(card, originals);
+    }
+
+    this._ensureTechFrameStyle(card.getRootNode?.());
+    card.setAttribute("data-theme-studio-tech-frame", "");
+
+    const cut = this.techFrameCut;
+    const glow = Math.round(this.techFrameGlow / 7);
+    const polygon = [
+      `0 ${cut}px`,
+      `${cut}px 0`,
+      "calc(100% - 48px) 0",
+      "calc(100% - 36px) 10px",
+      "100% 10px",
+      `100% calc(100% - ${cut}px)`,
+      `calc(100% - ${cut}px) 100%`,
+      "26px 100%",
+      "12px calc(100% - 10px)",
+      "0 calc(100% - 10px)",
+    ].join(", ");
+
+    card.style.setProperty("clip-path", `polygon(${polygon})`, "important");
+    card.style.setProperty(
+      "--theme-studio-tech-frame-shape",
+      `polygon(${polygon})`
+    );
+    card.style.setProperty(
+      "--theme-studio-tech-frame-border-width",
+      `${this.techFrameBorderWidth}px`
+    );
+    card.style.setProperty("border-radius", "0", "important");
+    card.style.setProperty("border-style", "solid", "important");
+    card.style.setProperty("border-width", "0", "important");
+    card.style.setProperty("border-color", "var(--primary-color)", "important");
+    card.style.setProperty("overflow", "hidden", "important");
+    card.style.setProperty("isolation", "isolate", "important");
+    this._syncTechFrameOutline(card, cut);
+    const frame = [];
+    const shadow = this.techFrameShadow;
+
+    if (shadow > 0) {
+      const shadowY = Math.max(1, Math.round(shadow / 8));
+      const shadowBlur = Math.max(2, Math.round(shadow / 2));
+      frame.push(
+        `drop-shadow(0 ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, 0.42))`
+      );
+    }
+
+    if (glow > 0) {
+      frame.push(
+        `drop-shadow(0 0 ${glow}px color-mix(in srgb, var(--theme-studio-tech-frame-border-color) 58%, transparent))`
+      );
+    }
+
+    card.style.setProperty(
+      "filter",
+      frame.length > 0 ? frame.join(" ") : "none",
+      "important"
+    );
+
+    this.techFrameCards.add(card);
+  }
+
+  _syncTechFrameOutline(card, cut) {
+    const namespace = "http://www.w3.org/2000/svg";
+    let outline = this.techFrameOutlines.get(card);
+
+    if (!outline?.svg?.isConnected) {
+      const existingSvg = card.querySelector?.(
+        ":scope > svg[data-theme-studio-tech-frame-outline]"
+      );
+      const existingPolygon = existingSvg?.querySelector("polygon");
+
+      if (existingSvg && existingPolygon) {
+        outline = { svg: existingSvg, polygon: existingPolygon };
+        this.techFrameOutlines.set(card, outline);
+      }
+    }
+
+    if (!outline?.svg?.isConnected) {
+      const svg = document.createElementNS(namespace, "svg");
+      const polygon = document.createElementNS(namespace, "polygon");
+
+      svg.setAttribute("data-theme-studio-tech-frame-outline", "");
+      svg.setAttribute("aria-hidden", "true");
+      Object.assign(svg.style, {
+        position: "absolute",
+        inset: "0",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: "2",
+      });
+      polygon.setAttribute("fill", "none");
+      polygon.setAttribute("stroke-linejoin", "round");
+      polygon.setAttribute("vector-effect", "non-scaling-stroke");
+      polygon.style.stroke =
+        "var(--theme-studio-tech-frame-border-color)";
+      svg.appendChild(polygon);
+      card.appendChild(svg);
+      outline = { svg, polygon };
+      this.techFrameOutlines.set(card, outline);
+    }
+
+    for (const duplicate of card.querySelectorAll?.(
+      ":scope > svg[data-theme-studio-tech-frame-outline]"
+    ) || []) {
+      if (duplicate !== outline.svg) {
+        duplicate.remove();
+      }
+    }
+
+    const rect = card.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+    const inset = Math.max(0.5, this.techFrameBorderWidth / 2);
+    const left = inset;
+    const top = inset;
+    const right = Math.max(left, width - inset);
+    const bottom = Math.max(top, height - inset);
+    const points = [
+      [left, Math.min(bottom, cut)],
+      [Math.min(right, cut), top],
+      [Math.max(left, width - 48), top],
+      [Math.max(left, width - 36), Math.min(bottom, 10)],
+      [right, Math.min(bottom, 10)],
+      [right, Math.max(top, height - cut)],
+      [Math.max(left, width - cut), bottom],
+      [Math.min(right, 26), bottom],
+      [Math.min(right, 12), Math.max(top, height - 10)],
+      [left, Math.max(top, height - 10)],
+    ].map((point) => point.join(",")).join(" ");
+
+    outline.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    outline.svg.setAttribute("preserveAspectRatio", "none");
+    outline.polygon.setAttribute("points", points);
+    outline.polygon.setAttribute(
+      "stroke-width",
+      String(this.techFrameBorderWidth)
+    );
+  }
+
+  _ensureTechFrameStyle(root) {
+    if (!root?.querySelector || !root?.appendChild) {
+      return;
+    }
+
+    let style = root.querySelector(
+      "style[data-theme-studio-tech-frame-style]"
+    );
+
+    if (
+      style?.getAttribute("data-theme-studio-tech-frame-version")
+      === THEME_STUDIO_EFFECTS_VERSION
+    ) {
+      return;
+    }
+
+    if (!style) {
+      style = document.createElement("style");
+      style.setAttribute("data-theme-studio-tech-frame-style", "");
+    }
+
+    style.setAttribute(
+      "data-theme-studio-tech-frame-version",
+      THEME_STUDIO_EFFECTS_VERSION
+    );
+    style.textContent = `
+      ha-card[data-theme-studio-tech-frame] {
+        position: relative !important;
+      }
+
+      ha-card[data-theme-studio-tech-frame]::after {
+        position: absolute;
+        top: 0;
+        right: 18px;
+        width: 38%;
+        height: 2px;
+        content: "";
+        background: var(--theme-studio-tech-frame-border-color);
+        box-shadow:
+          0 0 10px var(--theme-studio-tech-frame-border-color);
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      [data-theme-studio-tech-frame-overlay]::before {
+        position: absolute;
+        inset: 0;
+        content: "";
+        background: var(--ha-dialog-surface-background);
+        clip-path: var(--theme-studio-tech-frame-shape);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      [data-theme-studio-tech-frame-overlay]
+        > :not(svg[data-theme-studio-tech-frame-outline]) {
+        position: relative;
+        z-index: 1;
+      }
+    `;
+    if (!style.isConnected) {
+      root.appendChild(style);
+    }
+  }
+
+  _restoreTechFrameCard(card) {
+    const originals = this.originalTechFrameStyles.get(card);
+
+    if (!originals) {
+      return;
+    }
+
+    for (const [property, original] of Object.entries(originals)) {
+      if (original.value) {
+        card.style.setProperty(property, original.value, original.priority);
+      } else {
+        card.style.removeProperty(property);
+      }
+    }
+
+    this.originalTechFrameStyles.delete(card);
+    this.techFrameCards.delete(card);
+    this.techFrameOutlines.get(card)?.svg?.remove();
+    this.techFrameOutlines.delete(card);
+    for (const outline of card.querySelectorAll?.(
+      ":scope > svg[data-theme-studio-tech-frame-outline]"
+    ) || []) {
+      outline.remove();
+    }
+    card.removeAttribute("data-theme-studio-tech-frame");
+  }
+
+  _clearTechFrameCards() {
+    for (const card of Array.from(this.techFrameCards)) {
+      this._restoreTechFrameCard(card);
+    }
+
+    this.techFrameCards.clear();
   }
 
   _collectChangedPulseEntities(hass) {
@@ -2474,14 +3029,27 @@ function startThemeStudioEffects() {
   }
 
   if (current) {
-    current._stopStartupSync?.();
-    current._stopPolling?.();
-    current._stopAnimation?.();
-    current.canvas?.remove?.();
+    if (typeof current._destroy === "function") {
+      current._destroy();
+    } else {
+      current._stopStartupSync?.();
+      current._stopDynamicSync?.();
+      current._stopPolling?.();
+      current._stopAnimation?.();
+      current._clearEnergyCards?.();
+      current._clearClimateCards?.();
+      current._clearAlertCards?.();
+      current._clearLiquidGlassCards?.();
+      current._clearTechFrameCards?.();
+      current._restoreConfigSurface?.();
+      current.canvas?.remove?.();
+    }
 
     current._startPolling = () => {};
+    current._startStartupSync = () => {};
     current._readThemeSettings = () => {};
     current._checkCardStates = () => {};
+    current._invalidateCardIndex = () => {};
     current._resize = () => {};
   }
 

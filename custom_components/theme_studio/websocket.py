@@ -73,6 +73,9 @@ DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
     "cardBorderWidth": 1,
     "cardShadow": 16,
     "borderRadius": 18,
+    "cardShape": "standard",
+    "techFrameCut": 18,
+    "techFrameGlow": 35,
     "liquidGlass": False,
     "glassTransparency": 56,
     "glassBlur": 22,
@@ -100,6 +103,9 @@ DEFAULT_DARK_PROFILE: dict[str, Any] = {
     "cardBorderWidth": 0,
     "cardShadow": 28,
     "borderRadius": 18,
+    "cardShape": "standard",
+    "techFrameCut": 18,
+    "techFrameGlow": 35,
     "liquidGlass": False,
     "glassTransparency": 66,
     "glassBlur": 22,
@@ -173,6 +179,17 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Required("borderRadius"): vol.All(
             vol.Coerce(int),
             vol.Range(min=0, max=36),
+        ),
+        vol.Required("cardShape"): vol.In(
+            ("standard", "tech-frame")
+        ),
+        vol.Required("techFrameCut"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=6, max=34),
+        ),
+        vol.Required("techFrameGlow"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=0, max=70),
         ),
         vol.Required("liquidGlass"): bool,
         vol.Required("glassTransparency"): vol.All(
@@ -455,6 +472,7 @@ def normalize_profile(
         is_light_mode = defaults is DEFAULT_LIGHT_PROFILE
         normalized.update(
             {
+                "cardShape": "standard",
                 "cardColor": "#ffffff" if is_light_mode else "#253642",
                 "cardOpacity": 100 - normalized["glassTransparency"],
                 "cardBorderColor": "#ffffff",
@@ -1195,6 +1213,14 @@ def build_mode_values(
         "theme-studio-liquid-glass": (
             "1" if profile["liquidGlass"] else "0"
         ),
+        "theme-studio-card-shape": profile["cardShape"],
+        "theme-studio-tech-frame-cut": str(profile["techFrameCut"]),
+        "theme-studio-tech-frame-glow": str(profile["techFrameGlow"]),
+        "theme-studio-tech-frame-border-color": profile["cardBorderColor"],
+        "theme-studio-tech-frame-border-width": (
+            f'{profile["cardBorderWidth"]}px'
+        ),
+        "theme-studio-tech-frame-shadow": str(profile["cardShadow"]),
         "theme-studio-glass-blur": str(profile["glassBlur"]),
         "theme-studio-glass-saturation": str(
             profile["glassSaturation"]

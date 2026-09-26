@@ -4,7 +4,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-> Aktuelle Entwicklungsversion: **0.6.2**
+> Aktuelle Entwicklungsversion: **0.6.3**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -28,6 +28,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - kurze visuelle Erinnerung bei ungespeicherten Profiländerungen und einmaliges grünes Bestätigungspulsieren nach dem Speichern
 - Space-Command-Hintergrundeffekt mit Sternenfeld und Lichtakzenten, ohne sichtbares Raster
 - optionaler Liquid-Glass-Kartenstil mit eigenem Transparenzregler von 0–100 %, Hintergrundunschärfe, Sättigung und Reflexionen; widersprüchliche Karten-Materialwerte werden bei aktivem Glas automatisch gesetzt und gesperrt
+- optionaler Tech-Frame-Kartenstil mit asymmetrischen Eckenschnitten, geschlossener einstellbarer Kontur, Leuchtstärke, Rahmenfarbe, Rahmenstärke und Schatten; Überschriften bleiben unverändert, während normale Karten und deckende Detaildialoge den gewählten Rahmen verwenden
 - Dashboard-Effekte werden in den Home-Assistant-Einstellungen unter `/config` und in Overlay-Dialogen automatisch deaktiviert
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
@@ -72,7 +73,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 
 | Farben und Karten | Navigation |
 | --- | --- |
-| ![Karteneinstellungen mit Liquid Glass](images/fine-settings-cards-liquid-glass-v062.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](images/fine-settings-navigation-v044.png) |
+| ![Karteneinstellungen mit Standard, Liquid Glass und Tech Frame](images/fine-settings-cards-tech-frame-v063.png) | ![Kopfzeile, Seitenleiste und aktive Navigation gestalten](images/fine-settings-navigation-v044.png) |
 
 | Hintergrund und Bildbibliothek | Dashboard-Effekte und Entitätsauswahl |
 | --- | --- |
@@ -103,7 +104,7 @@ Danach erscheint **Theme Studio** in der Seitenleiste.
    frontend:
      themes: !include_dir_merge_named themes
      extra_module_url:
-       - /theme_studio_files/theme-studio-effects.js?v=0.6.2
+       - /theme_studio_files/theme-studio-effects.js?v=0.6.3
    ```
 
 3. Die Konfiguration prüfen und Home Assistant neu starten:

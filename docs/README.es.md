@@ -4,7 +4,7 @@
 
 Theme Studio es una integración personalizada para Home Assistant que permite crear, previsualizar y aplicar directamente tus propios diseños de interfaz.
 
-> Versión de desarrollo actual: **0.6.2**
+> Versión de desarrollo actual: **0.6.3**
 >
 > Theme Studio todavía se encuentra en una fase temprana de desarrollo. Crea una copia de seguridad de Home Assistant antes de instalarlo o actualizarlo.
 
@@ -28,6 +28,7 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 - breve recordatorio visual para cambios sin guardar y una única pulsación verde de confirmación después de guardar
 - efecto de fondo Space Command con campo de estrellas y acentos de luz, sin cuadrícula visible
 - estilo de tarjetas Liquid Glass opcional con un control de transparencia de 0 a 100 %, desenfoque del fondo, saturación y reflejos; los ajustes de material incompatibles se configuran automáticamente y se bloquean mientras el cristal está activo
+- estilo de tarjetas Tech Frame opcional con cortes asimétricos, contorno cerrado configurable, intensidad luminosa, color y grosor del borde y sombra; los encabezados permanecen sin cambios mientras las tarjetas normales y los diálogos de detalle opacos usan el marco seleccionado
 - los efectos del panel se desactivan automáticamente en los ajustes de Home Assistant bajo `/config` y en los diálogos superpuestos
 - punto de recuperación automático antes de aplicar un diseño
 - restauración con un clic del último diseño activo, incluso después de reiniciar
@@ -72,7 +73,7 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 
 | Colores y tarjetas | Navegación |
 | --- | --- |
-| ![Ajustes de tarjetas con Liquid Glass](images/fine-settings-cards-liquid-glass-v062.png) | ![Personalización del encabezado, barra lateral y navegación](images/fine-settings-navigation-v044.png) |
+| ![Ajustes de tarjetas con Standard, Liquid Glass y Tech Frame](images/fine-settings-cards-tech-frame-v063.png) | ![Personalización del encabezado, barra lateral y navegación](images/fine-settings-navigation-v044.png) |
 
 | Fondo y biblioteca | Efectos y selección de entidades |
 | --- | --- |
@@ -103,7 +104,7 @@ Theme Studio aparecerá en la barra lateral.
    frontend:
      themes: !include_dir_merge_named themes
      extra_module_url:
-       - /theme_studio_files/theme-studio-effects.js?v=0.6.2
+       - /theme_studio_files/theme-studio-effects.js?v=0.6.3
    ```
 
 3. Comprueba la configuración y reinicia Home Assistant:
