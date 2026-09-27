@@ -6,7 +6,7 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 
 ![Theme Studio 0.6.3 avec galerie communautaire, profils indépendants, cartes Tech Frame, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v063.png)
 
-> Version de développement actuelle : **0.6.3**
+> Version de développement actuelle : **0.6.4**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 
@@ -93,16 +93,16 @@ Les profils peuvent être envoyés directement sur [ha-theme-studio.com](https:/
 
 Theme Studio apparaît ensuite dans la barre latérale.
 
+Theme Studio enregistre automatiquement son module d’effets du tableau de bord. Aucune entrée `frontend.extra_module_url` n’est nécessaire.
+
 ## Installation manuelle
 
 1. Copiez le dossier `custom_components/theme_studio` de la version actuelle vers `/config/custom_components/theme_studio`.
-2. Activez les thèmes et le module d’effets dans `/config/configuration.yaml` :
+2. Activez les thèmes dans `/config/configuration.yaml` :
 
    ```yaml
    frontend:
      themes: !include_dir_merge_named themes
-     extra_module_url:
-       - /theme_studio_files/theme-studio-effects.js?v=0.6.3
    ```
 
 3. Vérifiez la configuration et redémarrez Home Assistant :

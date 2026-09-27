@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.6.3";
-import "./theme-studio-effects.js?v=0.6.3";
+} from "./theme-studio-locales.js?v=0.6.4";
+import "./theme-studio-effects.js?v=0.6.4";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
