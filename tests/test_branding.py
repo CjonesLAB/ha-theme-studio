@@ -41,6 +41,7 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     integration = ROOT / "custom_components/theme_studio"
     manifest = json.loads((integration / "manifest.json").read_text(encoding="utf-8"))
     constants = (integration / "const.py").read_text(encoding="utf-8")
+    setup = (integration / "__init__.py").read_text(encoding="utf-8")
     panel = (integration / "frontend/theme-studio-panel.js").read_text(encoding="utf-8")
     effects = (integration / "frontend/theme-studio-effects.js").read_text(encoding="utf-8")
 
@@ -50,6 +51,9 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert f'theme-studio-locales.js?v={RELEASE_VERSION}' in panel
     assert f'theme-studio-effects.js?v={RELEASE_VERSION}' in panel
     assert f'THEME_STUDIO_EFFECTS_VERSION = "{RELEASE_VERSION}"' in effects
+    assert "EFFECTS_MODULE_URL = (" in setup
+    assert "frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)" in setup
+    assert "DATA_EFFECTS_MODULE_REGISTERED" in setup
 
     for readme in (
         ROOT / "README.md",
@@ -59,5 +63,5 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     ):
         content = readme.read_text(encoding="utf-8")
         assert RELEASE_VERSION in content
-        assert f"theme-studio-effects.js?v={RELEASE_VERSION}" in content
+        assert "    extra_module_url:" not in content
         assert "fine-settings-cards-tech-frame-v063.png" in content

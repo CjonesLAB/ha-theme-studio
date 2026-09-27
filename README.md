@@ -95,6 +95,8 @@ Theme Studio can be installed as a custom repository through HACS:
 
 Theme Studio will then appear in the sidebar.
 
+Theme Studio registers its dashboard effect module automatically. No `frontend.extra_module_url` entry is required.
+
 ## Manual installation
 
 1. Copy the `custom_components/theme_studio` directory from the current release to Home Assistant:
@@ -103,13 +105,11 @@ Theme Studio will then appear in the sidebar.
    /config/custom_components/theme_studio
    ```
 
-2. Enable themes and the effect module in `/config/configuration.yaml`:
+2. Enable themes in `/config/configuration.yaml`:
 
    ```yaml
    frontend:
      themes: !include_dir_merge_named themes
-     extra_module_url:
-       - /theme_studio_files/theme-studio-effects.js?v=0.6.3
    ```
 
 3. Check the configuration and restart Home Assistant:
