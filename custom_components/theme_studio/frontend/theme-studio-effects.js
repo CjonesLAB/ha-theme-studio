@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.6.3";
+const THEME_STUDIO_EFFECTS_VERSION = "0.6.4";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -28,7 +28,11 @@ const DEFAULT_GLASS_HIGHLIGHT = 42;
 
 const EFFECT_CHECK_INTERVAL = 1200;
 const GLASS_SCAN_INTERVAL = 3000;
-const STARTUP_SYNC_DELAYS = [0, 40, 100, 220, 450, 800, 1400];
+const STARTUP_SYNC_DELAYS = [
+  0, 40, 100, 180, 280, 400, 550, 750,
+  1000, 1300, 1600, 1900, 2200, 2500,
+  2800, 3200,
+];
 const MAX_PIXEL_RATIO = 2;
 const CARD_INDEX_TTL = 30000;
 
@@ -79,6 +83,21 @@ class ThemeStudioEffects {
     this.techFrameCards = new Set();
     this.originalTechFrameStyles = new WeakMap();
     this.techFrameOutlines = new WeakMap();
+    this.techFrameResizeObserver = typeof window.ResizeObserver === "function"
+      ? new window.ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const card = entry.target;
+
+          if (
+            this.cardShape === "tech-frame"
+            && card.isConnected
+            && this.techFrameCards.has(card)
+          ) {
+            this._syncTechFrameOutline(card, this.techFrameCut);
+          }
+        }
+      })
+      : null;
     this.glassLastScan = 0;
     this.overlaySurfaces = new Set();
     this.originalOverlayStyles = new WeakMap();
@@ -345,6 +364,7 @@ class ThemeStudioEffects {
     this._clearAlertCards();
     this._clearLiquidGlassCards();
     this._clearTechFrameCards();
+    this.techFrameResizeObserver?.disconnect();
     this._restoreConfigSurface();
     this.canvas?.remove();
   }
@@ -942,10 +962,14 @@ class ThemeStudioEffects {
 
       if (this.liquidGlass) {
         this._restoreTechFrameCard(element);
-        this._styleLiquidGlassCard(element);
+        if (!this.glassCards.has(element)) {
+          this._styleLiquidGlassCard(element);
+        }
       } else {
         this._restoreLiquidGlassCard(element);
-        this._styleTechFrameCard(element);
+        if (!this.techFrameCards.has(element)) {
+          this._styleTechFrameCard(element);
+        }
       }
     });
 
@@ -1525,6 +1549,7 @@ class ThemeStudioEffects {
     );
 
     this.techFrameCards.add(card);
+    this.techFrameResizeObserver?.observe(card);
   }
 
   _syncTechFrameOutline(card, cut) {
@@ -1689,6 +1714,7 @@ class ThemeStudioEffects {
 
     this.originalTechFrameStyles.delete(card);
     this.techFrameCards.delete(card);
+    this.techFrameResizeObserver?.unobserve(card);
     this.techFrameOutlines.get(card)?.svg?.remove();
     this.techFrameOutlines.delete(card);
     for (const outline of card.querySelectorAll?.(

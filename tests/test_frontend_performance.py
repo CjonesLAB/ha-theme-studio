@@ -131,8 +131,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.6.3";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.6.3";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.6.4";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.6.4";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -170,7 +170,9 @@ def test_liquid_glass_uses_fast_startup_sync() -> None:
 
     effects_source = _effects_source()
 
-    assert "const STARTUP_SYNC_DELAYS = [0, 40, 100, 220, 450, 800, 1400];" in effects_source
+    assert "const STARTUP_SYNC_DELAYS = [" in effects_source
+    assert "0, 40, 100, 180, 280, 400, 550, 750," in effects_source
+    assert "2800, 3200," in effects_source
     assert "this.startupSyncTimeoutIds = new Set();" in effects_source
     assert "this._startStartupSync();" in effects_source
     assert (
@@ -180,6 +182,19 @@ def test_liquid_glass_uses_fast_startup_sync() -> None:
     assert "this._syncLiquidGlassCards(true);" in effects_source
     assert "this._stopStartupSync();" in effects_source
     assert "current._stopStartupSync?.();" in effects_source
+
+
+def test_staggered_tech_frame_cards_are_added_without_restyling_existing_cards() -> None:
+    """Late dashboard cards are caught quickly without repeated full restyling."""
+
+    effects_source = _effects_source()
+
+    assert "if (!this.techFrameCards.has(element))" in effects_source
+    assert "if (!this.glassCards.has(element))" in effects_source
+    assert "new window.ResizeObserver((entries) =>" in effects_source
+    assert "this.techFrameResizeObserver?.observe(card);" in effects_source
+    assert "this.techFrameResizeObserver?.unobserve(card);" in effects_source
+    assert "this.techFrameResizeObserver?.disconnect();" in effects_source
 
 
 def test_liquid_glass_excludes_heading_cards() -> None:

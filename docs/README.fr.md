@@ -6,7 +6,7 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 
 ![Theme Studio 0.6.3 avec galerie communautaire, profils indépendants, cartes Tech Frame, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v063.png)
 
-> Version de développement actuelle : **0.6.3**
+> Version de développement actuelle : **0.6.4**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 
