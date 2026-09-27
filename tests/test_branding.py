@@ -52,6 +52,8 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert f'theme-studio-effects.js?v={RELEASE_VERSION}' in panel
     assert f'THEME_STUDIO_EFFECTS_VERSION = "{RELEASE_VERSION}"' in effects
     assert "EFFECTS_MODULE_URL = (" in setup
+    assert "def _register_effects_module(hass: HomeAssistant)" in setup
+    assert "frontend.remove_extra_js_url(hass, url)" in setup
     assert "frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)" in setup
     assert "DATA_EFFECTS_MODULE_REGISTERED" in setup
 

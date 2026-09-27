@@ -27,6 +27,19 @@ DATA_STATIC_PATH_REGISTERED = "static_path_registered"
 DATA_EFFECTS_MODULE_REGISTERED = "effects_module_registered"
 
 
+def _register_effects_module(hass: HomeAssistant) -> None:
+    """Register only the current dashboard effects module URL."""
+
+    manager = hass.data.get(frontend.DATA_EXTRA_MODULE_URL)
+
+    if manager is not None:
+        for url in manager.urls:
+            if url.startswith(f"{STATIC_URL}/theme-studio-effects.js"):
+                frontend.remove_extra_js_url(hass, url)
+
+    frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -50,7 +63,7 @@ async def async_setup_entry(
         hass.data[DOMAIN][DATA_STATIC_PATH_REGISTERED] = True
 
     if not hass.data[DOMAIN].get(DATA_EFFECTS_MODULE_REGISTERED):
-        frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)
+        _register_effects_module(hass)
         hass.data[DOMAIN][DATA_EFFECTS_MODULE_REGISTERED] = True
 
     if PANEL_URL not in hass.data.get("frontend_panels", {}):
