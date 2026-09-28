@@ -18,14 +18,17 @@ from .websocket import (
     PROFILE_STORAGE_VERSION,
     RECOVERY_STORAGE_VERSION,
     STORAGE_VERSION,
+    USER_STORAGE_VERSION,
     get_background_store,
     get_profile_store,
     get_recovery_store,
     get_store,
+    get_user_store,
     normalize_recovery_state,
     normalize_saved_backgrounds,
     normalize_saved_profiles,
     normalize_settings,
+    normalize_user_state,
 )
 
 
@@ -143,6 +146,35 @@ def _recovery_diagnostics(saved: Any) -> dict[str, Any]:
     }
 
 
+def _user_diagnostics(saved: Any) -> dict[str, Any]:
+    """Summarize private user storage without returning identifiers or designs."""
+
+    result = {
+        "status": "missing",
+        "user_count": 0,
+        "active_user_count": 0,
+        "profile_count": 0,
+        "recovery_count": 0,
+    }
+    if saved is _UNAVAILABLE:
+        result["status"] = "unavailable"
+        return result
+    if saved is None:
+        return result
+    if not isinstance(saved, dict) or not isinstance(saved.get("users"), dict):
+        result["status"] = "invalid"
+        return result
+
+    result["status"] = "valid"
+    for raw_state in saved["users"].values():
+        state = normalize_user_state(raw_state)
+        result["user_count"] += 1
+        result["active_user_count"] += int(state["theme_studio_active"])
+        result["profile_count"] += len(state["profiles"])
+        result["recovery_count"] += int(state["recovery"] is not None)
+    return result
+
+
 def build_diagnostics(
     *,
     hass: HomeAssistant,
@@ -151,6 +183,7 @@ def build_diagnostics(
     profiles: Any,
     backgrounds: Any,
     recovery: Any,
+    users: Any = None,
 ) -> dict[str, Any]:
     """Build a diagnostic report containing metadata only."""
 
@@ -169,6 +202,7 @@ def build_diagnostics(
                 "profiles": PROFILE_STORAGE_VERSION,
                 "backgrounds": BACKGROUND_STORAGE_VERSION,
                 "recovery": RECOVERY_STORAGE_VERSION,
+                "users": USER_STORAGE_VERSION,
             },
             "settings": _settings_diagnostics(settings),
             "profiles": _collection_diagnostics(
@@ -184,6 +218,7 @@ def build_diagnostics(
                 capacity=MAX_BACKGROUNDS,
             ),
             "recovery": _recovery_diagnostics(recovery),
+            "users": _user_diagnostics(users),
         },
         "privacy": {
             "contains_design_values": False,
@@ -205,6 +240,7 @@ async def async_get_config_entry_diagnostics(
     profiles = await _async_load_store(get_profile_store(hass))
     backgrounds = await _async_load_store(get_background_store(hass))
     recovery = await _async_load_store(get_recovery_store(hass))
+    users = await _async_load_store(get_user_store(hass))
 
     return build_diagnostics(
         hass=hass,
@@ -213,4 +249,5 @@ async def async_get_config_entry_diagnostics(
         profiles=profiles,
         backgrounds=backgrounds,
         recovery=recovery,
+        users=users,
     )

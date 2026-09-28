@@ -6,7 +6,7 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 
 ![Theme Studio 0.6.3 with Community Gallery, independent design profiles, Tech Frame cards, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v063.png)
 
-> Current development version: **0.6.4**
+> Current development version: **0.7.0**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
@@ -42,6 +42,7 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - validate and sanitize JSON files on the server before importing them
 - clear import preview showing retained design settings and removed local content
 - display the installed Theme Studio version directly in the panel
+- keep settings, saved profiles, the active design and recovery history separate for every Home Assistant user
 - browse verified community designs as complete mini-dashboard previews in light and dark mode and import them as a local profile with one click
 - single-row community gallery showing three designs on desktop, with arrow controls and swipe navigation for additional designs
 - submit custom designs to [ha-theme-studio.com](https://ha-theme-studio.com/) for review and publication in the community gallery
@@ -64,6 +65,8 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - generation and direct activation of a real Home Assistant theme
 - safe return to the original Home Assistant default design
 - responsive operation on desktop, tablet, and smartphone
+
+Theme Studio settings, profiles, the active design, and the recovery point are private to each Home Assistant user. On first use after updating from 0.6.4, the existing design is copied into that user's private workspace. The background-image library remains shared across the Home Assistant instance and can be managed by administrators; every user can select an available shared image.
 
 ## Screenshots
 

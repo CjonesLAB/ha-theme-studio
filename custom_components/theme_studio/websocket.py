@@ -9,6 +9,7 @@ import json
 import time
 from datetime import UTC, datetime
 from functools import wraps
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -36,6 +37,8 @@ BACKGROUND_STORAGE_VERSION = 1
 BACKGROUND_STORAGE_KEY = f"{DOMAIN}.backgrounds"
 RECOVERY_STORAGE_VERSION = 1
 RECOVERY_STORAGE_KEY = f"{DOMAIN}.recovery"
+USER_STORAGE_VERSION = 1
+USER_STORAGE_KEY = f"{DOMAIN}.users"
 DATA_STORAGE_LOCK = "storage_lock"
 
 MAX_PROFILES = 64
@@ -44,6 +47,7 @@ MAX_BACKGROUNDS = 24
 MAX_BACKGROUND_NAME_LENGTH = 48
 
 THEME_NAME = "Theme Studio"
+USER_THEME_NAME_PREFIX = f"{THEME_NAME} · "
 THEME_FILENAME = "theme_studio.yaml"
 
 BACKGROUND_DIRECTORY = "theme_studio"
@@ -361,6 +365,125 @@ def get_recovery_store(
         RECOVERY_STORAGE_VERSION,
         RECOVERY_STORAGE_KEY,
     )
+
+
+def get_user_store(
+    hass: HomeAssistant,
+) -> Store[dict[str, Any]]:
+    """Return the per-user Theme Studio storage helper."""
+
+    return Store(
+        hass,
+        USER_STORAGE_VERSION,
+        USER_STORAGE_KEY,
+    )
+
+
+def theme_name_for_user(user_id: str) -> str:
+    """Return a stable theme name without exposing the Home Assistant user ID."""
+
+    identifier = sha256(user_id.encode("utf-8")).hexdigest()[:12]
+    return f"{USER_THEME_NAME_PREFIX}{identifier}"
+
+
+def normalize_user_state(
+    raw_state: Any,
+    *,
+    fallback_settings: Any = None,
+    fallback_profiles: Any = None,
+    fallback_recovery: Any = None,
+) -> dict[str, Any]:
+    """Normalize one user's private Theme Studio state."""
+
+    state = raw_state if isinstance(raw_state, dict) else {}
+    settings_source = state.get("settings", fallback_settings or {})
+
+    try:
+        settings = normalize_settings(settings_source)
+    except (vol.Invalid, TypeError, ValueError):
+        settings = default_settings()
+
+    profiles_source = state.get("profiles")
+    if not isinstance(profiles_source, list):
+        profiles_source = (
+            fallback_profiles.get("profiles", [])
+            if isinstance(fallback_profiles, dict)
+            else []
+        )
+    profiles = normalize_saved_profiles({"profiles": profiles_source})
+
+    active_profile_id = ""
+    candidate = state.get("active_profile_id")
+    if candidate is None and isinstance(fallback_settings, dict):
+        candidate = fallback_settings.get("active_profile_id")
+    if isinstance(candidate, str):
+        try:
+            validated = PROFILE_ID_VALIDATOR(candidate)
+            if any(profile["id"] == validated for profile in profiles):
+                active_profile_id = validated
+        except vol.Invalid:
+            pass
+
+    active_source = state.get("theme_studio_active")
+    if not isinstance(active_source, bool) and isinstance(
+        fallback_settings, dict
+    ):
+        active_source = fallback_settings.get("theme_studio_active")
+
+    recovery_source = state.get("recovery", fallback_recovery)
+
+    return {
+        "settings": settings,
+        "profiles": profiles,
+        "active_profile_id": active_profile_id,
+        "theme_studio_active": (
+            active_source if isinstance(active_source, bool) else True
+        ),
+        "theme_registered": bool(state.get("theme_registered", False)),
+        "recovery": normalize_recovery_state(recovery_source),
+    }
+
+
+async def async_load_user_state(
+    hass: HomeAssistant,
+    user_id: str,
+) -> tuple[dict[str, Any], bool]:
+    """Load one user's state and migrate the legacy global data on first use."""
+
+    store = get_user_store(hass)
+    saved = await store.async_load()
+    users = saved.get("users", {}) if isinstance(saved, dict) else {}
+    raw_state = users.get(user_id) if isinstance(users, dict) else None
+
+    if isinstance(raw_state, dict):
+        return normalize_user_state(raw_state), False
+
+    legacy_settings = await get_store(hass).async_load()
+    legacy_profiles = await get_profile_store(hass).async_load()
+    legacy_recovery = await get_recovery_store(hass).async_load()
+    state = normalize_user_state(
+        None,
+        fallback_settings=legacy_settings,
+        fallback_profiles=legacy_profiles,
+        fallback_recovery=legacy_recovery,
+    )
+    await async_save_user_state(hass, user_id, state)
+    return state, True
+
+
+async def async_save_user_state(
+    hass: HomeAssistant,
+    user_id: str,
+    state: dict[str, Any],
+) -> None:
+    """Persist one user's state without changing any other user."""
+
+    store = get_user_store(hass)
+    saved = await store.async_load()
+    raw_users = saved.get("users") if isinstance(saved, dict) else None
+    users = dict(raw_users) if isinstance(raw_users, dict) else {}
+    users[user_id] = normalize_user_state(state)
+    await store.async_save({"users": users})
 
 
 def get_storage_lock(hass: HomeAssistant) -> asyncio.Lock:
@@ -770,8 +893,13 @@ def normalize_saved_profiles(
 
 async def async_load_profiles(
     hass: HomeAssistant,
+    user_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Load and normalize all saved profiles."""
+
+    if user_id is not None:
+        state, _ = await async_load_user_state(hass, user_id)
+        return split_profiles(state["profiles"])
 
     store = get_profile_store(hass)
     saved = await store.async_load()
@@ -781,8 +909,15 @@ async def async_load_profiles(
 async def async_save_profiles(
     hass: HomeAssistant,
     profiles: list[dict[str, Any]],
+    user_id: str | None = None,
 ) -> None:
     """Persist all normalized profiles."""
+
+    if user_id is not None:
+        state, _ = await async_load_user_state(hass, user_id)
+        state["profiles"] = profiles
+        await async_save_user_state(hass, user_id, state)
+        return
 
     store = get_profile_store(hass)
     previous = await store.async_load()
@@ -1269,6 +1404,7 @@ def build_mode_values(
 
 def build_theme_file(
     settings: dict[str, Any],
+    theme_name: str = THEME_NAME,
 ) -> str:
     """Build a theme with light, dark and effect settings."""
 
@@ -1317,7 +1453,7 @@ def build_theme_file(
     }
 
     lines = [
-        f"{THEME_NAME}:",
+        f"{theme_name}:",
     ]
 
     for key, value in effect_values.items():
@@ -1353,6 +1489,33 @@ def build_theme_file(
     lines.append("")
 
     return "\n".join(lines)
+
+
+def build_theme_registry(
+    legacy_settings: dict[str, Any],
+    user_states: dict[str, Any],
+) -> str:
+    """Build the legacy alias and every active user's private theme."""
+
+    blocks = [build_theme_file(legacy_settings, THEME_NAME).rstrip()]
+
+    user_ids = sorted(
+        user_id
+        for user_id in user_states
+        if isinstance(user_id, str) and user_id
+    )
+    for user_id in user_ids:
+        state = normalize_user_state(user_states[user_id])
+        if not state["theme_studio_active"]:
+            continue
+        blocks.append(
+            build_theme_file(
+                state["settings"],
+                theme_name_for_user(user_id),
+            ).rstrip()
+        )
+
+    return "\n\n".join(blocks) + "\n"
 
 
 def write_theme_file(
@@ -1463,8 +1626,14 @@ async def async_generate_and_apply_theme(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
     settings: dict[str, Any],
-) -> None:
-    """Generate, reload and activate the theme."""
+    *,
+    user_id: str | None = None,
+    user_state: dict[str, Any] | None = None,
+) -> str:
+    """Generate all user themes, reload them and return this user's name."""
+
+    if user_id is None:
+        user_id = connection.user.id
 
     theme_path = Path(
         hass.config.path(
@@ -1473,7 +1642,27 @@ async def async_generate_and_apply_theme(
         )
     )
 
-    content = build_theme_file(settings)
+    raw_users = await get_user_store(hass).async_load()
+    user_states = (
+        dict(raw_users.get("users", {}))
+        if isinstance(raw_users, dict)
+        else {}
+    )
+    user_states[user_id] = normalize_user_state(
+        user_state
+        or {
+            "settings": settings,
+            "theme_studio_active": True,
+        }
+    )
+
+    legacy_raw = await get_store(hass).async_load()
+    try:
+        legacy_settings = normalize_settings(legacy_raw or {})
+    except (vol.Invalid, TypeError, ValueError):
+        legacy_settings = default_settings()
+
+    content = build_theme_registry(legacy_settings, user_states)
 
     await hass.async_add_executor_job(
         write_theme_file,
@@ -1489,16 +1678,7 @@ async def async_generate_and_apply_theme(
         context=connection.context(msg),
     )
 
-    await hass.services.async_call(
-        "frontend",
-        "set_theme",
-        {
-            "name": THEME_NAME,
-            "name_dark": THEME_NAME,
-        },
-        blocking=True,
-        context=connection.context(msg),
-    )
+    return theme_name_for_user(user_id)
 
 
 @websocket_api.websocket_command(
@@ -1509,6 +1689,7 @@ async def async_generate_and_apply_theme(
     }
 )
 @websocket_api.async_response
+@storage_locked
 async def websocket_get_settings(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1516,40 +1697,20 @@ async def websocket_get_settings(
 ) -> None:
     """Return saved and migrated settings."""
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
-    recovery = normalize_recovery_state(
-        await get_recovery_store(hass).async_load()
-    )
-
-    try:
-        settings = normalize_settings(
-            saved_settings or {}
-        )
-    except (vol.Invalid, TypeError, ValueError):
-        settings = default_settings()
-
-    active_profile_id = ""
-    theme_studio_active = True
-
-    if isinstance(saved_settings, dict):
-        if isinstance(saved_settings.get("theme_studio_active"), bool):
-            theme_studio_active = saved_settings["theme_studio_active"]
-        candidate = saved_settings.get("active_profile_id")
-
-        if isinstance(candidate, str):
-            try:
-                active_profile_id = PROFILE_ID_VALIDATOR(candidate)
-            except vol.Invalid:
-                active_profile_id = ""
+    user_id = connection.user.id
+    state, migrated = await async_load_user_state(hass, user_id)
 
     connection.send_result(
         msg["id"],
         {
-            **settings,
-            "active_profile_id": active_profile_id,
-            "theme_studio_active": theme_studio_active,
-            "recovery_available": recovery is not None,
+            **state["settings"],
+            "active_profile_id": state["active_profile_id"],
+            "theme_studio_active": state["theme_studio_active"],
+            "recovery_available": state["recovery"] is not None,
+            "theme": theme_name_for_user(user_id),
+            "theme_ready": state["theme_registered"],
+            "user_scoped": True,
+            "migrated": migrated,
         },
     )
 
@@ -1569,7 +1730,6 @@ async def websocket_get_settings(
         ): bool,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_save_settings(
@@ -1591,10 +1751,13 @@ async def websocket_save_settings(
         )
         return
 
+    user_id = connection.user.id
+    state, _ = await async_load_user_state(hass, user_id)
+    original_user_state = normalize_user_state(state)
     active_profile_id = msg.get("active_profile_id", "")
 
     if active_profile_id:
-        profiles = await async_load_profiles(hass)
+        profiles = split_profiles(state["profiles"])
 
         if not any(
             profile["id"] == active_profile_id
@@ -1602,32 +1765,45 @@ async def websocket_save_settings(
         ):
             active_profile_id = ""
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
-    previous_theme_studio_active = msg[
-        "previous_theme_studio_active"
-    ]
+    previous_theme_studio_active = state["theme_studio_active"]
     previous_state = recovery_state_from_settings(
-        saved_settings,
+        {
+            **state["settings"],
+            "active_profile_id": state["active_profile_id"],
+        },
         theme_studio_active=previous_theme_studio_active,
     )
     settings_changed = (
-        previous_state["settings"] != settings
-        or previous_state["active_profile_id"] != active_profile_id
+        state["settings"] != settings
+        or state["active_profile_id"] != active_profile_id
         or not previous_theme_studio_active
     )
 
     if settings_changed:
-        await get_recovery_store(hass).async_save(previous_state)
+        state["recovery"] = previous_state
+
+    state.update(
+        {
+            "settings": settings,
+            "active_profile_id": active_profile_id,
+            "theme_studio_active": True,
+        }
+    )
+    await async_save_user_state(hass, user_id, state)
 
     try:
-        await async_generate_and_apply_theme(
+        theme_name = await async_generate_and_apply_theme(
             hass,
             connection,
             msg,
             settings,
+            user_id=user_id,
+            user_state=state,
         )
+        state["theme_registered"] = True
+        await async_save_user_state(hass, user_id, state)
     except Exception as error:
+        await async_save_user_state(hass, user_id, original_user_state)
         connection.send_error(
             msg["id"],
             "theme_apply_failed",
@@ -1638,23 +1814,14 @@ async def websocket_save_settings(
         )
         return
 
-    stored_settings = {
-        **settings,
-        "active_profile_id": active_profile_id,
-        "theme_studio_active": True,
-    }
-    await store.async_save(stored_settings)
-
-    recovery_available = settings_changed or normalize_recovery_state(
-        await get_recovery_store(hass).async_load()
-    ) is not None
+    recovery_available = state["recovery"] is not None
 
     connection.send_result(
         msg["id"],
         {
             "success": True,
             "applied": True,
-            "theme": THEME_NAME,
+            "theme": theme_name,
             "theme_studio_active": True,
             "settings": settings,
             "active_profile_id": active_profile_id,
@@ -1674,7 +1841,6 @@ async def websocket_save_settings(
         ): bool,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_restore_default_theme(
@@ -1682,31 +1848,37 @@ async def websocket_restore_default_theme(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Restore the backend-preferred Home Assistant themes."""
+    """Restore the Home Assistant default for only the current user."""
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
+    user_id = connection.user.id
+    state, _ = await async_load_user_state(hass, user_id)
+    previous_state = normalize_user_state(state)
 
     if msg["current_theme_studio_active"]:
-        await get_recovery_store(hass).async_save(
-            recovery_state_from_settings(
-                saved_settings,
-                theme_studio_active=True,
-            )
+        state["recovery"] = recovery_state_from_settings(
+            {
+                **state["settings"],
+                "active_profile_id": state["active_profile_id"],
+            },
+            theme_studio_active=True,
         )
 
+    state["active_profile_id"] = ""
+    state["theme_studio_active"] = False
+    state["theme_registered"] = False
+    await async_save_user_state(hass, user_id, state)
+
     try:
-        await hass.services.async_call(
-            "frontend",
-            "set_theme",
-            {
-                "name": "default",
-                "name_dark": "default",
-            },
-            blocking=True,
-            context=connection.context(msg),
+        await async_generate_and_apply_theme(
+            hass,
+            connection,
+            msg,
+            state["settings"],
+            user_id=user_id,
+            user_state=state,
         )
     except Exception as error:
+        await async_save_user_state(hass, user_id, previous_state)
         connection.send_error(
             msg["id"],
             "theme_restore_failed",
@@ -1717,28 +1889,14 @@ async def websocket_restore_default_theme(
         )
         return
 
-    try:
-        settings = normalize_settings(saved_settings or {})
-    except (vol.Invalid, TypeError, ValueError):
-        settings = default_settings()
-
-    await store.async_save(
-        {
-            **settings,
-            "active_profile_id": "",
-            "theme_studio_active": False,
-        }
-    )
-
     connection.send_result(
         msg["id"],
         {
             "success": True,
             "theme": "default",
             "theme_studio_active": False,
-            "recovery_available": normalize_recovery_state(
-                await get_recovery_store(hass).async_load()
-            ) is not None,
+            "recovery_available": state["recovery"] is not None,
+            "user_scoped": True,
         },
     )
 
@@ -1751,6 +1909,7 @@ async def websocket_restore_default_theme(
     }
 )
 @websocket_api.async_response
+@storage_locked
 async def websocket_get_profiles(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -1758,7 +1917,7 @@ async def websocket_get_profiles(
 ) -> None:
     """Return all saved design profiles."""
 
-    profiles = await async_load_profiles(hass)
+    profiles = await async_load_profiles(hass, connection.user.id)
 
     connection.send_result(
         msg["id"],
@@ -1767,6 +1926,8 @@ async def websocket_get_profiles(
             "maximum": MAX_PROFILES,
         },
     )
+
+
 @websocket_api.websocket_command(
     {
         vol.Required(
@@ -1788,6 +1949,8 @@ async def websocket_get_info(
             "version": VERSION,
             "profile_format": "theme-studio-profile",
             "profile_format_version": 2,
+            "user_scoped": True,
+            "is_admin": connection.user.is_admin,
         },
     )
 
@@ -1803,7 +1966,6 @@ async def websocket_get_info(
         ): bool,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_restore_last_design(
@@ -1813,10 +1975,9 @@ async def websocket_restore_last_design(
 ) -> None:
     """Restore the last persistent design and retain the current one."""
 
-    recovery_store = get_recovery_store(hass)
-    recovery = normalize_recovery_state(
-        await recovery_store.async_load()
-    )
+    user_id = connection.user.id
+    state, _ = await async_load_user_state(hass, user_id)
+    recovery = state["recovery"]
 
     if recovery is None:
         connection.send_error(
@@ -1826,33 +1987,37 @@ async def websocket_restore_last_design(
         )
         return
 
-    store = get_store(hass)
-    saved_settings = await store.async_load()
     current_state = recovery_state_from_settings(
-        saved_settings,
+        {
+            **state["settings"],
+            "active_profile_id": state["active_profile_id"],
+        },
         theme_studio_active=msg["current_theme_studio_active"],
     )
+    previous_state = normalize_user_state(state)
+    state.update(
+        {
+            "settings": recovery["settings"],
+            "active_profile_id": recovery["active_profile_id"],
+            "theme_studio_active": recovery["theme_studio_active"],
+            "recovery": current_state,
+        }
+    )
+    await async_save_user_state(hass, user_id, state)
 
     try:
-        if recovery["theme_studio_active"]:
-            await async_generate_and_apply_theme(
-                hass,
-                connection,
-                msg,
-                recovery["settings"],
-            )
-        else:
-            await hass.services.async_call(
-                "frontend",
-                "set_theme",
-                {
-                    "name": "default",
-                    "name_dark": "default",
-                },
-                blocking=True,
-                context=connection.context(msg),
-            )
+        theme_name = await async_generate_and_apply_theme(
+            hass,
+            connection,
+            msg,
+            recovery["settings"],
+            user_id=user_id,
+            user_state=state,
+        )
+        state["theme_registered"] = bool(recovery["theme_studio_active"])
+        await async_save_user_state(hass, user_id, state)
     except Exception as error:
+        await async_save_user_state(hass, user_id, previous_state)
         connection.send_error(
             msg["id"],
             "recovery_failed",
@@ -1860,20 +2025,12 @@ async def websocket_restore_last_design(
         )
         return
 
-    restored_settings = {
-        **recovery["settings"],
-        "active_profile_id": recovery["active_profile_id"],
-        "theme_studio_active": recovery["theme_studio_active"],
-    }
-    await store.async_save(restored_settings)
-    await recovery_store.async_save(current_state)
-
     connection.send_result(
         msg["id"],
         {
             "success": True,
             "theme": (
-                THEME_NAME
+                theme_name
                 if recovery["theme_studio_active"]
                 else "default"
             ),
@@ -1881,6 +2038,7 @@ async def websocket_restore_last_design(
             "settings": recovery["settings"],
             "active_profile_id": recovery["active_profile_id"],
             "recovery_available": True,
+            "user_scoped": True,
         },
     )
 
@@ -1893,7 +2051,6 @@ async def websocket_restore_last_design(
         vol.Required("profile"): dict,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 async def websocket_preview_profile_import(
     hass: HomeAssistant,
@@ -1961,7 +2118,6 @@ async def websocket_preview_profile_import(
         vol.Required("settings"): dict,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_save_profile(
@@ -1984,7 +2140,8 @@ async def websocket_save_profile(
         )
         return
 
-    profiles = await async_load_profiles(hass)
+    user_id = connection.user.id
+    profiles = await async_load_profiles(hass, user_id)
     profile_id = msg.get("profile_id")
     existing_profile = next(
         (
@@ -2038,7 +2195,7 @@ async def websocket_save_profile(
     profiles.sort(
         key=lambda profile: profile["name"].casefold()
     )
-    await async_save_profiles(hass, profiles)
+    await async_save_profiles(hass, profiles, user_id)
 
     connection.send_result(
         msg["id"],
@@ -2058,7 +2215,6 @@ async def websocket_save_profile(
         vol.Required("profile_id"): PROFILE_ID_VALIDATOR,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_delete_profile(
@@ -2068,7 +2224,8 @@ async def websocket_delete_profile(
 ) -> None:
     """Delete one saved design profile."""
 
-    profiles = await async_load_profiles(hass)
+    user_id = connection.user.id
+    profiles = await async_load_profiles(hass, user_id)
     remaining_profiles = [
         profile
         for profile in profiles
@@ -2086,21 +2243,13 @@ async def websocket_delete_profile(
     await async_save_profiles(
         hass,
         remaining_profiles,
+        user_id,
     )
 
-    settings_store = get_store(hass)
-    saved_settings = await settings_store.async_load()
-
-    if (
-        isinstance(saved_settings, dict)
-        and saved_settings.get("active_profile_id") == msg["profile_id"]
-    ):
-        await settings_store.async_save(
-            {
-                **saved_settings,
-                "active_profile_id": "",
-            }
-        )
+    state, _ = await async_load_user_state(hass, user_id)
+    if state["active_profile_id"] == msg["profile_id"]:
+        state["active_profile_id"] = ""
+        await async_save_user_state(hass, user_id, state)
 
     connection.send_result(
         msg["id"],
@@ -2213,6 +2362,7 @@ def sanitize_gallery_settings(
 
 async def async_store_gallery_profile(
     hass: HomeAssistant,
+    user_id: str,
     requested_name: Any,
     fallback_name: Any,
     settings: dict[str, Any],
@@ -2220,7 +2370,7 @@ async def async_store_gallery_profile(
     """Store an imported gallery profile without losing concurrent writes."""
 
     async with get_storage_lock(hass):
-        profiles = await async_load_profiles(hass)
+        profiles = await async_load_profiles(hass, user_id)
 
         if len(profiles) >= MAX_PROFILES:
             return None
@@ -2241,7 +2391,7 @@ async def async_store_gallery_profile(
         profiles.sort(
             key=lambda profile: profile["name"].casefold()
         )
-        await async_save_profiles(hass, profiles)
+        await async_save_profiles(hass, profiles, user_id)
 
     return saved_profile, profiles
 
@@ -2256,7 +2406,6 @@ async def async_store_gallery_profile(
         vol.Optional("name"): str,
     }
 )
-@websocket_api.require_admin
 @websocket_api.async_response
 async def websocket_import_gallery_design(
     hass: HomeAssistant,
@@ -2321,6 +2470,7 @@ async def websocket_import_gallery_design(
 
     stored = await async_store_gallery_profile(
         hass,
+        connection.user.id,
         msg.get("name"),
         downloaded["name"],
         settings,
@@ -2498,11 +2648,35 @@ async def websocket_delete_background(
     if recovery is not None:
         protected_profiles.append({"settings": recovery["settings"]})
 
-    if background_is_referenced(
+    background_in_use = background_is_referenced(
         background["filename"],
         settings,
         protected_profiles,
-    ):
+    )
+
+    raw_user_data = await get_user_store(hass).async_load()
+    raw_users = (
+        raw_user_data.get("users", {})
+        if isinstance(raw_user_data, dict)
+        else {}
+    )
+    if isinstance(raw_users, dict):
+        for raw_state in raw_users.values():
+            state = normalize_user_state(raw_state)
+            user_profiles = list(state["profiles"])
+            if state["recovery"] is not None:
+                user_profiles.append(
+                    {"settings": state["recovery"]["settings"]}
+                )
+            if background_is_referenced(
+                background["filename"],
+                state["settings"],
+                user_profiles,
+            ):
+                background_in_use = True
+                break
+
+    if background_in_use:
         connection.send_error(
             msg["id"],
             "background_in_use",

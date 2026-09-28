@@ -6,7 +6,7 @@ Theme Studio es una integración personalizada para Home Assistant que permite c
 
 ![Theme Studio 0.6.3 con galería comunitaria, perfiles independientes, tarjetas Tech Frame, ajustes y vista previa del panel](images/theme-studio-community-overview-v063.png)
 
-> Versión de desarrollo actual: **0.6.4**
+> Versión de desarrollo actual: **0.7.0**
 >
 > Theme Studio todavía se encuentra en una fase temprana de desarrollo. Crea una copia de seguridad de Home Assistant antes de instalarlo o actualizarlo.
 
@@ -42,6 +42,7 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 - validación y limpieza de archivos JSON en el servidor antes de importarlos
 - vista previa clara con los ajustes conservados y el contenido local eliminado
 - visualización de la versión instalada en el panel
+- separación de los ajustes, perfiles guardados, diseño activo y punto de recuperación de cada usuario de Home Assistant
 - galería de diseños verificados con vista previa completa en modo claro y oscuro e importación con un clic
 - galería de una sola fila con tres diseños visibles en escritorio, flechas y navegación mediante gestos
 - envío de diseños a [ha-theme-studio.com](https://ha-theme-studio.com/) para su revisión y publicación
@@ -64,6 +65,8 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 - creación y activación directa de un tema real de Home Assistant
 - regreso seguro al diseño predeterminado de Home Assistant
 - funcionamiento adaptable en ordenador, tableta y teléfono
+
+Los ajustes de Theme Studio, los perfiles, el diseño activo y el punto de recuperación son privados para cada usuario de Home Assistant. En el primer acceso después de actualizar desde la versión 0.6.4, el diseño existente se copia al espacio personal de ese usuario. La biblioteca de imágenes de fondo continúa compartida dentro de la instancia de Home Assistant y la administran los administradores; cada usuario puede seleccionar una imagen compartida disponible.
 
 ## Capturas de pantalla
 

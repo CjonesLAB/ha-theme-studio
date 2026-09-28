@@ -43,7 +43,7 @@ class ResultConnection:
     def __init__(self) -> None:
         self.result: dict[str, Any] | None = None
         self.error: tuple[Any, ...] | None = None
-        self.user = SimpleNamespace(is_admin=True)
+        self.user = SimpleNamespace(id="user-1", is_admin=True)
 
     def send_result(self, _message_id: int, result: dict[str, Any]) -> None:
         """Capture a successful response."""
@@ -130,20 +130,25 @@ async def test_delete_profile_clears_active_reference(
 
     deleted_id = "a" * 32
     kept_id = "b" * 32
-    profile_store = MemoryStore(
-        {"profiles": [_profile(deleted_id, "Abend"), _profile(kept_id, "Morgen")]}
-    )
-    settings_store = MemoryStore(
+    user_store = MemoryStore(
         {
-            **default_settings(),
-            "active_profile_id": deleted_id,
-            "theme_studio_active": True,
+            "users": {
+                "user-1": {
+                    "settings": default_settings(),
+                    "profiles": [
+                        _profile(deleted_id, "Abend"),
+                        _profile(kept_id, "Morgen"),
+                    ],
+                    "active_profile_id": deleted_id,
+                    "theme_studio_active": True,
+                    "recovery": None,
+                }
+            }
         }
     )
     connection = ResultConnection()
 
-    monkeypatch.setattr(websocket, "get_profile_store", lambda _hass: profile_store)
-    monkeypatch.setattr(websocket, "get_store", lambda _hass: settings_store)
+    monkeypatch.setattr(websocket, "get_user_store", lambda _hass: user_store)
     monkeypatch.setattr(websocket, "get_storage_lock", lambda _hass: asyncio.Lock())
 
     await unwrap(websocket.websocket_delete_profile)(
@@ -155,5 +160,5 @@ async def test_delete_profile_clears_active_reference(
     assert connection.error is None
     assert connection.result is not None
     assert [item["id"] for item in connection.result["profiles"]] == [kept_id]
-    assert settings_store.value is not None
-    assert settings_store.value["active_profile_id"] == ""
+    assert user_store.value is not None
+    assert user_store.value["users"]["user-1"]["active_profile_id"] == ""
