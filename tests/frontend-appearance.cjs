@@ -4,12 +4,12 @@ const start=src.indexOf('  _syncAppearanceFromHass() {'),end=src.indexOf('  set 
 const proto=new Function('return class {'+src.slice(start,end)+'}')().prototype;
 global.CustomEvent=class {constructor(type,options){this.type=type;Object.assign(this,options);}};
 global.window={matchMedia:()=>({matches:false})};
-const p={activeMode:'dark',_hass:{selectedTheme:{dark:false}},settings:{mode:'dark'},_syncControls(){},_updatePreview(){},_renderCommunityGallery(){},dispatchEvent(e){this.event=e}};
+const p={activeMode:'dark',activeThemeName:'Theme Studio · private123456',_hass:{selectedTheme:{dark:false}},settings:{mode:'dark'},_syncControls(){},_updatePreview(){},_renderCommunityGallery(){},dispatchEvent(e){this.event=e}};
 proto._syncAppearanceFromHass.call(p);
 assert.equal(p.activeMode,'dark','HA appearance must not switch the edited design');
 proto._setAppearance.call(p,'light');
 assert.equal(p.event.detail.dark,false);
-assert.equal(p.event.detail.theme,'Theme Studio');
+assert.equal(p.event.detail.theme,'Theme Studio · private123456');
 assert.equal(p.activeMode,'dark','Applying mode must not replace another open draft');
 proto._setHomeAssistantDefaultAppearance.call(p);
 assert.equal(p.event.detail.theme,'');

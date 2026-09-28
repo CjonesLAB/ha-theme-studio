@@ -6,7 +6,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ![Theme Studio 0.6.3 mit Community-Galerie, eigenständigen Designprofilen, Tech-Frame-Karten, Feineinstellungen und Dashboard-Vorschau](images/theme-studio-community-overview-v063.png)
 
-> Aktuelle Entwicklungsversion: **0.6.4**
+> Aktuelle Entwicklungsversion: **0.7.0**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -42,6 +42,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - JSON-Dateien vor dem Import serverseitig prüfen und bereinigen
 - übersichtliche Importvorschau mit den übernommenen Farben und entfernten lokalen Inhalten
 - installierte Theme-Studio-Version direkt im Bedienfeld anzeigen
+- Einstellungen, gespeicherte Profile, aktives Design und Wiederherstellungspunkt für jeden Home-Assistant-Benutzer getrennt speichern
 - geprüfte Community-Designs in einer vollständigen Mini-Dashboard-Vorschau für Hell und Dunkel ansehen und mit einem Klick als lokales Profil importieren
 - einzeilige Community-Galerie mit drei sichtbaren Designs auf dem Desktop sowie Pfeilsteuerung und Wischbedienung für weitere Designs
 - eigene Designs über [ha-theme-studio.com](https://ha-theme-studio.com/) zur Prüfung und Veröffentlichung in der Community-Galerie einreichen
@@ -64,6 +65,8 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - Erzeugung und direkte Aktivierung eines echten Home-Assistant-Themes
 - sichere Rückkehr zum originalen Home-Assistant-Standarddesign
 - responsive Bedienung auf Desktop, Tablet und Smartphone
+
+Theme-Studio-Einstellungen, Profile, das aktive Design und der Wiederherstellungspunkt sind für jeden Home-Assistant-Benutzer privat. Beim ersten Zugriff nach dem Update von 0.6.4 wird das vorhandene Design in den persönlichen Bereich dieses Benutzers kopiert. Die Hintergrundbild-Bibliothek bleibt innerhalb der Home-Assistant-Instanz gemeinsam und wird von Administratoren verwaltet; jeder Benutzer kann ein verfügbares gemeinsames Bild auswählen.
 
 ## Screenshots
 

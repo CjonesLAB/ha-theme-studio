@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.6.4";
-import "./theme-studio-effects.js?v=0.6.4";
+} from "./theme-studio-locales.js?v=0.7.0";
+import "./theme-studio-effects.js?v=0.7.0";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -38,7 +38,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.importPreviewReturnFocus = null;
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
+    this.activeThemeName = "Theme Studio";
     this.localizer = null;
+    this.isAdmin = false;
 
     this.settings = {
       light: {
@@ -143,6 +145,7 @@ class ThemeStudioPanel extends HTMLElement {
   set hass(hass) {
     if (!this._initialDesignDefaults) this._initialDesignDefaults = this._cloneSettings(this.settings);
     this._hass = hass;
+    this.isAdmin = hass?.user?.is_admin === true;
     this._syncAppearanceFromHass();
 
     if (!this._rendered) {
@@ -173,13 +176,14 @@ class ThemeStudioPanel extends HTMLElement {
     }
   }
 
-  _setAppearance(mode) {
+  _setAppearance(mode, themeName = this.activeThemeName) {
     if (!["auto", "light", "dark"].includes(mode)) return;
     const dark = mode === "auto" ? undefined : mode === "dark";
+    this.activeThemeName = themeName || this.activeThemeName;
     this.appearanceMode = mode;
     // Same user-scoped event as HA's profile; no global theme service call.
     this.dispatchEvent(new CustomEvent("settheme", {
-      detail: { dark, theme: "Theme Studio" }, bubbles: true, composed: true,
+      detail: { dark, theme: this.activeThemeName }, bubbles: true, composed: true,
     }));
     this._syncControls();
     this._updatePreview();
@@ -3378,7 +3382,7 @@ class ThemeStudioPanel extends HTMLElement {
                   </button>
                 </div>
 
-                <div class="upload-box">
+                ${this.isAdmin ? `<div class="upload-box">
                   <p>
                     JPG, PNG oder WebP bis 5 MB.
                   </p>
@@ -3410,7 +3414,10 @@ class ThemeStudioPanel extends HTMLElement {
                     id="file-name"
                     class="file-name"
                   ></div>
-                </div>
+                </div>` : `<p class="background-library-empty">
+                  Eigene Hintergrundbilder werden gemeinsam verwaltet und können
+                  nur von Administratoren hinzugefügt oder gelöscht werden.
+                </p>`}
 
                 <div class="background-library-heading">
                   <h4>Bildbibliothek</h4>
@@ -6452,6 +6459,18 @@ class ThemeStudioPanel extends HTMLElement {
           : "";
       this.recoveryAvailable = saved.recovery_available === true;
       this.themeStudioActive = saved.theme_studio_active !== false;
+      const privateThemeName = typeof saved.theme === "string" && saved.theme
+        ? saved.theme
+        : "Theme Studio";
+      const selectedThemeName = this._hass?.selectedTheme?.theme;
+      this.activeThemeName = saved.theme_ready === true
+        ? privateThemeName
+        : (
+          typeof selectedThemeName === "string"
+          && selectedThemeName.startsWith("Theme Studio")
+            ? selectedThemeName
+            : "Theme Studio"
+        );
 
       this.settings = {
         mode: saved.mode || (this._hass.themes?.darkMode === false ? "light" : "dark"),
@@ -6481,7 +6500,10 @@ class ThemeStudioPanel extends HTMLElement {
       // backend default but left "Theme Studio" selected in this user profile.
       if (
         !this.themeStudioActive
-        && this._hass?.selectedTheme?.theme === "Theme Studio"
+        && (
+          this._hass?.selectedTheme?.theme === "Theme Studio"
+          || this._hass?.selectedTheme?.theme?.startsWith("Theme Studio · ")
+        )
       ) {
         this._setHomeAssistantDefaultAppearance();
       }
@@ -6581,7 +6603,7 @@ class ThemeStudioPanel extends HTMLElement {
               ${this._formatFileSize(background.size)}
             </span>
           </button>
-          <div class="background-library-actions">
+          ${this.isAdmin ? `<div class="background-library-actions">
             <button
               class="background-library-action"
               data-action="rename"
@@ -6598,7 +6620,7 @@ class ThemeStudioPanel extends HTMLElement {
             >
               Löschen
             </button>
-          </div>
+          </div>` : ""}
         </article>
       `;
     }).join("");
@@ -6899,11 +6921,15 @@ class ThemeStudioPanel extends HTMLElement {
         this._setProfileEditBaseline();
       }
       this.appliedSettings = this._cloneSettings(result.settings);
+      this.activeThemeName = result.theme || this.activeThemeName;
       this.persistedActiveProfileId =
         result.active_profile_id || "";
       this.recoveryAvailable = result.recovery_available === true;
       this.themeStudioActive = true;
-      this._setAppearance(result.settings.mode || this.activeMode);
+      this._setAppearance(
+        result.settings.mode || this.activeMode,
+        this.activeThemeName
+      );
       this._syncUnsavedStatus();
       this._syncRecoveryButton();
 
@@ -6974,7 +7000,8 @@ class ThemeStudioPanel extends HTMLElement {
       this.settings.mode ||= this.activeMode;
       this.activeMode = this.settings.mode;
       if (result.theme_studio_active) {
-        this._setAppearance(this.settings.mode);
+        this.activeThemeName = result.theme || this.activeThemeName;
+        this._setAppearance(this.settings.mode, this.activeThemeName);
       } else {
         this._setHomeAssistantDefaultAppearance();
       }

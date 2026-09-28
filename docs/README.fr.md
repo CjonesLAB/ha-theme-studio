@@ -6,7 +6,7 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 
 ![Theme Studio 0.6.3 avec galerie communautaire, profils indépendants, cartes Tech Frame, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v063.png)
 
-> Version de développement actuelle : **0.6.4**
+> Version de développement actuelle : **0.7.0**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 
@@ -42,6 +42,7 @@ La galerie suit automatiquement le mode du profil chargé. Elle affiche uniqueme
 - validation et nettoyage côté serveur des fichiers JSON avant importation
 - aperçu d’importation indiquant les réglages conservés et les contenus locaux supprimés
 - affichage de la version installée dans le panneau
+- séparation des réglages, profils enregistrés, thème actif et point de restauration pour chaque utilisateur Home Assistant
 - galerie de designs vérifiés avec aperçu complet en mode clair et sombre et importation en un clic
 - galerie sur une seule ligne avec trois designs visibles sur ordinateur, flèches et navigation tactile
 - envoi de designs sur [ha-theme-studio.com](https://ha-theme-studio.com/) pour vérification et publication
@@ -64,6 +65,8 @@ La galerie suit automatiquement le mode du profil chargé. Elle affiche uniqueme
 - création et activation directe d’un véritable thème Home Assistant
 - retour sécurisé au design Home Assistant d’origine
 - interface adaptée aux ordinateurs, tablettes et smartphones
+
+Les réglages Theme Studio, les profils, le thème actif et le point de restauration sont privés pour chaque utilisateur Home Assistant. Lors du premier accès après la mise à jour depuis la version 0.6.4, le thème existant est copié dans l’espace personnel de cet utilisateur. La bibliothèque d’images d’arrière-plan reste partagée au sein de l’instance Home Assistant et est gérée par les administrateurs ; chaque utilisateur peut sélectionner une image partagée disponible.
 
 ## Captures d’écran
 

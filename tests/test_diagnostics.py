@@ -66,6 +66,17 @@ def test_diagnostics_contain_counts_but_no_private_values() -> None:
         "theme_studio_active": True,
         "saved_at": "2026-08-22T10:00:00+00:00",
     }
+    users = {
+        "users": {
+            "private-home-assistant-user-id": {
+                "settings": settings,
+                "profiles": profiles["profiles"],
+                "active_profile_id": "a" * 32,
+                "theme_studio_active": True,
+                "recovery": recovery,
+            }
+        }
+    }
 
     diagnostics = build_diagnostics(
         hass=_hass(),
@@ -74,6 +85,7 @@ def test_diagnostics_contain_counts_but_no_private_values() -> None:
         profiles=profiles,
         backgrounds=backgrounds,
         recovery=recovery,
+        users=users,
     )
     serialized = json.dumps(diagnostics)
 
@@ -82,6 +94,13 @@ def test_diagnostics_contain_counts_but_no_private_values() -> None:
     assert diagnostics["storage"]["profiles"]["valid_count"] == 1
     assert diagnostics["storage"]["backgrounds"]["valid_count"] == 1
     assert diagnostics["storage"]["recovery"]["available"] is True
+    assert diagnostics["storage"]["users"] == {
+        "status": "valid",
+        "user_count": 1,
+        "active_user_count": 1,
+        "profile_count": 1,
+        "recovery_count": 1,
+    }
     assert "#123456" not in serialized
     assert "sensor.private_power" not in serialized
     assert "binary_sensor.private_alarm" not in serialized
@@ -89,6 +108,7 @@ def test_diagnostics_contain_counts_but_no_private_values() -> None:
     assert "Private holiday photo" not in serialized
     assert "image_" + "c" * 32 + ".jpg" not in serialized
     assert "a" * 32 not in serialized
+    assert "private-home-assistant-user-id" not in serialized
 
 
 def test_diagnostics_report_invalid_and_unavailable_storage() -> None:
