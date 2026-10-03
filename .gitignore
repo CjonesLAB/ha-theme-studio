@@ -13,6 +13,8 @@ venv/
 dist/
 build/
 outputs/
+output/
+tmp/
 .codex-*.png
 ha-theme-studio-v*-complete/
 ha-theme-studio-v*-complete.zip

@@ -12,6 +12,15 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 
 Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
+## User guides
+
+| Language | Read online | Download PDF |
+| --- | --- | --- |
+| English | [Open guide](docs/guides/USER_GUIDE.en.md) | [Download](docs/downloads/theme-studio-user-guide-en.pdf) |
+| Deutsch | [Anleitung öffnen](docs/guides/BENUTZERHANDBUCH.de.md) | [PDF herunterladen](docs/downloads/theme-studio-benutzerhandbuch-de.pdf) |
+| Français | [Ouvrir le guide](docs/guides/GUIDE_UTILISATEUR.fr.md) | [Télécharger](docs/downloads/theme-studio-guide-utilisateur-fr.pdf) |
+| Español | [Abrir la guía](docs/guides/GUIA_USUARIO.es.md) | [Descargar](docs/downloads/theme-studio-guia-usuario-es.pdf) |
+
 ## Features
 
 Each profile is one independent **Light** or **Dark** design. Enter its name and mode under **Create new design**, then edit it directly. **Apply design** activates its palette and fixed mode. There is no mode switch or automatic counterpart generation inside a design.
