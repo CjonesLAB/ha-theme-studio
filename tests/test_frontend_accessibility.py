@@ -242,6 +242,12 @@ def test_css_example_library_is_searchable_safe_and_keyboard_accessible() -> Non
     assert 'support: "Offizielles Home-Assistant-Theme"' in panel_source
     assert 'insertable: false' in panel_source
     assert 'support: "Theme Studio getestet"' in panel_source
+    assert panel_source.count("\n    id: \"") >= 32
+    assert 'id: "full-width-card"' in panel_source
+    assert 'id: "hide-entity-card"' in panel_source
+    assert 'id: "pulse-card"' in panel_source
+    assert 'id: "light-dark-modes"' in panel_source
+    assert 'support: "Experimentell"' in panel_source
     assert 'this.settings.effects.expertCssEnabled = true;' in insert_source
     assert 'currentCss.includes(example.code.trim())' in insert_source
     assert "this._saveAndApplySettings" not in insert_source
