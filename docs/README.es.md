@@ -6,7 +6,7 @@ Theme Studio es una integración personalizada para Home Assistant que permite c
 
 ![Theme Studio 0.6.3 con galería comunitaria, perfiles independientes, tarjetas Tech Frame, ajustes y vista previa del panel](images/theme-studio-community-overview-v063.png)
 
-> Versión de desarrollo actual: **0.7.0**
+> Versión de desarrollo actual: **0.8.0**
 >
 > Theme Studio todavía se encuentra en una fase temprana de desarrollo. Crea una copia de seguridad de Home Assistant antes de instalarlo o actualizarlo.
 
@@ -139,6 +139,12 @@ Las opciones de las listas desplegables utilizan un color de selección fijo y d
 La galería integrada solo muestra diseños revisados y publicados en [ha-theme-studio.com](https://ha-theme-studio.com). Cada vista previa representa un panel compacto y sigue el modo claro u oscuro seleccionado. Home Assistant vuelve a validar todos los perfiles importados. Las rutas de imágenes locales del creador no se importan.
 
 En **Fondo → Biblioteca de imágenes** pueden gestionarse hasta 24 archivos JPG, PNG o WebP. Las imágenes utilizadas están protegidas frente a la eliminación accidental. Los efectos de tarjeta solo se aplican a las entidades seleccionadas.
+
+### CSS experto
+
+El modo CSS experto es específico de cada usuario y solo se aplica a los paneles. El editor directo permite seleccionar una tarjeta real, cambiar al instante su espacio, tamaño, posición, columnas, opacidad, tamaño de texto o esquinas y guardar una regla limitada a esa tarjeta. Mantén `Ctrl` para seleccionar varias tarjetas. Cada tarjeta conserva una clave estable y puede restablecerse de forma individual o junto con todo el grupo. Las reglas también pueden limitarse a ordenador, tableta o teléfono. El área de CSS libre sigue disponible para ajustes avanzados y rechaza importaciones, URL remotas y construcciones ejecutables peligrosas.
+
+![Editor directo de tarjetas de Theme Studio 0.8.0 con vista previa y selección múltiple](images/theme-studio-card-editor-v080.gif)
 
 ## Actualización
 

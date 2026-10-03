@@ -6,7 +6,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ![Theme Studio 0.6.3 mit Community-Galerie, eigenständigen Designprofilen, Tech-Frame-Karten, Feineinstellungen und Dashboard-Vorschau](images/theme-studio-community-overview-v063.png)
 
-> Aktuelle Entwicklungsversion: **0.7.0**
+> Aktuelle Entwicklungsversion: **0.8.0**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 
@@ -31,6 +31,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - Space-Command-Hintergrundeffekt mit Sternenfeld und Lichtakzenten, ohne sichtbares Raster
 - optionaler Liquid-Glass-Kartenstil mit eigenem Transparenzregler von 0–100 %, Hintergrundunschärfe, Sättigung und Reflexionen; widersprüchliche Karten-Materialwerte werden bei aktivem Glas automatisch gesetzt und gesperrt
 - optionaler Tech-Frame-Kartenstil mit asymmetrischen Eckenschnitten, geschlossener einstellbarer Kontur, Leuchtstärke, Rahmenfarbe, Rahmenstärke und Schatten; Überschriften bleiben unverändert, während normale Karten und deckende Detaildialoge den gewählten Rahmen verwenden
+- zuschaltbarer Expertenmodus für benutzerbezogenes CSS, gezielte Entitäts-/Kartenregeln, kompakte Dashboard-Abstände, Positionen, Größen und responsive Anordnungen
 - Dashboard-Effekte werden in den Home-Assistant-Einstellungen unter `/config` und in Overlay-Dialogen automatisch deaktiviert
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
@@ -139,6 +140,36 @@ Dropdown-Einträge verwenden eine feste kontrastreiche Auswahlfarbe, damit Profi
 Die Community-Galerie zeigt ausschließlich geprüfte Designs von [ha-theme-studio.com](https://ha-theme-studio.com). Jede Vorschau stellt ein kompaktes Home-Assistant-Dashboard dar und folgt der Auswahl für hellen oder dunklen Modus. Importierte Profile werden erneut durch Home Assistant validiert. Lokale Hintergrundbild-Pfade des Erstellers werden nicht übernommen.
 
 Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-Dateien verwaltet werden. Verwendete Bilder sind vor versehentlichem Löschen geschützt. Karteneffekte gelten nur für die ausgewählten Entitäten.
+
+### Expertenmodus für CSS
+
+Unter **Dashboard-Effekte** kann eigenes CSS nach Bestätigung des Warnhinweises eingeschaltet werden. Die Regeln gelten nur für den aktuellen Home-Assistant-Benutzer und ausschließlich in Dashboards – nicht in Einstellungen oder Overlay-Dialogen. Beim Ausschalten entfernt Theme Studio die Regeln und Zielmarkierungen vollständig.
+
+Für häufige Anpassungen ist kein eigener CSS-Code nötig. Im Dashboard-Bearbeitungsmodus wird die echte Karte direkt auf dem aktiven Dashboard ausgewählt. Abstand, Größe, Position, Spaltenbreite, Deckkraft, Schriftgröße und Rundung sind dadurch sofort an der betreffenden Karte sichtbar, bevor die Regel gespeichert wird. Mit gedrückter `Strg`-Taste lassen sich mehrere Karten gemeinsam auswählen. Jede Karte behält ihren eigenen stabilen Schlüssel; eine Reset-Funktion entfernt die Anpassung einer einzelnen Karte oder der ganzen Auswahl, ohne das eigentliche Dashboard zu verändern. Regeln lassen sich anschließend in Theme Studio verwalten, auf Desktop, Tablet oder Smartphone begrenzen sowie bearbeiten, duplizieren, vorübergehend deaktivieren und löschen. Das Feld für freies CSS bleibt darunter als optionale Profi-Stufe erhalten.
+
+![Direkter Karteneditor von Theme Studio 0.8.0 mit Live-Vorschau und Mehrfachauswahl](images/theme-studio-card-editor-v080.gif)
+
+Theme Studio stellt dafür stabile Zielattribute im Dashboard bereit:
+
+```css
+/* Karte mit einer bestimmten Entität */
+ha-card[data-theme-studio-entity~="sensor.house_power"] {
+  min-height: 120px;
+}
+
+/* Äußeres Dashboard-Element positionieren oder vergrößern */
+[data-theme-studio-card-container][data-theme-studio-id="energie"] {
+  grid-column: span 2;
+  margin: 0 !important;
+}
+
+/* Freiraum in erkannten Dashboard-Rastern verkleinern */
+[data-theme-studio-layout] {
+  gap: 6px !important;
+}
+```
+
+Für eine eindeutige ID in der YAML-Konfiguration der Karte beispielsweise `theme_studio_id: energie` ergänzen. Erlaubt sind Buchstaben, Zahlen, Unterstriche und Bindestriche. Externe `@import`-Regeln, Remote-/Data-URLs und ausführbare veraltete CSS-Konstrukte werden abgewiesen. Experten-CSS wird bewusst nicht in portable Profil-Exporte übernommen.
 
 ## Aktualisierung
 

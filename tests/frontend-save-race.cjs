@@ -3,7 +3,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync(path.join(__dirname, '../custom_components/theme_studio/frontend/theme-studio-panel.js'), 'utf8');
 const start = source.indexOf('  async _saveAndApplySettings() {');
-const end = source.indexOf('\n  _syncRecoveryButton()', start);
+const end = source.indexOf('\n  async _openDashboardEditor()', start);
 const method = new Function('return ({' + source.slice(start, end) + '})')()._saveAndApplySettings;
 global.window = { setTimeout() {} };
 async function scenario(change, fail = false) {
@@ -17,6 +17,7 @@ async function scenario(change, fail = false) {
       return new Promise((yes, no) => { resolve = yes; reject = no; });
     } },
     _currentProfile: () => null, _cloneSettings: structuredClone,
+    _expertCssError: () => '',
     _stopProfileSaveReminderPulse() {},
     _setProfileEditBaseline() { this.baselines++; },
     _resetHistory() { this.resets++; }, _syncUnsavedStatus() {},

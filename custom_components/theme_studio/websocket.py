@@ -6,6 +6,7 @@ import asyncio
 import base64
 import binascii
 import json
+import re
 import time
 from datetime import UTC, datetime
 from functools import wraps
@@ -45,6 +46,7 @@ MAX_PROFILES = 64
 MAX_PROFILE_NAME_LENGTH = 48
 MAX_BACKGROUNDS = 24
 MAX_BACKGROUND_NAME_LENGTH = 48
+MAX_EXPERT_CSS_LENGTH = 20_000
 
 THEME_NAME = "Theme Studio"
 USER_THEME_NAME_PREFIX = f"{THEME_NAME} · "
@@ -136,9 +138,99 @@ DEFAULT_EFFECT_SETTINGS: dict[str, Any] = {
     "climateHot": 28,
     "alertEntities": [],
     "alertBatteryLow": 20,
+    "expertCssEnabled": False,
+    "expertRules": [],
+    "expertCss": "",
 }
 
+
+def validate_expert_css(value: Any) -> str:
+    """Validate user-authored dashboard CSS without rewriting it."""
+
+    if not isinstance(value, str):
+        raise vol.Invalid("Experten-CSS muss Text sein.")
+
+    css = value.replace("\r\n", "\n").replace("\r", "\n")
+
+    if len(css) > MAX_EXPERT_CSS_LENGTH:
+        raise vol.Invalid(
+            f"Experten-CSS darf höchstens {MAX_EXPERT_CSS_LENGTH} Zeichen enthalten."
+        )
+
+    lowered = css.lower()
+    forbidden_patterns = (
+        (r"@import\b", "@import ist im Experten-CSS nicht erlaubt."),
+        (r"javascript\s*:", "javascript:-Adressen sind nicht erlaubt."),
+        (r"expression\s*\(", "CSS-Ausdrücke sind nicht erlaubt."),
+        (r"(?:^|[;{])\s*behavior\s*:", "CSS-Verhalten ist nicht erlaubt."),
+        (r"-moz-binding\s*:", "CSS-Bindings sind nicht erlaubt."),
+    )
+
+    for pattern, message in forbidden_patterns:
+        if re.search(pattern, lowered):
+            raise vol.Invalid(message)
+
+    for match in re.finditer(
+        r"url\s*\(\s*(['\"]?)(.*?)\1\s*\)",
+        css,
+        re.I | re.S,
+    ):
+        target = match.group(2).strip().lower()
+        if target.startswith(("http:", "https:", "//", "data:", "javascript:")):
+            raise vol.Invalid(
+                "Externe oder eingebettete URLs sind im Experten-CSS nicht erlaubt."
+            )
+
+    return css
+
 COLOR_VALIDATOR = vol.Match(r"^#[0-9a-fA-F]{6}$")
+
+EXPERT_RULE_SCHEMA = vol.Schema(
+    {
+        vol.Required("id"): vol.Match(r"^[a-f0-9]{12}$"),
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=48)),
+        vol.Required("enabled"): bool,
+        vol.Required("targetType"): vol.In(
+            ("all", "entity", "id", "card", "layout")
+        ),
+        vol.Required("target"): vol.All(str, vol.Length(max=128)),
+        vol.Required("device"): vol.In(("all", "desktop", "tablet", "mobile")),
+        vol.Required("margin"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=-100, max=100))
+        ),
+        vol.Required("padding"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=0, max=100))
+        ),
+        vol.Required("gap"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=0, max=100))
+        ),
+        vol.Required("width"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=40, max=2000))
+        ),
+        vol.Required("minHeight"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=20, max=2000))
+        ),
+        vol.Required("columns"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=1, max=12))
+        ),
+        vol.Required("offsetX"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=-500, max=500))
+        ),
+        vol.Required("offsetY"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=-500, max=500))
+        ),
+        vol.Required("opacity"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=0, max=100))
+        ),
+        vol.Required("fontSize"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=8, max=48))
+        ),
+        vol.Required("borderRadius"): vol.Any(
+            None, vol.All(vol.Coerce(int), vol.Range(min=0, max=60))
+        ),
+    },
+    extra=vol.PREVENT_EXTRA,
+)
 
 BACKGROUND_URL_VALIDATOR = vol.Any(
     "",
@@ -296,6 +388,12 @@ EFFECT_SCHEMA = vol.Schema(
             vol.Coerce(int),
             vol.Range(min=1, max=100),
         ),
+        vol.Required("expertCssEnabled"): bool,
+        vol.Required("expertRules"): vol.All(
+            [EXPERT_RULE_SCHEMA],
+            vol.Length(max=64),
+        ),
+        vol.Required("expertCss"): validate_expert_css,
     },
     extra=vol.PREVENT_EXTRA,
 )
@@ -690,7 +788,33 @@ def normalize_effects(
             normalized["climateComfortMax"] + 1,
         )
 
-    return EFFECT_SCHEMA(normalized)
+    validated = EFFECT_SCHEMA(normalized)
+    rule_ids: set[str] = set()
+
+    for rule in validated["expertRules"]:
+        if rule["id"] in rule_ids:
+            raise vol.Invalid("Regel-IDs im Expertenmodus müssen eindeutig sein.")
+        rule_ids.add(rule["id"])
+
+        if rule["targetType"] == "entity" and not re.fullmatch(
+            r"[a-z0-9_]+\.[a-z0-9_]+", rule["target"]
+        ):
+            raise vol.Invalid("Für eine Entitätsregel ist eine gültige Entitäts-ID nötig.")
+
+        if rule["targetType"] == "id" and not re.fullmatch(
+            r"[a-zA-Z0-9_-]{1,64}", rule["target"]
+        ):
+            raise vol.Invalid("Die Karten-ID enthält nicht erlaubte Zeichen.")
+
+        if rule["targetType"] == "card" and not re.fullmatch(
+            r"[a-f0-9]{16}", rule["target"]
+        ):
+            raise vol.Invalid("Der automatische Kartenschlüssel ist ungültig.")
+
+        if rule["targetType"] in ("all", "layout") and rule["target"]:
+            raise vol.Invalid("Diese Regelart benötigt kein Ziel.")
+
+    return validated
 
 
 def normalize_settings(
@@ -1402,6 +1526,120 @@ def build_mode_values(
     }
 
 
+def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
+    """Build scoped CSS from validated visual expert rules."""
+
+    blocks: list[str] = []
+
+    for rule in rules:
+        if not rule["enabled"]:
+            continue
+
+        target_type = rule["targetType"]
+        target = rule["target"]
+        attribute = ""
+
+        if target_type == "entity":
+            attribute = f'[data-theme-studio-entity~="{target}"]'
+        elif target_type == "id":
+            attribute = f'[data-theme-studio-id="{target}"]'
+        elif target_type == "card":
+            attribute = f'[data-theme-studio-card-key="{target}"]'
+
+        card_selector = f"ha-card{attribute}"
+        container_selector = (
+            f"[data-theme-studio-card-container]{attribute}"
+        )
+        visual: list[str] = []
+        placement: list[str] = []
+        font_descendants: list[str] = []
+
+        if rule["padding"] is not None:
+            visual.append(f'padding: {rule["padding"]}px !important;')
+        if rule["minHeight"] is not None:
+            visual.append(f'min-height: {rule["minHeight"]}px !important;')
+        if rule["opacity"] is not None:
+            visual.append(f'opacity: {rule["opacity"] / 100:.2f} !important;')
+        if rule["fontSize"] is not None:
+            visual.append(f'font-size: {rule["fontSize"]}px !important;')
+            for variable in (
+                "--ha-font-size-xs",
+                "--ha-font-size-s",
+                "--ha-font-size-m",
+                "--ha-font-size-l",
+                "--mdc-typography-body1-font-size",
+                "--mdc-typography-body2-font-size",
+                "--paper-font-body1_-_font-size",
+                "--paper-font-body2_-_font-size",
+                "--state-card-primary-font-size",
+                "--state-card-secondary-font-size",
+                "--card-primary-font-size",
+                "--card-secondary-font-size",
+            ):
+                visual.append(
+                    f'{variable}: {rule["fontSize"]}px !important;'
+                )
+            font_descendants.append(
+                f'font-size: {rule["fontSize"]}px !important;'
+            )
+        if rule["borderRadius"] is not None:
+            visual.append(f'border-radius: {rule["borderRadius"]}px !important;')
+
+        if rule["margin"] is not None:
+            placement.append(f'margin: {rule["margin"]}px !important;')
+        if rule["width"] is not None:
+            placement.append(f'width: {rule["width"]}px !important;')
+        if rule["columns"] is not None:
+            placement.append(f'grid-column: span {rule["columns"]} !important;')
+        if rule["offsetX"] is not None or rule["offsetY"] is not None:
+            offset_x = rule["offsetX"] or 0
+            offset_y = rule["offsetY"] or 0
+            placement.append(
+                f"transform: translate({offset_x}px, {offset_y}px) !important;"
+            )
+
+        declarations: list[tuple[str, list[str]]] = []
+
+        if target_type == "layout":
+            layout_rules = visual + placement
+            if rule["gap"] is not None:
+                layout_rules.append(f'gap: {rule["gap"]}px !important;')
+            declarations.append(("[data-theme-studio-layout]", layout_rules))
+        else:
+            declarations.extend(
+                (
+                    (card_selector, visual),
+                    (f"{card_selector} *", font_descendants),
+                    (container_selector, placement),
+                )
+            )
+
+        rule_blocks = []
+        for selector, properties in declarations:
+            if not properties:
+                continue
+            body = "\n".join(f"  {property_value}" for property_value in properties)
+            rule_blocks.append(f"{selector} {{\n{body}\n}}")
+
+        if not rule_blocks:
+            continue
+
+        css = f"/* Theme Studio rule {rule['id']} */\n" + "\n\n".join(rule_blocks)
+        media = {
+            "desktop": "(min-width: 1025px)",
+            "tablet": "(min-width: 601px) and (max-width: 1024px)",
+            "mobile": "(max-width: 600px)",
+        }.get(rule["device"])
+
+        if media:
+            indented = "\n".join(f"  {line}" for line in css.splitlines())
+            css = f"@media {media} {{\n{indented}\n}}"
+
+        blocks.append(css)
+
+    return "\n\n".join(blocks)
+
+
 def build_theme_file(
     settings: dict[str, Any],
     theme_name: str = THEME_NAME,
@@ -1409,6 +1647,11 @@ def build_theme_file(
     """Build a theme with light, dark and effect settings."""
 
     effects = settings["effects"]
+
+    generated_expert_css = build_expert_rules_css(effects["expertRules"])
+    expert_css = "\n\n".join(
+        part for part in (generated_expert_css, effects["expertCss"]) if part
+    )
 
     effect_values = {
         "theme-studio-effect": effects["effect"],
@@ -1450,6 +1693,12 @@ def build_theme_file(
         "theme-studio-alert-battery-low": str(
             effects["alertBatteryLow"]
         ),
+        "theme-studio-expert-css-enabled": (
+            "1" if effects["expertCssEnabled"] else "0"
+        ),
+        "theme-studio-expert-css-b64": base64.b64encode(
+            expert_css.encode("utf-8")
+        ).decode("ascii"),
     }
 
     lines = [

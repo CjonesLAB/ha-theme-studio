@@ -131,8 +131,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.7.0";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.7.0";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.8.0";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.8.0";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -146,7 +146,8 @@ def test_effect_module_caches_style_reads_and_releases_global_listeners() -> Non
     assert "this.themeComputedStyles = this._themeElements().map" in effects_source
     assert "this._readThemeSettingsFromComputedStyles();" in effects_source
     assert "this.themeComputedStyles = null;" in effects_source
-    assert "this.resizeEventHandler = () => this._resize();" in effects_source
+    assert "this.resizeEventHandler = () => {" in effects_source
+    assert "this._positionDashboardEditorHighlight();" in effects_source
     assert "this._unbindEvents();" in effects_source
     assert 'window.removeEventListener("resize", this.resizeEventHandler);' in effects_source
     assert "current._destroy();" in effects_source
@@ -175,13 +176,51 @@ def test_liquid_glass_uses_fast_startup_sync() -> None:
     assert "2800, 3200," in effects_source
     assert "this.startupSyncTimeoutIds = new Set();" in effects_source
     assert "this._startStartupSync();" in effects_source
-    assert (
-        'if (this.liquidGlass || this.cardShape === "tech-frame")'
-        in effects_source
-    )
+    assert "const EXPERT_CSS_STARTUP_SYNC_DELAYS = new Set([" in effects_source
+    assert "EXPERT_CSS_STARTUP_SYNC_DELAYS.has(delay)" in effects_source
     assert "this._syncLiquidGlassCards(true);" in effects_source
     assert "this._stopStartupSync();" in effects_source
     assert "current._stopStartupSync?.();" in effects_source
+
+
+def test_expert_css_reuses_the_bounded_material_scan() -> None:
+    """Expert CSS adds no observer and is cleaned up during hot replacement."""
+
+    effects_source = _effects_source()
+    panel_source = _panel_source()
+
+    assert "new MutationObserver(" not in effects_source
+    assert '"--theme-studio-expert-css-b64"' in effects_source
+    assert 'style.setAttribute("data-theme-studio-expert-css", "")' in effects_source
+    assert "this._markExpertCard(element);" in effects_source
+    assert '"data-theme-studio-entity"' in effects_source
+    assert '"data-theme-studio-id"' in effects_source
+    assert '"data-theme-studio-card-key"' in effects_source
+    assert '"data-theme-studio-layout"' in effects_source
+    assert "this._clearExpertCss();" in effects_source
+    assert 'id="expert-css-enabled"' in panel_source
+    assert 'id="expert-css"' in panel_source
+    assert "this._expertCssError(" in panel_source
+    assert 'id="expert-rule-target-type"' in panel_source
+    assert 'id="expert-rule-entity"' in panel_source
+    assert 'id="expert-rule-device"' in panel_source
+    assert 'id="expert-rule-list"' in panel_source
+    assert 'id="expert-dashboard-editor-button"' in panel_source
+    assert "_openDashboardEditor()" in panel_source
+    assert "_startDashboardEditor()" in effects_source
+    assert "_selectDashboardEditorCard(card, event.ctrlKey || event.metaKey)" in effects_source
+    assert "_dashboardCardKey(card)" in effects_source
+    assert 'targetType: "card"' in effects_source
+    assert 'candidate.targetType === "card"' in effects_source
+    assert '<option value="card">Direkt ausgewählte Karte</option>' in panel_source
+    assert "_applyDashboardEditorPreview()" in effects_source
+    assert "_saveDashboardEditorRule()" in effects_source
+    assert "this._stopDashboardEditor(false);" in effects_source
+    assert 'document.removeEventListener(\n      "click"' in effects_source
+    assert 'window.removeEventListener(\n      "scroll"' in effects_source
+    assert "_saveExpertRuleFromForm()" in panel_source
+    assert "_handleExpertRuleAction(action, ruleId)" in panel_source
+    assert 'data-rule-action="duplicate"' in panel_source
 
 
 def test_staggered_tech_frame_cards_are_added_without_restyling_existing_cards() -> None:

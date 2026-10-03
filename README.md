@@ -6,7 +6,7 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 
 ![Theme Studio 0.6.3 with Community Gallery, independent design profiles, Tech Frame cards, fine-tuning, and dashboard preview](docs/images/theme-studio-community-overview-v063.png)
 
-> Current development version: **0.7.0**
+> Current development version: **0.8.0**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
@@ -31,6 +31,7 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - Space Command background effect with stars and light accents, without a visible grid overlay
 - optional Liquid Glass card style with a dedicated 0–100% transparency control, backdrop blur, saturation, and reflections; conflicting card material controls are set automatically and locked while glass is active
 - optional Tech Frame card style with asymmetric corner cuts, a closed configurable outline, glow intensity, border color, border width, and shadow; headings remain unchanged while normal cards and opaque detail dialogs use the selected frame
+- opt-in Expert CSS mode for per-user card styling, targeted entity/card rules, compact dashboard gaps, positioning, sizing, and responsive layouts
 - dashboard effects are automatically disabled in Home Assistant settings under `/config` and in overlay dialogs
 - automatic recovery point before applying a design
 - restore the last active design with one click, even after a restart
@@ -150,6 +151,36 @@ The integrated Community Gallery only displays previously reviewed and published
 Up to 24 JPG, PNG, or WebP files can be managed under **Background → Image library**. Existing Theme Studio images are detected automatically. An image used by the active design or a saved profile is protected against accidental deletion.
 
 Card effects are only applied to the selected entities. This keeps large dashboards clear and avoids unnecessary effects.
+
+### Expert CSS
+
+Under **Dashboard effects**, Expert CSS can be enabled after acknowledging the warning. The rules are private to the current Home Assistant user and are applied only to dashboards, not to settings pages or overlay dialogs. Disabling Expert CSS removes its styles and target markers completely.
+
+The visual rule editor covers the common adjustments without requiring CSS knowledge. Its dashboard editing mode lets you select a real card directly on the active dashboard, change spacing, size, position, column span, opacity, font size, or rounded corners, and see the result immediately on that card before saving. Hold `Ctrl` while selecting to edit several cards together. Every selected card keeps its own stable key, and a per-card or group reset removes the customization without affecting the underlying dashboard. Rules can also be managed in Theme Studio, limited to desktop, tablet, or phone, edited, duplicated, temporarily disabled, or deleted. The optional raw CSS area remains available for adjustments that are not covered by the visual fields.
+
+![Theme Studio 0.8.0 direct card editor with live preview and multi-selection](docs/images/theme-studio-card-editor-v080.gif)
+
+Theme Studio exposes stable targeting attributes inside the dashboard:
+
+```css
+/* A card containing a specific entity */
+ha-card[data-theme-studio-entity~="sensor.house_power"] {
+  min-height: 120px;
+}
+
+/* Position or resize the outer dashboard item */
+[data-theme-studio-card-container][data-theme-studio-id="energy"] {
+  grid-column: span 2;
+  margin: 0 !important;
+}
+
+/* Reduce empty space in detected dashboard layouts */
+[data-theme-studio-layout] {
+  gap: 6px !important;
+}
+```
+
+For an unambiguous ID, add `theme_studio_id: energy` to the card's YAML configuration. IDs may contain letters, numbers, underscores, and hyphens. External `@import` rules, remote/data URLs, and executable legacy CSS constructs are rejected. Expert CSS is intentionally omitted from portable profile exports.
 
 ## Updating
 

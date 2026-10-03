@@ -1,7 +1,9 @@
 """Run actual pure backend functions without importing Home Assistant."""
 import ast
 import asyncio
+import base64
 import json
+import re
 import runpy
 import sys
 from copy import deepcopy
@@ -22,7 +24,14 @@ for node in source.body:
     elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         node.decorator_list = []
         nodes.append(node)
-env = {'DOMAIN':'theme_studio', 'vol':vol, 'json':json, **helpers}
+env = {
+    'DOMAIN': 'theme_studio',
+    'vol': vol,
+    'json': json,
+    'base64': base64,
+    're': re,
+    **helpers,
+}
 exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), '<actual backend functions>', 'exec'), env)
 settings = env['default_settings']()
 settings['light']['primaryColor'] = '#112233'
@@ -69,6 +78,43 @@ try:
     raise AssertionError('invalid mode accepted')
 except vol.Invalid:
     pass
+expert = env['default_settings']()
+expert_css = 'ha-card[data-theme-studio-id="energy"] { margin: 0 !important; }'
+expert['effects']['expertCssEnabled'] = True
+expert['effects']['expertCss'] = expert_css
+expert['effects']['expertRules'] = [{
+    'id': '0123456789ab', 'name': 'Compact energy', 'enabled': True,
+    'targetType': 'entity', 'target': 'sensor.house_power', 'device': 'mobile',
+    'margin': 0, 'padding': 6, 'gap': None, 'width': None, 'minHeight': 80,
+    'columns': 2, 'offsetX': None, 'offsetY': -3, 'opacity': 95,
+    'fontSize': 14, 'borderRadius': 4,
+}, {
+    'id': 'abcdef012345', 'name': 'One dashboard card', 'enabled': True,
+    'targetType': 'card', 'target': '0123456789abcdef', 'device': 'all',
+    'margin': 2, 'padding': None, 'gap': None, 'width': None,
+    'minHeight': None, 'columns': None, 'offsetX': None, 'offsetY': None,
+    'opacity': None, 'fontSize': None, 'borderRadius': None,
+}]
+expert = env['normalize_settings'](expert)
+expert_yaml = env['build_theme_file'](expert)
+generated_css = env['build_expert_rules_css'](expert['effects']['expertRules'])
+combined_css = f'{generated_css}\n\n{expert_css}'
+encoded_css = base64.b64encode(combined_css.encode('utf-8')).decode('ascii')
+assert f'theme-studio-expert-css-b64: "{encoded_css}"' in expert_yaml
+assert expert_css not in expert_yaml
+assert '@media (max-width: 600px)' in generated_css
+assert 'grid-column: span 2 !important' in generated_css
+assert 'data-theme-studio-card-key="0123456789abcdef"' in generated_css
+assert '--state-card-primary-font-size: 14px !important' in generated_css
+for unsafe_css in ('@import "https://example.invalid/a.css";',
+                   'ha-card { background: url(data:image/png;base64,AAAA); }'):
+    candidate = deepcopy(expert['effects'])
+    candidate['expertCss'] = unsafe_css
+    try:
+        env['normalize_effects'](candidate)
+        raise AssertionError('unsafe expert CSS accepted')
+    except vol.Invalid:
+        pass
 print('Backend checks passed: 32 -> 64 lossless profiles, stable IDs, repeat migration, isolated palettes, single-mode YAML, v2 roundtrip, invalid mode.')
 
 class MemoryStore:

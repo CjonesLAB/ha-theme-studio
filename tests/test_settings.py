@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from copy import deepcopy
 
 import pytest
@@ -19,6 +20,9 @@ from custom_components.theme_studio.websocket import (
     recovery_state_from_settings,
     sanitize_gallery_settings,
     build_mode_values,
+    build_expert_rules_css,
+    build_theme_file,
+    normalize_effects,
 )
 
 
@@ -144,6 +148,138 @@ def test_legacy_effect_fields_are_migrated_and_deduplicated() -> None:
     assert migrated["effects"]["energyWarning"] == 500
     assert migrated["effects"]["energyCritical"] == 501
 
+
+def test_expert_css_is_disabled_for_existing_profiles() -> None:
+    """Existing saved designs gain an inert expert-mode default."""
+
+    normalized = normalize_effects({"effect": "none"})
+
+    assert normalized["expertCssEnabled"] is False
+    assert normalized["expertCss"] == ""
+
+
+def test_expert_css_is_base64_encoded_in_theme_file() -> None:
+    """Multiline CSS reaches the frontend without breaking generated YAML."""
+
+    settings = default_settings()
+    css = (
+        'ha-card[data-theme-studio-id="energy"] {\n'
+        "  margin: 0 !important;\n"
+        "}\n"
+    )
+    settings["effects"]["expertCssEnabled"] = True
+    settings["effects"]["expertCss"] = css
+
+    theme = build_theme_file(normalize_settings(settings))
+    encoded = base64.b64encode(css.encode("utf-8")).decode("ascii")
+
+    assert 'theme-studio-expert-css-enabled: "1"' in theme
+    assert f'theme-studio-expert-css-b64: "{encoded}"' in theme
+    assert css not in theme
+
+
+@pytest.mark.parametrize(
+    "css",
+    [
+        '@import "https://example.com/theme.css";',
+        'ha-card { background: url("https://example.com/a.png"); }',
+        "ha-card { background: url(data:image/png;base64,AAAA); }",
+        "ha-card { width: expression(alert(1)); }",
+    ],
+)
+def test_expert_css_rejects_remote_or_active_content(css: str) -> None:
+    """Expert mode cannot load remote or executable CSS content."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["expertCssEnabled"] = True
+    effects["expertCss"] = css
+
+    with pytest.raises(vol.Invalid):
+        normalize_effects(effects)
+
+    effects["expertRules"] = [_expert_rule(), _expert_rule(name="Duplicate")]
+
+    with pytest.raises(vol.Invalid):
+        normalize_effects(effects)
+
+
+def _expert_rule(**changes: object) -> dict[str, object]:
+    rule: dict[str, object] = {
+        "id": "0123456789ab",
+        "name": "Energy card",
+        "enabled": True,
+        "targetType": "entity",
+        "target": "sensor.house_power",
+        "device": "desktop",
+        "margin": 0,
+        "padding": 8,
+        "gap": None,
+        "width": 520,
+        "minHeight": 120,
+        "columns": 2,
+        "offsetX": 0,
+        "offsetY": -4,
+        "opacity": 95,
+        "fontSize": 14,
+        "borderRadius": 6,
+    }
+    rule.update(changes)
+    return rule
+
+
+def test_visual_expert_rules_generate_scoped_responsive_css() -> None:
+    """The visual editor produces card and layout-item rules without raw CSS."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["expertCssEnabled"] = True
+    effects["expertRules"] = [_expert_rule()]
+    normalized = normalize_effects(effects)
+    css = build_expert_rules_css(normalized["expertRules"])
+
+    assert "@media (min-width: 1025px)" in css
+    assert 'ha-card[data-theme-studio-entity~="sensor.house_power"]' in css
+    assert "[data-theme-studio-card-container]" in css
+    assert "grid-column: span 2 !important" in css
+    assert "transform: translate(0px, -4px) !important" in css
+    assert "opacity: 0.95 !important" in css
+    assert "--state-card-primary-font-size: 14px !important" in css
+    assert 'ha-card[data-theme-studio-entity~="sensor.house_power"] *' in css
+
+
+def test_visual_expert_rules_validate_target_and_unique_ids() -> None:
+    """Malformed targets and duplicate visual-rule IDs are rejected."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["expertRules"] = [_expert_rule(target="not-an-entity")]
+
+    with pytest.raises(vol.Invalid):
+        normalize_effects(effects)
+
+
+def test_visual_expert_rule_can_target_one_dashboard_card_instance() -> None:
+    """A generated card key scopes CSS to one selected dashboard card."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["expertRules"] = [
+        _expert_rule(
+            targetType="card",
+            target="0123456789abcdef",
+            device="all",
+        )
+    ]
+    normalized = normalize_effects(effects)
+    css = build_expert_rules_css(normalized["expertRules"])
+
+    selector = '[data-theme-studio-card-key="0123456789abcdef"]'
+    assert f"ha-card{selector}" in css
+    assert f"[data-theme-studio-card-container]{selector}" in css
+
+    effects["expertRules"] = [
+        _expert_rule(targetType="card", target="shared-entity")
+    ]
+
+    with pytest.raises(vol.Invalid):
+        normalize_effects(effects)
 
 def test_liquid_glass_defaults_keep_existing_designs_unchanged() -> None:
     """Older profiles gain disabled, safe Liquid Glass defaults."""
