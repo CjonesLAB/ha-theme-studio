@@ -156,6 +156,8 @@ Card effects are only applied to the selected entities. This keeps large dashboa
 
 Under **Dashboard effects**, Expert CSS can be enabled after acknowledging the warning. The rules are private to the current Home Assistant user and are applied only to dashboards, not to settings pages or overlay dialogs. Disabling Expert CSS removes its styles and target markers completely.
 
+> **Compatibility:** Card effects, Expert CSS, and the direct card editor rely on the standard Lovelace card and layout structure. Fully custom dashboards or custom panels that render their own HTML or web-component structure are not supported by these features. Theme colors and compatible Home Assistant theme variables may still apply, but card effects cannot be guaranteed there.
+
 The visual rule editor covers the common adjustments without requiring CSS knowledge. Its dashboard editing mode lets you select a real card directly on the active dashboard, change spacing, size, position, column span, opacity, font size, or rounded corners, and see the result immediately on that card before saving. Hold `Ctrl` while selecting to edit several cards together. Every selected card keeps its own stable key, and a per-card or group reset removes the customization without affecting the underlying dashboard. Rules can also be managed in Theme Studio, limited to desktop, tablet, or phone, edited, duplicated, temporarily disabled, or deleted. The optional raw CSS area remains available for adjustments that are not covered by the visual fields.
 
 Theme Studio exposes stable targeting attributes inside the dashboard:
