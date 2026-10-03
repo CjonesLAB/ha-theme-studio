@@ -6,7 +6,7 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 
 ![Theme Studio 0.6.3 avec galerie communautaire, profils indépendants, cartes Tech Frame, réglages et aperçu du tableau de bord](images/theme-studio-community-overview-v063.png)
 
-> Version de développement actuelle : **0.7.0**
+> Version de développement actuelle : **0.8.0**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 
@@ -139,6 +139,12 @@ Les entrées des listes déroulantes utilisent une couleur de sélection fixe et
 La galerie intégrée affiche uniquement les designs vérifiés et publiés sur [ha-theme-studio.com](https://ha-theme-studio.com). Chaque aperçu reproduit un tableau de bord compact et suit le mode clair ou sombre sélectionné. Home Assistant valide de nouveau chaque profil importé. Les chemins d’images locaux du créateur ne sont pas importés.
 
 Jusqu’à 24 fichiers JPG, PNG ou WebP peuvent être gérés dans **Arrière-plan → Bibliothèque d’images**. Les images utilisées sont protégées contre une suppression accidentelle. Les effets de carte s’appliquent uniquement aux entités sélectionnées.
+
+### CSS expert
+
+Le mode CSS expert est propre à chaque utilisateur et ne s’applique qu’aux tableaux de bord. L’éditeur direct permet de sélectionner une carte réelle, de modifier en direct son espacement, sa taille, sa position, son nombre de colonnes, son opacité, la taille du texte ou l’arrondi, puis d’enregistrer une règle limitée à cette carte. Maintenez `Ctrl` pour sélectionner plusieurs cartes. Chaque carte conserve une clé stable et peut être réinitialisée individuellement ou avec tout le groupe. Les règles peuvent aussi être limitées à l’ordinateur, la tablette ou le téléphone. Une zone CSS libre reste disponible pour les réglages avancés et refuse les imports, URL distantes et constructions exécutables dangereuses.
+
+![Éditeur direct de cartes Theme Studio 0.8.0 avec aperçu et sélection multiple](images/theme-studio-card-editor-v080.gif)
 
 ## Mise à jour
 

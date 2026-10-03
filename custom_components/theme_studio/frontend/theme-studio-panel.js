@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.7.0";
-import "./theme-studio-effects.js?v=0.7.0";
+} from "./theme-studio-locales.js?v=0.8.0";
+import "./theme-studio-effects.js?v=0.8.0";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -41,6 +41,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.activeThemeName = "Theme Studio";
     this.localizer = null;
     this.isAdmin = false;
+    this.editingExpertRuleId = "";
 
     this.settings = {
       light: {
@@ -117,6 +118,9 @@ class ThemeStudioPanel extends HTMLElement {
         climateHot: 28,
         alertEntities: [],
         alertBatteryLow: 20,
+        expertCssEnabled: false,
+        expertRules: [],
+        expertCss: "",
       },
     };
   }
@@ -302,17 +306,30 @@ class ThemeStudioPanel extends HTMLElement {
           font-size: 13px;
         }
 
-        .version-badge {
+        .topbar-badges {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          margin-top: 7px;
+        }
+
+        .version-badge,
+        .active-design-badge {
           display: inline-flex;
           align-items: center;
           min-height: 22px;
-          margin-top: 7px;
           padding: 0 8px;
           border: 1px solid var(--divider-color);
           border-radius: 999px;
           color: var(--secondary-text-color);
           font-size: 10px;
           font-weight: 700;
+        }
+
+        .active-design-badge {
+          border-color: color-mix(in srgb, var(--primary-color) 55%, var(--divider-color));
+          color: var(--primary-color);
         }
 
         .design-mode-indicator {
@@ -2174,6 +2191,323 @@ class ThemeStudioPanel extends HTMLElement {
           }
         }
 
+        .expert-css-panel {
+          margin-top: 18px;
+          padding: 13px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          background: color-mix(
+            in srgb,
+            var(--secondary-background-color) 88%,
+            transparent
+          );
+        }
+
+        .expert-css-toggle {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .expert-css-toggle input {
+          width: 18px;
+          height: 18px;
+          margin: 0;
+          accent-color: var(--primary-color);
+        }
+
+        .expert-css-warning {
+          margin: 12px 0;
+          padding: 10px 11px;
+          border: 1px solid var(--warning-color, #f9a825);
+          border-radius: 8px;
+          color: var(--primary-text-color);
+          background: color-mix(
+            in srgb,
+            var(--warning-color, #f9a825) 10%,
+            transparent
+          );
+          font-size: 10px;
+          line-height: 1.45;
+        }
+
+        .expert-rule-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin: 14px 0 8px;
+        }
+
+        .expert-rule-heading h4 {
+          margin: 0;
+          font-size: 12px;
+        }
+
+        .expert-rule-count {
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .expert-rule-list {
+          display: grid;
+          gap: 7px;
+          margin-bottom: 11px;
+        }
+
+        .expert-rule-card {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 9px;
+          align-items: center;
+          padding: 9px 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          background: var(--secondary-background-color);
+        }
+
+        .expert-rule-card.disabled {
+          opacity: 0.55;
+        }
+
+        .expert-rule-title,
+        .expert-rule-description {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .expert-rule-title {
+          margin-bottom: 2px;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .expert-rule-description {
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .expert-rule-actions {
+          display: flex;
+          gap: 4px;
+        }
+
+        .expert-rule-actions button {
+          width: 30px;
+          height: 30px;
+          padding: 0;
+          border: 1px solid var(--divider-color);
+          border-radius: 7px;
+          color: var(--primary-text-color);
+          background: var(--card-background-color);
+          font-size: 12px;
+        }
+
+        .expert-rule-empty {
+          margin: 0;
+          padding: 10px;
+          border: 1px dashed var(--divider-color);
+          border-radius: 8px;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+          text-align: center;
+        }
+
+        .expert-rule-management-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin: 10px 0 12px;
+        }
+
+        .expert-rule-management-actions p {
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+          line-height: 1.4;
+        }
+
+        .expert-rule-management-actions button {
+          flex: 0 0 auto;
+          min-height: 34px;
+          padding: 0 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          color: var(--primary-text-color);
+          background: var(--secondary-background-color);
+          font-size: 10px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .expert-rule-builder {
+          padding: 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+        }
+
+        .dashboard-editor-launch {
+          margin: 12px 0 15px;
+          padding: 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          background: color-mix(
+            in srgb,
+            var(--primary-color) 8%,
+            transparent
+          );
+        }
+
+        .dashboard-editor-launch p {
+          margin: 0 0 9px;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        .dashboard-editor-launch strong {
+          display: block;
+          margin-bottom: 4px;
+          font-size: 11px;
+        }
+
+        .dashboard-editor-launch button {
+          min-height: 36px;
+          padding: 0 13px;
+          border: 1px solid var(--primary-color);
+          border-radius: 8px;
+          background: var(--primary-color);
+          color: var(--text-primary-color, #fff);
+          font-size: 10px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .expert-rule-grid,
+        .expert-property-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 9px;
+        }
+
+        .expert-property-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin-top: 10px;
+        }
+
+        .expert-rule-field {
+          min-width: 0;
+        }
+
+        .expert-rule-field label {
+          display: block;
+          margin-bottom: 4px;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+        }
+
+        .expert-rule-field input,
+        .expert-rule-field select {
+          width: 100%;
+          min-height: 34px;
+          box-sizing: border-box;
+        }
+
+        .expert-rule-builder-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 11px;
+        }
+
+        .expert-rule-builder-actions button {
+          min-height: 34px;
+          padding: 0 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          color: var(--primary-text-color);
+          background: var(--secondary-background-color);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .expert-rule-builder-actions .primary {
+          border-color: var(--primary-color);
+          color: var(--text-primary-color, #ffffff);
+          background: var(--primary-color);
+        }
+
+        .expert-raw-css {
+          margin-top: 13px;
+          border-top: 1px solid var(--divider-color);
+        }
+
+        .expert-raw-css > summary {
+          min-height: 42px;
+          padding: 0;
+          font-size: 10px;
+        }
+
+        .expert-css-editor {
+          width: 100%;
+          min-height: 230px;
+          box-sizing: border-box;
+          padding: 11px;
+          resize: vertical;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          outline: none;
+          color: var(--primary-text-color);
+          background: var(--primary-background-color);
+          font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+          tab-size: 2;
+        }
+
+        .expert-css-editor:focus {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 1px var(--primary-color);
+        }
+
+        .expert-css-editor:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .expert-css-tools {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 9px;
+        }
+
+        .expert-css-tools button {
+          min-height: 34px;
+          padding: 0 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          color: var(--primary-text-color);
+          background: var(--secondary-background-color);
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .expert-css-help {
+          margin: 11px 0 0;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+          line-height: 1.55;
+        }
+
+        .expert-css-help code {
+          color: var(--primary-text-color);
+          overflow-wrap: anywhere;
+        }
+
         .preview-header {
           display: flex;
           justify-content: space-between;
@@ -2538,6 +2872,19 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         @media (max-width: 620px) {
+          .expert-rule-grid,
+          .expert-property-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .expert-rule-card {
+            grid-template-columns: 1fr;
+          }
+
+          .expert-rule-actions {
+            justify-content: flex-end;
+          }
+
           .page {
             padding: 13px 20px 24px;
           }
@@ -2780,9 +3127,14 @@ class ThemeStudioPanel extends HTMLElement {
             <p>
               Community-Design wählen oder individuell gestalten.
             </p>
-            <span id="version-badge" class="version-badge">
-              Version wird geladen …
-            </span>
+            <div class="topbar-badges">
+              <span id="version-badge" class="version-badge">
+                Version wird geladen …
+              </span>
+              <span id="active-design-badge" class="active-design-badge" role="status" aria-live="polite">
+                Aktives Design wird geladen …
+              </span>
+            </div>
           </div>
 
           <div class="topbar-actions">
@@ -3191,6 +3543,12 @@ class ThemeStudioPanel extends HTMLElement {
                   </button>
                 </div>
 
+                <div class="dashboard-editor-launch">
+                  <strong>Einzelne Karte direkt bearbeiten</strong>
+                  <p>Eine Karte auf dem echten Dashboard auswählen und Größe, Abstand oder Position dort sofort anpassen.</p>
+                  <button id="expert-dashboard-editor-button" type="button">Dashboard-Bearbeitungsmodus starten</button>
+                </div>
+
                 <div id="glass-controls" hidden>
                   ${this._rangeField(
                     "glass-transparency",
@@ -3337,6 +3695,7 @@ class ThemeStudioPanel extends HTMLElement {
                   Die Einstellungen gelten getrennt für den
                   oben ausgewählten hellen oder dunklen Modus.
                 </p>
+
               </div>
             </details>
 
@@ -3761,6 +4120,133 @@ class ThemeStudioPanel extends HTMLElement {
                   Modus. Bei aktivierter Systemoption
                   „Bewegung reduzieren“ bleibt er automatisch aus.
                 </p>
+
+                <div class="expert-css-panel">
+                  <label class="expert-css-toggle">
+                    <input id="expert-css-enabled" type="checkbox">
+                    <span>Expertenmodus: eigenes Dashboard-CSS</span>
+                  </label>
+
+                  <p class="expert-css-warning">
+                    Achtung: Eigene CSS-Regeln können Darstellung,
+                    Bedienbarkeit und responsives Verhalten beeinflussen.
+                    Nach Home-Assistant-Updates können Anpassungen ausfallen.
+                    Der Expertenmodus gilt nur für dein Benutzerkonto und
+                    nicht für Einstellungen oder Dialogfenster.
+                  </p>
+
+                  <div class="expert-rule-heading">
+                    <h4>Visuelle CSS-Regeln</h4>
+                    <span id="expert-rule-count" class="expert-rule-count"></span>
+                  </div>
+
+                  <div id="expert-rule-list" class="expert-rule-list"></div>
+
+                  <div class="expert-rule-management-actions">
+                    <p>
+                      Kartenspezifische Regeln erstellst du am einfachsten
+                      direkt im Dashboard.
+                    </p>
+                    <button
+                      id="expert-rule-create"
+                      type="button"
+                      aria-controls="expert-rule-builder"
+                      aria-expanded="false"
+                    >
+                      Erweiterte Regel erstellen
+                    </button>
+                  </div>
+
+                  <div id="expert-rule-builder" class="expert-rule-builder" hidden>
+                    <div class="expert-rule-grid">
+                      <div class="expert-rule-field">
+                        <label for="expert-rule-name">Regelname</label>
+                        <input id="expert-rule-name" type="text" maxlength="48" placeholder="Zum Beispiel: Energiekarte">
+                      </div>
+                      <div class="expert-rule-field">
+                        <label for="expert-rule-device">Gerät</label>
+                        <select id="expert-rule-device">
+                          <option value="all">Alle Geräte</option>
+                          <option value="desktop">Desktop</option>
+                          <option value="tablet">Tablet</option>
+                          <option value="mobile">Smartphone</option>
+                        </select>
+                      </div>
+                      <div class="expert-rule-field">
+                        <label for="expert-rule-target-type">Ziel</label>
+                        <select id="expert-rule-target-type">
+                          <option value="entity">Bestimmte Entität</option>
+                          <option value="id">Eigene Karten-ID</option>
+                          <option value="card">Direkt ausgewählte Karte</option>
+                          <option value="all">Alle Karten</option>
+                          <option value="layout">Dashboard-Raster</option>
+                        </select>
+                      </div>
+                      <div id="expert-rule-target-field" class="expert-rule-field">
+                        <label id="expert-rule-target-label" for="expert-rule-entity">Entität</label>
+                        <select id="expert-rule-entity">
+                          <option value="">Entität auswählen …</option>
+                          ${this._expertEntityOptions()}
+                        </select>
+                        <input id="expert-rule-target" type="text" maxlength="64" placeholder="energie" hidden disabled>
+                      </div>
+                    </div>
+
+                    <div class="expert-property-grid">
+                      ${this._expertRuleNumberField("margin", "Außenabstand", -100, 100, "px")}
+                      ${this._expertRuleNumberField("padding", "Innenabstand", 0, 100, "px")}
+                      ${this._expertRuleNumberField("gap", "Rasterabstand", 0, 100, "px")}
+                      ${this._expertRuleNumberField("width", "Breite", 40, 2000, "px")}
+                      ${this._expertRuleNumberField("min-height", "Mindesthöhe", 20, 2000, "px")}
+                      ${this._expertRuleNumberField("columns", "Spaltenbreite", 1, 12, "Spalten")}
+                      ${this._expertRuleNumberField("offset-x", "Horizontal verschieben", -500, 500, "px")}
+                      ${this._expertRuleNumberField("offset-y", "Vertikal verschieben", -500, 500, "px")}
+                      ${this._expertRuleNumberField("opacity", "Deckkraft", 0, 100, "%")}
+                      ${this._expertRuleNumberField("font-size", "Schriftgröße", 8, 48, "px")}
+                      ${this._expertRuleNumberField("border-radius", "Runde Ecken", 0, 60, "px")}
+                    </div>
+
+                    <div class="expert-rule-builder-actions">
+                      <button id="expert-rule-save" class="primary" type="button">Regel hinzufügen</button>
+                      <button id="expert-rule-cancel" type="button" hidden>Bearbeiten abbrechen</button>
+                    </div>
+                  </div>
+
+                  <details class="expert-raw-css">
+                    <summary>Freies CSS (optional)</summary>
+
+                  <textarea
+                    id="expert-css"
+                    class="expert-css-editor"
+                    maxlength="20000"
+                    spellcheck="false"
+                    aria-label="Eigenes Dashboard-CSS"
+                    placeholder="/* CSS für dein Dashboard */"
+                  ></textarea>
+
+                  <div class="expert-css-tools">
+                    <button id="expert-css-example" type="button">
+                      Beispiel einsetzen
+                    </button>
+                    <button id="expert-css-clear" type="button">
+                      CSS leeren
+                    </button>
+                  </div>
+
+                  <p class="expert-css-help">
+                    Alle Karten: <code>ha-card { ... }</code><br>
+                    Bestimmte Entität:
+                    <code>ha-card[data-theme-studio-entity~="sensor.power"] { ... }</code><br>
+                    Eindeutige Karten-ID: Ergänze in der Karten-YAML
+                    <code>theme_studio_id: energie</code> und verwende
+                    <code>ha-card[data-theme-studio-id="energie"] { ... }</code><br>
+                    Position und Rastergröße einer Karte:
+                    <code>[data-theme-studio-card-container][data-theme-studio-id="energie"] { ... }</code><br>
+                    Abstände in Rasterbereichen:
+                    <code>[data-theme-studio-layout] { gap: 6px !important; }</code>
+                  </p>
+                  </details>
+                </div>
               </div>
             </details>
 
@@ -4787,6 +5273,136 @@ class ThemeStudioPanel extends HTMLElement {
       "alertBatteryLow"
     );
 
+    const expertCssEnabled = this.shadowRoot
+      .getElementById("expert-css-enabled");
+    const expertCssEditor = this.shadowRoot
+      .getElementById("expert-css");
+
+    expertCssEnabled.addEventListener("change", (event) => {
+      if (
+        event.target.checked
+        && !this._confirm(
+          "Expertenmodus aktivieren? Fehlerhafte CSS-Regeln können Karten "
+          + "verschieben, verdecken oder unbedienbar machen."
+        )
+      ) {
+        event.target.checked = false;
+        return;
+      }
+
+      this._recordHistory();
+      this.settings.effects.expertCssEnabled = event.target.checked;
+      this._syncEffectControls();
+      this._finishSettingsChange();
+    });
+
+    expertCssEditor.addEventListener("input", (event) => {
+      this._recordHistory("expert-css");
+      this.settings.effects.expertCss = event.target.value;
+      this._syncUnsavedStatus();
+    });
+
+    expertCssEditor.addEventListener("change", () => {
+      this._endHistoryCoalescing("expert-css");
+      this._syncHistoryControls();
+    });
+
+    this.shadowRoot
+      .getElementById("expert-rule-create")
+      .addEventListener("click", () => {
+        this._resetExpertRuleForm();
+        this._setExpertRuleBuilderOpen(true);
+        this.shadowRoot.getElementById("expert-rule-name").focus();
+      });
+
+    this.shadowRoot
+      .getElementById("expert-rule-target-type")
+      .addEventListener("change", () => {
+        this._syncExpertRuleTargetForm();
+      });
+
+    this.shadowRoot
+      .getElementById("expert-rule-save")
+      .addEventListener("click", () => {
+        this._saveExpertRuleFromForm();
+      });
+
+    this.shadowRoot
+      .getElementById("expert-rule-cancel")
+      .addEventListener("click", () => {
+        this._resetExpertRuleForm();
+      });
+
+    this.shadowRoot
+      .getElementById("expert-rule-list")
+      .addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-rule-action]");
+
+        if (button) {
+          this._handleExpertRuleAction(
+            button.dataset.ruleAction,
+            button.dataset.ruleId
+          );
+        }
+      });
+
+    this.shadowRoot
+      .getElementById("expert-dashboard-editor-button")
+      .addEventListener("click", () => {
+        this._openDashboardEditor();
+      });
+
+    this.shadowRoot
+      .getElementById("expert-css-example")
+      .addEventListener("click", () => {
+        if (
+          this.settings.effects.expertCss
+          && !this._confirm("Vorhandenes Experten-CSS durch das Beispiel ersetzen?")
+        ) {
+          return;
+        }
+
+        this._recordHistory();
+        this.settings.effects.expertCss = [
+          "/* Bestimmte Karte über ihre Entität auswählen */",
+          "[data-theme-studio-card-container][data-theme-studio-entity~=\"sensor.power\"] {",
+          "  margin: 0 !important;",
+          "  transform: translateY(-4px);",
+          "  grid-column: span 2;",
+          "}",
+          "",
+          "/* Abstände in erkannten Dashboard-Rastern verkleinern */",
+          "[data-theme-studio-layout] {",
+          "  gap: 6px !important;",
+          "}",
+          "",
+          "@media (max-width: 600px) {",
+          "  [data-theme-studio-layout] {",
+          "    gap: 4px !important;",
+          "  }",
+          "}",
+        ].join("\n");
+        this._syncEffectControls();
+        this._finishSettingsChange();
+      });
+
+    this.shadowRoot
+      .getElementById("expert-css-clear")
+      .addEventListener("click", () => {
+        if (
+          this.settings.effects.expertCss
+          && !this._confirm("Experten-CSS wirklich vollständig leeren?")
+        ) {
+          return;
+        }
+
+        this._recordHistory();
+        this.settings.effects.expertCss = "";
+        this.settings.effects.expertCssEnabled = false;
+        this._syncEffectControls();
+        this._finishSettingsChange();
+      });
+
     this.shadowRoot
       .querySelectorAll(".background-option")
       .forEach((button) => {
@@ -5567,6 +6183,50 @@ class ThemeStudioPanel extends HTMLElement {
     ) || null;
   }
 
+  _appliedProfile() {
+    if (!this.themeStudioActive) {
+      return null;
+    }
+
+    const persisted = this.profiles.find(
+      (profile) => profile.id === this.persistedActiveProfileId
+    );
+
+    if (persisted) {
+      return persisted;
+    }
+
+    if (!this.appliedSettings) {
+      return null;
+    }
+
+    return this.profiles.find((profile) =>
+      this._settingsEqual(profile.settings, this.appliedSettings)
+    ) || null;
+  }
+
+  _syncActiveDesignIndicator() {
+    const badge = this.shadowRoot?.getElementById("active-design-badge");
+
+    if (!badge) {
+      return;
+    }
+
+    const profile = this._appliedProfile();
+    let label;
+
+    if (!this.themeStudioActive) {
+      label = this._translate("Aktiv: Home-Assistant-Standard");
+    } else if (profile) {
+      label = `${this._translate("Aktiv")}: ${this._profileDisplayLabel(profile)}`;
+    } else {
+      label = this._translate("Aktiv: Individueller Stand");
+    }
+
+    badge.textContent = label;
+    badge.title = label;
+  }
+
   _profileName() {
     return this.shadowRoot
       .getElementById("profile-name")
@@ -5595,12 +6255,13 @@ class ThemeStudioPanel extends HTMLElement {
     const nameInput =
       this.shadowRoot.getElementById("profile-name");
     const currentProfile = this._currentProfile();
+    const appliedProfile = this._appliedProfile();
 
     select.innerHTML = `
       <option value="">Neues Profil anlegen</option>
       ${this.profiles.map((profile) => `
         <option value="${this._escapeHtml(profile.id)}">
-          ${this._escapeHtml(this._profileDisplayLabel(profile))}
+          ${this._escapeHtml(this._profileDisplayLabel(profile))}${profile.id === appliedProfile?.id ? ` · ${this._translate("Aktiv")}` : ""}
         </option>
       `).join("")}
     `;
@@ -5617,6 +6278,7 @@ class ThemeStudioPanel extends HTMLElement {
       this._setProfileEditBaseline();
     }
     this._syncProfileControls();
+    this._syncActiveDesignIndicator();
   }
 
   _syncProfileControls(busy = false) {
@@ -5689,18 +6351,16 @@ class ThemeStudioPanel extends HTMLElement {
         : [];
       this.profileLimit = Number(result.maximum) || 32;
 
-      const currentThemeIsThemeStudio =
-        this._hass.themes?.theme === "Theme Studio";
-      const persistedProfile = currentThemeIsThemeStudio
+      const persistedProfile = this.themeStudioActive
         ? this.profiles.find(
           (profile) => profile.id === this.persistedActiveProfileId && profile.settings.mode === this.settings.mode
         )
         : null;
-      const matchingProfile = currentThemeIsThemeStudio
+      const matchingProfile = this.themeStudioActive
         ? this.profiles.find(
           (profile) => this._settingsEqual(
             profile.settings,
-            this.settings
+            this.appliedSettings || this.settings
           )
         )
         : null;
@@ -6070,6 +6730,41 @@ class ThemeStudioPanel extends HTMLElement {
         <strong>${label}</strong>
       </div>
     `;
+  }
+
+  _expertRuleNumberField(id, label, minimum, maximum, unit) {
+    return `
+      <div class="expert-rule-field">
+        <label for="expert-rule-${id}">${label} (${unit})</label>
+        <input
+          id="expert-rule-${id}"
+          type="number"
+          min="${minimum}"
+          max="${maximum}"
+          step="1"
+          placeholder="unverändert"
+        >
+      </div>
+    `;
+  }
+
+  _expertEntityOptions() {
+    return Object.entries(this._hass?.states || {})
+      .filter(([entityId]) =>
+        /^[a-z0-9_]+\.[a-z0-9_]+$/.test(entityId)
+      )
+      .map(([entityId, stateObject]) => {
+        const name = stateObject.attributes?.friendly_name || entityId;
+        return { entityId, name };
+      })
+      .sort((first, second) =>
+        first.name.localeCompare(second.name, "de")
+        || first.entityId.localeCompare(second.entityId, "de")
+      )
+      .map(({ entityId, name }) =>
+        `<option value="${this._escapeHtml(entityId)}">${this._escapeHtml(name)} (${this._escapeHtml(entityId)})</option>`
+      )
+      .join("");
   }
 
   _closeImportPreview() {
@@ -6850,6 +7545,16 @@ class ThemeStudioPanel extends HTMLElement {
   async _saveAndApplySettings() {
     this._stopProfileSaveReminderPulse();
 
+    const expertCssError = this._expertCssError(
+      this.settings.effects.expertCss
+    );
+
+    if (expertCssError) {
+      this._setStatus(expertCssError, "error");
+      this.shadowRoot.getElementById("expert-css")?.focus();
+      return;
+    }
+
     if (
       this.settings.effects.cardEffects.includes("status-pulse")
       && this.settings.effects.pulseEntities.length === 0
@@ -6902,6 +7607,8 @@ class ThemeStudioPanel extends HTMLElement {
 
     const submittedSettings = this._cloneSettings(this.settings);
     const submittedProfileId = this.activeProfileId;
+    let succeeded = false;
+
     try {
       const result =
         await this._hass.callWS({
@@ -6932,6 +7639,7 @@ class ThemeStudioPanel extends HTMLElement {
       );
       this._syncUnsavedStatus();
       this._syncRecoveryButton();
+      this._renderProfileOptions(false);
 
       this._setStatus(
         "Design gespeichert und aktiviert.",
@@ -6939,6 +7647,7 @@ class ThemeStudioPanel extends HTMLElement {
       );
 
       button.textContent = "Aktiviert ✓";
+      succeeded = true;
     } catch (error) {
       this._setStatus(
         this._errorMessage(error),
@@ -6952,6 +7661,56 @@ class ThemeStudioPanel extends HTMLElement {
       button.disabled = false;
       button.textContent = "Design anwenden";
     }, 2200);
+
+    return succeeded;
+  }
+
+  async _openDashboardEditor() {
+    const button = this.shadowRoot.getElementById(
+      "expert-dashboard-editor-button"
+    );
+    const originalLabel = button.textContent;
+
+    button.disabled = true;
+    button.textContent = "Dashboard wird vorbereitet …";
+
+    const saved = await this._saveAndApplySettings();
+
+    if (!saved) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(
+        "theme-studio-dashboard-editor",
+        "1"
+      );
+    } catch (_error) {
+      // The global effects instance can still start the editor directly.
+    }
+
+    window.themeStudioEffects?._startDashboardEditor?.();
+
+    let destination = "/lovelace";
+
+    try {
+      const remembered = window.sessionStorage.getItem(
+        "theme-studio-last-dashboard-path"
+      );
+
+      if (remembered?.startsWith("/") && !remembered.startsWith("/config")) {
+        destination = remembered;
+      }
+    } catch (_error) {
+      // Fall back to the default dashboard route.
+    }
+
+    window.history.pushState(null, "", destination);
+    window.dispatchEvent(new CustomEvent("location-changed", {
+      detail: { replace: false },
+    }));
   }
 
   _syncRecoveryButton() {
@@ -7488,6 +8247,446 @@ class ThemeStudioPanel extends HTMLElement {
       .hidden =
         !this.settings.effects.cardEffects
           .includes("alert-focus");
+
+    const expertCssEnabled = this.settings.effects.expertCssEnabled === true;
+    const expertCssEditor = this.shadowRoot.getElementById("expert-css");
+
+    this.shadowRoot
+      .getElementById("expert-css-enabled")
+      .checked = expertCssEnabled;
+    expertCssEditor.value = this.settings.effects.expertCss || "";
+    expertCssEditor.disabled = !expertCssEnabled;
+    this.settings.effects.expertRules = Array.isArray(
+      this.settings.effects.expertRules
+    ) ? this.settings.effects.expertRules : [];
+    this._renderExpertRules();
+    this._syncExpertRuleTargetForm();
+  }
+
+  _newExpertRuleId() {
+    const bytes = new Uint8Array(6);
+
+    if (globalThis.crypto?.getRandomValues) {
+      globalThis.crypto.getRandomValues(bytes);
+    } else {
+      for (let index = 0; index < bytes.length; index += 1) {
+        bytes[index] = Math.floor(Math.random() * 256);
+      }
+    }
+
+    return Array.from(bytes, (value) =>
+      value.toString(16).padStart(2, "0")
+    ).join("");
+  }
+
+  _expertRuleFieldValue(id) {
+    const input = this.shadowRoot.getElementById(`expert-rule-${id}`);
+    const raw = input.value.trim();
+
+    if (!raw) {
+      return null;
+    }
+
+    const value = Number(raw);
+    const minimum = Number(input.min);
+    const maximum = Number(input.max);
+
+    if (
+      !Number.isInteger(value)
+      || value < minimum
+      || value > maximum
+    ) {
+      throw new Error(
+        `${input.previousElementSibling?.textContent || id}: `
+        + `Wert zwischen ${minimum} und ${maximum} eingeben.`
+      );
+    }
+
+    return value;
+  }
+
+  _expertRuleFromForm() {
+    const name = this.shadowRoot
+      .getElementById("expert-rule-name")
+      .value.trim();
+    const targetType = this.shadowRoot
+      .getElementById("expert-rule-target-type")
+      .value;
+    let target = targetType === "entity"
+      ? this.shadowRoot.getElementById("expert-rule-entity").value
+      : this.shadowRoot.getElementById("expert-rule-target").value.trim();
+
+    if (!name) {
+      throw new Error("Bitte einen Regelnamen eingeben.");
+    }
+
+    if (targetType === "entity") {
+      target = target.toLowerCase();
+      if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(target)) {
+        throw new Error("Bitte eine gültige Entitäts-ID auswählen.");
+      }
+    } else if (targetType === "id") {
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(target)) {
+        throw new Error(
+          "Die Karten-ID darf nur Buchstaben, Zahlen, Unterstriche und Bindestriche enthalten."
+        );
+      }
+    } else if (targetType === "card") {
+      target = target.toLowerCase();
+      if (!/^[a-f0-9]{16}$/.test(target)) {
+        throw new Error(
+          "Der Kartenschlüssel ist ungültig. Bitte die Karte erneut direkt im Dashboard auswählen."
+        );
+      }
+    } else {
+      target = "";
+    }
+
+    const rule = {
+      id: this.editingExpertRuleId || this._newExpertRuleId(),
+      name: name.slice(0, 48),
+      enabled: true,
+      targetType,
+      target,
+      device: this.shadowRoot
+        .getElementById("expert-rule-device")
+        .value,
+      margin: this._expertRuleFieldValue("margin"),
+      padding: this._expertRuleFieldValue("padding"),
+      gap: this._expertRuleFieldValue("gap"),
+      width: this._expertRuleFieldValue("width"),
+      minHeight: this._expertRuleFieldValue("min-height"),
+      columns: this._expertRuleFieldValue("columns"),
+      offsetX: this._expertRuleFieldValue("offset-x"),
+      offsetY: this._expertRuleFieldValue("offset-y"),
+      opacity: this._expertRuleFieldValue("opacity"),
+      fontSize: this._expertRuleFieldValue("font-size"),
+      borderRadius: this._expertRuleFieldValue("border-radius"),
+    };
+
+    if (targetType !== "layout") {
+      rule.gap = null;
+    }
+
+    const propertyNames = [
+      "margin",
+      "padding",
+      "gap",
+      "width",
+      "minHeight",
+      "columns",
+      "offsetX",
+      "offsetY",
+      "opacity",
+      "fontSize",
+      "borderRadius",
+    ];
+
+    if (propertyNames.every((property) => rule[property] === null)) {
+      throw new Error("Bitte mindestens eine Änderung für die Regel eintragen.");
+    }
+
+    return rule;
+  }
+
+  _saveExpertRuleFromForm() {
+    let rule;
+
+    try {
+      rule = this._expertRuleFromForm();
+    } catch (error) {
+      this._setStatus(error.message, "error");
+      return;
+    }
+
+    const rules = this.settings.effects.expertRules;
+    const existingIndex = rules.findIndex(
+      (candidate) => candidate.id === rule.id
+    );
+
+    if (existingIndex < 0 && rules.length >= 64) {
+      this._setStatus("Es können höchstens 64 CSS-Regeln gespeichert werden.", "error");
+      return;
+    }
+
+    this._recordHistory();
+
+    if (existingIndex >= 0) {
+      rule.enabled = rules[existingIndex].enabled;
+      rules.splice(existingIndex, 1, rule);
+      this._setStatus("CSS-Regel aktualisiert. Bitte Design anwenden.", "success");
+    } else {
+      rules.push(rule);
+      this._setStatus("CSS-Regel hinzugefügt. Bitte Design anwenden.", "success");
+    }
+
+    this._resetExpertRuleForm();
+    this._renderExpertRules();
+    this._finishSettingsChange();
+  }
+
+  _handleExpertRuleAction(action, ruleId) {
+    const rules = this.settings.effects.expertRules;
+    const index = rules.findIndex((rule) => rule.id === ruleId);
+
+    if (index < 0) {
+      return;
+    }
+
+    const rule = rules[index];
+
+    if (action === "edit") {
+      this._loadExpertRuleForm(rule);
+      return;
+    }
+
+    if (action === "delete") {
+      if (!this._confirm(`CSS-Regel „${rule.name}“ wirklich löschen?`)) {
+        return;
+      }
+      this._recordHistory();
+      rules.splice(index, 1);
+      if (this.editingExpertRuleId === ruleId) {
+        this._resetExpertRuleForm();
+      }
+    } else if (action === "duplicate") {
+      if (rules.length >= 64) {
+        this._setStatus("Es können höchstens 64 CSS-Regeln gespeichert werden.", "error");
+        return;
+      }
+      this._recordHistory();
+      rules.splice(index + 1, 0, {
+        ...this._cloneSettings(rule),
+        id: this._newExpertRuleId(),
+        name: `${rule.name} Kopie`.slice(0, 48),
+      });
+    } else if (action === "toggle") {
+      this._recordHistory();
+      rule.enabled = !rule.enabled;
+    } else {
+      return;
+    }
+
+    this._renderExpertRules();
+    this._finishSettingsChange();
+  }
+
+  _loadExpertRuleForm(rule) {
+    this._setExpertRuleBuilderOpen(true);
+    this.editingExpertRuleId = rule.id;
+    this.shadowRoot.getElementById("expert-rule-name").value = rule.name;
+    this.shadowRoot.getElementById("expert-rule-device").value = rule.device;
+    this.shadowRoot.getElementById("expert-rule-target-type").value = rule.targetType;
+    this.shadowRoot.getElementById("expert-rule-entity").value =
+      rule.targetType === "entity" ? rule.target : "";
+    this.shadowRoot.getElementById("expert-rule-target").value =
+      rule.targetType === "id" || rule.targetType === "card"
+        ? rule.target
+        : "";
+
+    const fields = {
+      margin: rule.margin,
+      padding: rule.padding,
+      gap: rule.gap,
+      width: rule.width,
+      "min-height": rule.minHeight,
+      columns: rule.columns,
+      "offset-x": rule.offsetX,
+      "offset-y": rule.offsetY,
+      opacity: rule.opacity,
+      "font-size": rule.fontSize,
+      "border-radius": rule.borderRadius,
+    };
+
+    for (const [id, value] of Object.entries(fields)) {
+      this.shadowRoot.getElementById(`expert-rule-${id}`).value =
+        value === null ? "" : value;
+    }
+
+    this.shadowRoot.getElementById("expert-rule-save").textContent =
+      "Regel speichern";
+    this.shadowRoot.getElementById("expert-rule-cancel").hidden = false;
+    this._syncExpertRuleTargetForm();
+    this.shadowRoot.getElementById("expert-rule-name").focus();
+  }
+
+  _resetExpertRuleForm() {
+    this.editingExpertRuleId = "";
+    this.shadowRoot.getElementById("expert-rule-name").value = "";
+    this.shadowRoot.getElementById("expert-rule-device").value = "all";
+    this.shadowRoot.getElementById("expert-rule-target-type").value = "entity";
+    this.shadowRoot.getElementById("expert-rule-entity").value = "";
+    this.shadowRoot.getElementById("expert-rule-target").value = "";
+
+    for (const id of [
+      "margin",
+      "padding",
+      "gap",
+      "width",
+      "min-height",
+      "columns",
+      "offset-x",
+      "offset-y",
+      "opacity",
+      "font-size",
+      "border-radius",
+    ]) {
+      this.shadowRoot.getElementById(`expert-rule-${id}`).value = "";
+    }
+
+    this.shadowRoot.getElementById("expert-rule-save").textContent =
+      "Regel hinzufügen";
+    this.shadowRoot.getElementById("expert-rule-cancel").hidden = true;
+    this._syncExpertRuleTargetForm();
+    this._setExpertRuleBuilderOpen(false);
+  }
+
+  _setExpertRuleBuilderOpen(open) {
+    const builder = this.shadowRoot.getElementById("expert-rule-builder");
+    const createButton = this.shadowRoot.getElementById("expert-rule-create");
+
+    builder.hidden = !open;
+    createButton.hidden = open;
+    createButton.setAttribute("aria-expanded", String(open));
+  }
+
+  _syncExpertRuleTargetForm() {
+    const targetType = this.shadowRoot
+      .getElementById("expert-rule-target-type")
+      .value;
+    const targetField = this.shadowRoot
+      .getElementById("expert-rule-target-field");
+    const targetInput = this.shadowRoot
+      .getElementById("expert-rule-target");
+    const entitySelect = this.shadowRoot
+      .getElementById("expert-rule-entity");
+    const targetLabel = this.shadowRoot
+      .getElementById("expert-rule-target-label");
+    const needsTarget = ["entity", "id", "card"].includes(targetType);
+
+    targetField.hidden = !needsTarget;
+    entitySelect.hidden = targetType !== "entity";
+    entitySelect.disabled = targetType !== "entity";
+    targetInput.hidden = !["id", "card"].includes(targetType);
+    targetInput.disabled = !["id", "card"].includes(targetType);
+    targetInput.readOnly = targetType === "card";
+    targetLabel.textContent = this._translate(
+      targetType === "entity"
+        ? "Entität"
+        : targetType === "card"
+          ? "Kartenschlüssel"
+          : "Karten-ID"
+    );
+    targetLabel.htmlFor = targetType === "entity"
+      ? "expert-rule-entity"
+      : "expert-rule-target";
+
+    const gapInput = this.shadowRoot.getElementById("expert-rule-gap");
+    gapInput.disabled = targetType !== "layout";
+    if (gapInput.disabled) {
+      gapInput.value = "";
+    }
+
+  }
+
+  _expertRuleDescription(rule) {
+    const targetLabels = {
+      all: this._translate("Alle Karten"),
+      entity: rule.target,
+      id: `${this._translate("Karten-ID")}: ${rule.target}`,
+      card: `${this._translate("Direkte Karte")}: ${rule.target.slice(0, 8)}…`,
+      layout: this._translate("Dashboard-Raster"),
+    };
+    const deviceLabels = {
+      all: this._translate("Alle Geräte"),
+      desktop: this._translate("Desktop"),
+      tablet: this._translate("Tablet"),
+      mobile: this._translate("Smartphone"),
+    };
+    const propertyCount = [
+      "margin",
+      "padding",
+      "gap",
+      "width",
+      "minHeight",
+      "columns",
+      "offsetX",
+      "offsetY",
+      "opacity",
+      "fontSize",
+      "borderRadius",
+    ].filter((property) => rule[property] !== null).length;
+
+    return `${targetLabels[rule.targetType]} · ${deviceLabels[rule.device]} · ${propertyCount} ${this._translate("Werte")}`;
+  }
+
+  _renderExpertRules() {
+    const rules = this.settings.effects.expertRules || [];
+    const list = this.shadowRoot.getElementById("expert-rule-list");
+    const count = this.shadowRoot.getElementById("expert-rule-count");
+
+    count.textContent = `${rules.length} von 64 Regeln`;
+
+    if (rules.length === 0) {
+      list.innerHTML = '<p class="expert-rule-empty">Noch keine visuelle Regel angelegt.</p>';
+      return;
+    }
+
+    list.innerHTML = rules.map((rule) => `
+      <div class="expert-rule-card ${rule.enabled ? "" : "disabled"}">
+        <div>
+          <span class="expert-rule-title">${this._escapeHtml(rule.name)}</span>
+          <span class="expert-rule-description">${this._escapeHtml(this._expertRuleDescription(rule))}</span>
+        </div>
+        <div class="expert-rule-actions">
+          <button type="button" data-rule-action="toggle" data-rule-id="${rule.id}" title="${rule.enabled ? "Regel deaktivieren" : "Regel aktivieren"}" aria-label="${rule.enabled ? "Regel deaktivieren" : "Regel aktivieren"}">${rule.enabled ? "✓" : "○"}</button>
+          <button type="button" data-rule-action="edit" data-rule-id="${rule.id}" title="Regel bearbeiten" aria-label="Regel bearbeiten">✎</button>
+          <button type="button" data-rule-action="duplicate" data-rule-id="${rule.id}" title="Regel duplizieren" aria-label="Regel duplizieren">⧉</button>
+          <button type="button" data-rule-action="delete" data-rule-id="${rule.id}" title="Regel löschen" aria-label="Regel löschen">×</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  _expertCssError(css) {
+    if (typeof css !== "string") {
+      return "Experten-CSS muss Text sein.";
+    }
+
+    if (css.length > 20000) {
+      return "Experten-CSS darf höchstens 20.000 Zeichen enthalten.";
+    }
+
+    if (/@import\b/i.test(css)) {
+      return "@import ist im Experten-CSS nicht erlaubt.";
+    }
+
+    if (
+      /javascript\s*:/i.test(css)
+      || /expression\s*\(/i.test(css)
+      || /(?:^|[;{])\s*behavior\s*:/im.test(css)
+      || /-moz-binding\s*:/i.test(css)
+    ) {
+      return "Die CSS-Regeln enthalten eine nicht erlaubte Anweisung.";
+    }
+
+    const urlPattern = /url\s*\(\s*(['\"]?)(.*?)\1\s*\)/gis;
+
+    for (const match of css.matchAll(urlPattern)) {
+      const target = match[2].trim().toLowerCase();
+
+      if (
+        target.startsWith("http:")
+        || target.startsWith("https:")
+        || target.startsWith("//")
+        || target.startsWith("data:")
+        || target.startsWith("javascript:")
+      ) {
+        return "Externe oder eingebettete URLs sind nicht erlaubt.";
+      }
+    }
+
+    return "";
   }
 
   _syncEntitySelectionCount(checkboxClass, countId) {

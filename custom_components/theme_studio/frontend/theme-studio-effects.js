@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.7.0";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.0";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -16,6 +16,8 @@ const DEFAULT_CLIMATE_COMFORT_MAX = 24;
 const DEFAULT_CLIMATE_HOT = 28;
 const DEFAULT_ALERT_ENTITIES = [];
 const DEFAULT_ALERT_BATTERY_LOW = 20;
+const DEFAULT_EXPERT_CSS_ENABLED = false;
+const DEFAULT_EXPERT_CSS = "";
 const DEFAULT_LIQUID_GLASS = false;
 const DEFAULT_CARD_SHAPE = "standard";
 const DEFAULT_TECH_FRAME_CUT = 18;
@@ -33,8 +35,37 @@ const STARTUP_SYNC_DELAYS = [
   1000, 1300, 1600, 1900, 2200, 2500,
   2800, 3200,
 ];
+const EXPERT_CSS_STARTUP_SYNC_DELAYS = new Set([
+  0,
+  100,
+  400,
+  1000,
+  2200,
+]);
 const MAX_PIXEL_RATIO = 2;
 const CARD_INDEX_TTL = 30000;
+const DASHBOARD_LAYOUT_NAMES = new Set([
+  "hui-masonry-view",
+  "hui-sections-view",
+  "hui-panel-view",
+  "hui-view",
+]);
+const DASHBOARD_LAYOUT_IDS = new Set([
+  "columns",
+  "grid",
+  "root",
+  "sections",
+]);
+const DASHBOARD_LAYOUT_CLASSES = new Set([
+  "cards",
+  "column",
+  "columns",
+  "grid",
+  "section",
+  "sections",
+]);
+const DASHBOARD_EDITOR_STORAGE_KEY = "theme-studio-dashboard-editor";
+const LAST_DASHBOARD_PATH_STORAGE_KEY = "theme-studio-last-dashboard-path";
 
 
 class ThemeStudioEffects {
@@ -59,6 +90,37 @@ class ThemeStudioEffects {
     this.climateHot = DEFAULT_CLIMATE_HOT;
     this.alertEntities = [...DEFAULT_ALERT_ENTITIES];
     this.alertBatteryLow = DEFAULT_ALERT_BATTERY_LOW;
+    this.expertCssEnabled = DEFAULT_EXPERT_CSS_ENABLED;
+    this.expertCss = DEFAULT_EXPERT_CSS;
+    this.expertStyleElements = new Set();
+    this.expertCards = new Set();
+    this.expertCardTargetsByCard = new WeakMap();
+    this.expertCardKeyByCard = new WeakMap();
+    this.expertLayouts = new Set();
+    this.dashboardEditorActive = false;
+    this.dashboardEditorRoot = null;
+    this.dashboardEditorHighlight = null;
+    this.dashboardEditorHoveredCard = null;
+    this.dashboardEditorSelectedCard = null;
+    this.dashboardEditorSelectedCardKey = "";
+    this.dashboardEditorSelectedCardName = "";
+    this.dashboardEditorSelectedEntityIds = [];
+    this.dashboardEditorSelectedTargets = [];
+    this.dashboardEditorSelectedCards = [];
+    this.dashboardEditorSelectedRuleIds = new Map();
+    this.dashboardEditorLiveStyles = new Set();
+    this.dashboardEditorSettings = null;
+    this.dashboardEditorExistingRuleId = "";
+    this.dashboardEditorActiveProfileId = "";
+    this.dashboardEditorThemeActive = true;
+    this.dashboardEditorPanelDrag = null;
+    this.dashboardEditorCardDrag = null;
+    this.dashboardEditorBaselineValues = {};
+    this.dashboardEditorDirtyFields = new Set();
+    this.dashboardEditorExtraHighlights = [];
+    this.dashboardToolbarHost = null;
+    this.dashboardToolbarThemeActive = false;
+    this.dashboardToolbarExpertModeEnabled = false;
     this.liquidGlass = DEFAULT_LIQUID_GLASS;
     this.cardShape = DEFAULT_CARD_SHAPE;
     this.techFrameCut = DEFAULT_TECH_FRAME_CUT;
@@ -116,13 +178,20 @@ class ThemeStudioEffects {
     this.overlaySyncFrame = 0;
     this.overlaySyncTimeoutIds = new Set();
     this.overlayEventHandler = () => this._startOverlaySync();
-    this.resizeEventHandler = () => this._resize();
+    this.resizeEventHandler = () => {
+      this._resize();
+      this._positionDashboardEditorHighlight();
+    };
     this.locationChangedEventHandler = () => {
       this.stateSnapshot.clear();
       this._invalidateCardIndex();
       this.glassLastScan = 0;
       this._readThemeSettings();
       this._startStartupSync();
+      this._rememberDashboardPath();
+      if (this._dashboardEditorRequested()) {
+        this._startDashboardEditor();
+      }
     };
     this.reduceMotionEventHandler = () => this._readThemeSettings();
     this.visibilityEventHandler = () => {
@@ -147,9 +216,14 @@ class ThemeStudioEffects {
 
     this._createLayer();
     this._bindEvents();
+    this._rememberDashboardPath();
     this._resize();
     this._readThemeSettings();
     this._startStartupSync();
+
+    if (this._dashboardEditorRequested()) {
+      this._startDashboardEditor();
+    }
   }
 
   _createLayer() {
@@ -176,6 +250,8 @@ class ThemeStudioEffects {
     });
 
     document.body.appendChild(this.canvas);
+
+    this._createDashboardToolbarButton();
 
     this.context = this.canvas.getContext(
       "2d",
@@ -261,7 +337,14 @@ class ThemeStudioEffects {
           this.startupSyncTimeoutIds.delete(timeoutId);
           this._readThemeSettings();
 
-          if (this.liquidGlass || this.cardShape === "tech-frame") {
+          const materialEnabled =
+            this.liquidGlass
+            || this.cardShape === "tech-frame";
+          const expertCssScanDue =
+            this.expertCssEnabled
+            && EXPERT_CSS_STARTUP_SYNC_DELAYS.has(delay);
+
+          if (materialEnabled || expertCssScanDue) {
             this.glassLastScan = 0;
             this._syncLiquidGlassCards(true);
           }
@@ -364,9 +447,101 @@ class ThemeStudioEffects {
     this._clearAlertCards();
     this._clearLiquidGlassCards();
     this._clearTechFrameCards();
+    this._stopDashboardEditor(false);
+    this._clearExpertCss();
     this.techFrameResizeObserver?.disconnect();
     this._restoreConfigSurface();
+    this.dashboardToolbarHost?.remove();
+    this.dashboardToolbarHost = null;
     this.canvas?.remove();
+  }
+
+  _createDashboardToolbarButton() {
+    this.dashboardToolbarHost?.remove();
+
+    const host = document.createElement("div");
+    host.setAttribute("data-theme-studio-dashboard-toolbar", "");
+    host.hidden = true;
+    const root = host.attachShadow({ mode: "open" });
+
+    root.innerHTML = `
+      <style>
+        :host {
+          position: fixed;
+          z-index: 4;
+          top: 3px;
+          right: 211px;
+          color: var(--app-header-text-color, var(--primary-text-color, #fff));
+          font: 600 13px/1 system-ui, sans-serif;
+        }
+        :host([hidden]) { display: none !important; }
+        button {
+          display: inline-flex;
+          width: 48px;
+          height: 48px;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 0;
+          border-radius: 50%;
+          color: inherit;
+          background: transparent;
+          cursor: pointer;
+        }
+        button:hover, button:focus-visible {
+          color: var(--primary-color, #26b2b3);
+          background: color-mix(in srgb, currentColor 12%, transparent);
+          outline: none;
+        }
+        .icon { font-size: 22px; line-height: 1; }
+      </style>
+      <button type="button" title="Einzelne Karte direkt bearbeiten" aria-label="Kartenmodus starten">
+        <span class="icon" aria-hidden="true">✥</span>
+      </button>
+    `;
+
+    root.querySelector("button").addEventListener("click", () => {
+      this._startDashboardEditor();
+    });
+    document.body.appendChild(host);
+    this.dashboardToolbarHost = host;
+  }
+
+  _isDashboardPath() {
+    const path = window.location?.pathname || "";
+    const hass = this._getHass();
+    const panels = hass?.panels || {};
+    const pathSegment = path.split("/").filter(Boolean)[0] || "";
+    const defaultPanel = hass?.defaultPanel
+      || hass?.config?.default_panel
+      || "lovelace";
+    const panel = panels[pathSegment || defaultPanel]
+      || Object.values(panels).find((candidate) =>
+        candidate?.url_path === pathSegment
+      );
+
+    if (panel) {
+      return panel.component_name === "lovelace";
+    }
+
+    return path === "/"
+      || path === "/lovelace"
+      || path.startsWith("/lovelace/")
+      || path.startsWith("/dashboard-");
+  }
+
+  _syncDashboardToolbarButton() {
+    if (!this.dashboardToolbarHost) {
+      return;
+    }
+
+    this.dashboardToolbarHost.hidden = !(
+      this.dashboardToolbarThemeActive
+      && this.dashboardToolbarExpertModeEnabled
+      && this._isDashboardPath()
+      && !this.dashboardEditorActive
+    );
+
   }
 
   _themeElements() {
@@ -414,6 +589,24 @@ class ThemeStudioEffects {
       maximum,
       Math.max(minimum, parsedValue)
     );
+  }
+
+  _decodeExpertCss(encoded) {
+    if (!encoded) {
+      return "";
+    }
+
+    try {
+      const bytes = Uint8Array.from(
+        window.atob(encoded),
+        (character) => character.charCodeAt(0)
+      );
+
+      return new TextDecoder("utf-8", { fatal: true })
+        .decode(bytes);
+    } catch (_error) {
+      return "";
+    }
   }
 
   _readEntityListVariable(name) {
@@ -569,6 +762,18 @@ class ThemeStudioEffects {
         100
       );
 
+    const requestedExpertCssEnabled =
+      this._readNumberVariable(
+        "--theme-studio-expert-css-enabled",
+        DEFAULT_EXPERT_CSS_ENABLED ? 1 : 0,
+        0,
+        1
+      ) >= 0.5;
+
+    const requestedExpertCss = this._decodeExpertCss(
+      this._readCssVariable("--theme-studio-expert-css-b64")
+    );
+
     const requestedLiquidGlass =
       this._readNumberVariable(
         "--theme-studio-liquid-glass",
@@ -580,6 +785,12 @@ class ThemeStudioEffects {
     const requestedCardShapeValue = this._readCssVariable(
       "--theme-studio-card-shape"
     );
+    this.dashboardToolbarThemeActive = Boolean(
+      requestedCardShapeValue
+      || this._readCssVariable("--theme-studio-effect")
+    );
+    this.dashboardToolbarExpertModeEnabled = requestedExpertCssEnabled;
+    this._syncDashboardToolbarButton();
     const requestedCardShape = requestedCardShapeValue === "tech-frame"
       ? "tech-frame"
       : DEFAULT_CARD_SHAPE;
@@ -660,6 +871,11 @@ class ThemeStudioEffects {
       ? "standard"
       : requestedCardShape;
 
+    const nextExpertCssEnabled =
+      !effectsExcludedForConfig
+      && requestedExpertCssEnabled
+      && requestedExpertCss.length > 0;
+
     const changed =
       nextEffect !== this.effect
       || requestedMotion !== this.motion
@@ -696,6 +912,8 @@ class ThemeStudioEffects {
       || requestedGlassSaturation !== this.glassSaturation
       || requestedGlassHighlight !== this.glassHighlight
       || requestedOverlayBackground !== this.overlayBackground
+      || nextExpertCssEnabled !== this.expertCssEnabled
+      || requestedExpertCss !== this.expertCss
       || effectsExcludedForConfig !==
         this.effectsExcludedForConfig;
 
@@ -708,6 +926,7 @@ class ThemeStudioEffects {
     this._clearAlertCards();
     this._clearLiquidGlassCards();
     this._clearTechFrameCards();
+    this._clearExpertCss();
 
     this.effect = nextEffect;
     this.motion = requestedMotion;
@@ -744,6 +963,8 @@ class ThemeStudioEffects {
     this.glassSaturation = requestedGlassSaturation;
     this.glassHighlight = requestedGlassHighlight;
     this.overlayBackground = requestedOverlayBackground;
+    this.expertCssEnabled = nextExpertCssEnabled;
+    this.expertCss = requestedExpertCss;
     this.effectsExcludedForConfig =
       effectsExcludedForConfig;
     this.stateSnapshot.clear();
@@ -894,9 +1115,15 @@ class ThemeStudioEffects {
   _syncLiquidGlassCards(force = false) {
     const techFrameEnabled = this.cardShape === "tech-frame";
 
-    if (!this.liquidGlass && !techFrameEnabled) {
+    if (
+      !this.liquidGlass
+      && !techFrameEnabled
+      && !this.expertCssEnabled
+      && !this.dashboardEditorActive
+    ) {
       this._clearLiquidGlassCards();
       this._clearTechFrameCards();
+      this._clearExpertCss();
       return;
     }
 
@@ -915,8 +1142,58 @@ class ThemeStudioEffects {
     const currentHeadings = new Set();
     const currentOverlays = new Set();
     const currentScrims = new Set();
+    const currentExpertStyles = new Set();
+    const currentExpertCards = new Set();
+    const currentExpertLayouts = new Set();
+    const currentExpertRoots = new Set();
 
     this._visitElements(document, (element) => {
+      if (this.expertCssEnabled || this.dashboardEditorActive) {
+        if (
+          element.localName === "ha-card"
+          && !this._isInsideOverlay(element)
+          && !this._isHeadingCard(element)
+        ) {
+          let targets;
+
+          if (!this.expertCards.has(element)) {
+            targets = this._markExpertCard(element);
+            this.expertCardTargetsByCard.set(element, targets);
+          } else {
+            targets = this.expertCardTargetsByCard.get(element) || [element];
+          }
+
+          for (const target of targets) {
+            currentExpertCards.add(target);
+            const root = target.getRootNode?.();
+
+            if (!currentExpertRoots.has(root)) {
+              currentExpertRoots.add(root);
+              const style = this._ensureExpertCssStyle(root);
+
+              if (style) {
+                currentExpertStyles.add(style);
+              }
+            }
+          }
+        }
+
+        if (this._isDashboardLayoutElement(element)) {
+          currentExpertLayouts.add(element);
+          element.setAttribute("data-theme-studio-layout", "");
+          const root = element.getRootNode?.();
+
+          if (!currentExpertRoots.has(root)) {
+            currentExpertRoots.add(root);
+            const style = this._ensureExpertCssStyle(root);
+
+            if (style) {
+              currentExpertStyles.add(style);
+            }
+          }
+        }
+      }
+
       if (this.liquidGlass && this._isOverlayScrimElement(element)) {
         currentScrims.add(element);
         this._styleOverlayScrim(element);
@@ -965,11 +1242,14 @@ class ThemeStudioEffects {
         if (!this.glassCards.has(element)) {
           this._styleLiquidGlassCard(element);
         }
-      } else {
+      } else if (techFrameEnabled) {
         this._restoreLiquidGlassCard(element);
         if (!this.techFrameCards.has(element)) {
           this._styleTechFrameCard(element);
         }
+      } else {
+        this._restoreLiquidGlassCard(element);
+        this._restoreTechFrameCard(element);
       }
     });
 
@@ -1016,6 +1296,30 @@ class ThemeStudioEffects {
     }
 
     this.overlayScrims = currentScrims;
+
+    for (const card of this.expertCards) {
+      if (!currentExpertCards.has(card) || !card.isConnected) {
+        this._clearExpertCardMarkers(card);
+      }
+    }
+
+    this.expertCards = currentExpertCards;
+
+    for (const layout of this.expertLayouts) {
+      if (!currentExpertLayouts.has(layout) || !layout.isConnected) {
+        layout.removeAttribute("data-theme-studio-layout");
+      }
+    }
+
+    this.expertLayouts = currentExpertLayouts;
+
+    for (const style of this.expertStyleElements) {
+      if (!currentExpertStyles.has(style) || !style.isConnected) {
+        style.remove();
+      }
+    }
+
+    this.expertStyleElements = currentExpertStyles;
   }
 
   _isOverlayScrimElement(element) {
@@ -2498,6 +2802,1825 @@ class ThemeStudioEffects {
     }
   }
 
+  _ensureExpertCssStyle(root) {
+    if (!this.expertCssEnabled || !this.expertCss || !root) {
+      return null;
+    }
+
+    const target = root.nodeType === Node.DOCUMENT_NODE
+      ? root.head
+      : root;
+
+    if (!target?.querySelector || !target?.appendChild) {
+      return null;
+    }
+
+    let style = target.querySelector(
+      "style[data-theme-studio-expert-css]"
+    );
+
+    if (!style) {
+      style = document.createElement("style");
+      style.setAttribute("data-theme-studio-expert-css", "");
+      target.appendChild(style);
+    }
+
+    if (style.textContent !== this.expertCss) {
+      style.textContent = this.expertCss;
+    }
+
+    this.expertStyleElements.add(style);
+    return style;
+  }
+
+  _markExpertCard(card) {
+    const entityIds = new Set();
+    let themeStudioId = "";
+    let current = card;
+
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      if (
+        current !== card
+        && this._isDashboardLayoutElement(current)
+      ) {
+        break;
+      }
+
+      for (const entityId of this._entityIdsForElement(current)) {
+        entityIds.add(entityId);
+      }
+
+      const configCandidates = this._configCandidates(current);
+
+      if (!themeStudioId) {
+        for (const candidate of configCandidates) {
+          const value = candidate?.theme_studio_id;
+
+          if (
+            typeof value === "string"
+            && /^[a-zA-Z0-9_-]{1,64}$/.test(value)
+          ) {
+            themeStudioId = value;
+            break;
+          }
+        }
+      }
+
+      if (
+        current !== card
+        && entityIds.size > 0
+        && (
+          configCandidates.length > 0
+          || typeof current.entity === "string"
+        )
+      ) {
+        break;
+      }
+
+      if (current.parentElement) {
+        current = current.parentElement;
+      } else {
+        current = current.getRootNode?.()?.host || null;
+      }
+    }
+
+    const targets = [card];
+    let outerContainer = null;
+    current = card;
+
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      if (current !== card && this._isExpertCardContainer(current)) {
+        outerContainer = current;
+      }
+
+      if (current.parentElement) {
+        current = current.parentElement;
+      } else {
+        current = current.getRootNode?.()?.host || null;
+      }
+    }
+
+    if (outerContainer) {
+      targets.push(outerContainer);
+    }
+
+    const entityValue = Array.from(entityIds).join(" ");
+    const cardKey = this._dashboardCardKey(card);
+
+    for (const target of targets) {
+      if (entityValue) {
+        target.setAttribute("data-theme-studio-entity", entityValue);
+      } else {
+        target.removeAttribute("data-theme-studio-entity");
+      }
+
+      if (themeStudioId) {
+        target.setAttribute("data-theme-studio-id", themeStudioId);
+      } else {
+        target.removeAttribute("data-theme-studio-id");
+      }
+
+      target.setAttribute("data-theme-studio-card-key", cardKey);
+
+      if (target !== card) {
+        target.setAttribute("data-theme-studio-card-container", "");
+      }
+    }
+
+    return targets;
+  }
+
+  _isExpertCardContainer(element) {
+    const name = String(element.localName || "");
+
+    return (
+      name === "hui-card"
+      || name.endsWith("-card")
+      || element.classList?.contains("card")
+      || element.classList?.contains("card-wrapper")
+    );
+  }
+
+  _configCandidates(element) {
+    const candidates = [];
+
+    try {
+      candidates.push(element._config);
+    } catch (_error) {
+      // Some custom elements expose guarded properties.
+    }
+
+    try {
+      candidates.push(element.config);
+    } catch (_error) {
+      // Some custom elements expose guarded properties.
+    }
+
+    return candidates.filter(
+      (candidate) => candidate && typeof candidate === "object"
+    );
+  }
+
+  _dashboardCardKey(card) {
+    const cached = this.expertCardKeyByCard.get(card);
+
+    if (cached) {
+      return cached;
+    }
+
+    const identity = [window.location?.pathname || "/"];
+    let current = card;
+
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      for (const config of this._configCandidates(current)) {
+        identity.push(this._stableDashboardCardValue(config));
+      }
+
+      if (current !== card && this._isDashboardLayoutElement(current)) {
+        break;
+      }
+
+      current = current.parentElement || current.getRootNode?.()?.host || null;
+    }
+
+    identity.push(this._dashboardCardDomPath(card));
+    const value = identity.join("|");
+    let hash = 0xcbf29ce484222325n;
+
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= BigInt(value.charCodeAt(index));
+      hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+    }
+
+    const key = hash.toString(16).padStart(16, "0");
+    this.expertCardKeyByCard.set(card, key);
+    return key;
+  }
+
+  _stableDashboardCardValue(value, depth = 0, seen = new WeakSet()) {
+    if (value === null || typeof value === "boolean" || typeof value === "number") {
+      return JSON.stringify(value);
+    }
+
+    if (typeof value === "string") {
+      return JSON.stringify(value.slice(0, 500));
+    }
+
+    if (depth >= 6 || typeof value !== "object") {
+      return "";
+    }
+
+    if (seen.has(value)) {
+      return '"[cycle]"';
+    }
+
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+      return `[${value.slice(0, 100).map((item) =>
+        this._stableDashboardCardValue(item, depth + 1, seen)
+      ).join(",")}]`;
+    }
+
+    const entries = Object.keys(value)
+      .filter((key) => !key.startsWith("_") && typeof value[key] !== "function")
+      .sort()
+      .slice(0, 100)
+      .map((key) => `${JSON.stringify(key)}:${this._stableDashboardCardValue(
+        value[key], depth + 1, seen
+      )}`);
+
+    return `{${entries.join(",")}}`;
+  }
+
+  _dashboardCardDomPath(card) {
+    const parts = [];
+    let current = card;
+
+    for (let depth = 0; current && depth < 24; depth += 1) {
+      const name = String(current.localName || "element");
+      const parent = current.parentElement;
+      let index = 0;
+
+      if (parent) {
+        const peers = Array.from(parent.children).filter(
+          (element) => element.localName === current.localName
+        );
+        index = Math.max(0, peers.indexOf(current));
+      }
+
+      parts.push(`${name}:${index}`);
+
+      if (this._isDashboardLayoutElement(current)) {
+        break;
+      }
+
+      current = parent || current.getRootNode?.()?.host || null;
+    }
+
+    return parts.reverse().join("/");
+  }
+
+  _clearExpertCardMarkers(card) {
+    card.removeAttribute("data-theme-studio-entity");
+    card.removeAttribute("data-theme-studio-id");
+    card.removeAttribute("data-theme-studio-card-key");
+    card.removeAttribute("data-theme-studio-card-container");
+  }
+
+  _isDashboardLayoutElement(element) {
+    const name = String(element.localName || "");
+    let isLayout = false;
+
+    if (DASHBOARD_LAYOUT_NAMES.has(name)) {
+      isLayout = true;
+    }
+
+    const id = String(element.id || "").toLowerCase();
+    isLayout = isLayout || DASHBOARD_LAYOUT_IDS.has(id);
+
+    isLayout = isLayout || Array.from(element.classList || [])
+      .some((className) => DASHBOARD_LAYOUT_CLASSES.has(className));
+
+    return isLayout && !this._isInsideOverlay(element);
+  }
+
+  _clearExpertCss() {
+    for (const style of this.expertStyleElements) {
+      style.remove();
+    }
+
+    for (const card of this.expertCards) {
+      this._clearExpertCardMarkers(card);
+    }
+
+    for (const layout of this.expertLayouts) {
+      layout.removeAttribute("data-theme-studio-layout");
+    }
+
+    this.expertStyleElements.clear();
+    this.expertCards.clear();
+    this.expertLayouts.clear();
+  }
+
+  _dashboardEditorRequested() {
+    try {
+      return window.sessionStorage.getItem(
+        DASHBOARD_EDITOR_STORAGE_KEY
+      ) === "1";
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  _rememberDashboardPath() {
+    const path = window.location?.pathname || "";
+
+    if (!this._isDashboardPath()) {
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(
+        LAST_DASHBOARD_PATH_STORAGE_KEY,
+        `${path}${window.location?.search || ""}`
+      );
+    } catch (_error) {
+      // Remembering the route is optional.
+    }
+  }
+
+  _startDashboardEditor() {
+    if (this.dashboardEditorActive) {
+      return;
+    }
+
+    this.dashboardEditorActive = true;
+    this._syncDashboardToolbarButton();
+
+    try {
+      window.sessionStorage.setItem(
+        DASHBOARD_EDITOR_STORAGE_KEY,
+        "1"
+      );
+    } catch (_error) {
+      // The editor still works for the current page session.
+    }
+
+    this.dashboardEditorClickHandler = (event) =>
+      this._handleDashboardEditorCardClick(event);
+    this.dashboardEditorPointerHandler = (event) =>
+      this._handleDashboardEditorPointer(event);
+    this.dashboardEditorScrollHandler = () =>
+      this._positionDashboardEditorHighlight();
+    this.dashboardEditorKeyHandler = (event) => {
+      if (event.key === "Escape") {
+        if (this.dashboardEditorSelectedCard) {
+          this._clearDashboardEditorSelection();
+        } else {
+          this._stopDashboardEditor();
+        }
+      }
+    };
+
+    document.addEventListener(
+      "click",
+      this.dashboardEditorClickHandler,
+      true
+    );
+    document.addEventListener(
+      "pointerover",
+      this.dashboardEditorPointerHandler,
+      true
+    );
+    document.addEventListener(
+      "keydown",
+      this.dashboardEditorKeyHandler,
+      true
+    );
+    window.addEventListener(
+      "scroll",
+      this.dashboardEditorScrollHandler,
+      true
+    );
+
+    this._renderDashboardEditor();
+    this._loadDashboardEditorSettings();
+    this.glassLastScan = 0;
+    this._syncLiquidGlassCards(true);
+  }
+
+  _renderDashboardEditor() {
+    this.dashboardEditorRoot?.remove();
+    this.dashboardEditorHighlight?.remove();
+
+    const host = document.createElement("div");
+    host.setAttribute("data-theme-studio-dashboard-editor", "");
+    const root = host.attachShadow({ mode: "open" });
+
+    root.innerHTML = `
+      <style>
+        :host {
+          position: fixed;
+          z-index: 2147483646;
+          top: 72px;
+          right: 16px;
+          width: min(340px, calc(100vw - 24px));
+          color: #f4f7f8;
+          font: 13px/1.35 system-ui, sans-serif;
+        }
+        * { box-sizing: border-box; }
+        .panel {
+          max-height: calc(100vh - 88px);
+          overflow: auto;
+          border: 1px solid rgba(255,255,255,.22);
+          border-radius: 14px;
+          background: rgba(19,29,34,.97);
+          box-shadow: 0 14px 38px rgba(0,0,0,.42);
+        }
+        header {
+          position: sticky;
+          top: 0;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px 14px;
+          border-bottom: 1px solid rgba(255,255,255,.14);
+          background: #172329;
+          cursor: grab;
+          touch-action: none;
+        }
+        header.dragging { cursor: grabbing; }
+        h2 { margin: 0; overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+        .close {
+          width: 30px;
+          height: 30px;
+          padding: 0;
+          border: 1px solid rgba(255,255,255,.2);
+          border-radius: 50%;
+          color: inherit;
+          background: transparent;
+          font-size: 18px;
+          cursor: pointer;
+        }
+        .card-position-control {
+          display: grid;
+          grid-template-columns: repeat(3, 44px);
+          grid-template-rows: repeat(3, 44px);
+          width: max-content;
+          margin: 14px auto 16px;
+        }
+        .card-position-control button {
+          width: 44px;
+          height: 44px;
+          padding: 0;
+          border: 1px solid rgba(255,255,255,.22);
+          border-radius: 12px;
+          color: #f4f7f8;
+          background: #24343c;
+          font-size: 21px;
+          line-height: 1;
+          cursor: pointer;
+        }
+        .card-position-control button:hover,
+        .card-position-control button:focus-visible {
+          border-color: #26b2b3;
+          color: #26b2b3;
+          outline: none;
+        }
+        .card-position-control button:disabled {
+          opacity: .35;
+          cursor: not-allowed;
+        }
+        .card-position-up { grid-column: 2; grid-row: 1; }
+        .card-position-left { grid-column: 1; grid-row: 2; }
+        .card-move {
+          grid-column: 2;
+          grid-row: 2;
+          border-color: #26b2b3 !important;
+          background: #168b8c !important;
+          font-size: 24px !important;
+          touch-action: none;
+          cursor: grab;
+        }
+        .card-position-right { grid-column: 3; grid-row: 2; }
+        .card-position-down { grid-column: 2; grid-row: 3; }
+        .card-move.active { cursor: grabbing; color: #26b2b3; }
+        .intro, form { padding: 13px 14px; }
+        .intro { color: #c8d2d6; }
+        .intro strong { color: #fff; }
+        form[hidden] { display: none; }
+        .card-target {
+          margin: 0 0 12px;
+          padding: 10px;
+          border: 1px solid rgba(38,178,179,.45);
+          border-radius: 8px;
+          background: rgba(38,178,179,.1);
+        }
+        .card-target strong, .card-target span { display: block; }
+        .card-target span { margin-top: 3px; color: #aebbc0; font-size: 11px; }
+        label {
+          display: block;
+          margin-bottom: 9px;
+          color: #c8d2d6;
+          font-size: 11px;
+        }
+        input, select {
+          width: 100%;
+          min-height: 36px;
+          margin-top: 4px;
+          padding: 0 9px;
+          border: 1px solid rgba(255,255,255,.2);
+          border-radius: 8px;
+          color: #fff;
+          background: #24343c;
+        }
+        .field-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0 9px;
+        }
+        .actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 12px;
+        }
+        .actions button {
+          min-height: 38px;
+          padding: 0 12px;
+          border: 1px solid rgba(255,255,255,.2);
+          border-radius: 8px;
+          color: #fff;
+          background: #2d4049;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .actions .save {
+          flex: 1;
+          border-color: #26b2b3;
+          background: #168b8c;
+        }
+        .actions .reset { color: #ffaaaa; }
+        .actions button:disabled { opacity: .55; cursor: wait; }
+        .status {
+          min-height: 18px;
+          margin: 10px 0 0;
+          color: #b8c4c7;
+          font-size: 11px;
+        }
+        .status.error { color: #ff8b8b; }
+        .status.success { color: #72dc88; }
+        @media (max-width: 600px) {
+          :host {
+            top: auto;
+            right: 8px;
+            bottom: 8px;
+            left: 8px;
+            width: auto;
+          }
+          .panel { max-height: min(72vh, 620px); }
+        }
+      </style>
+      <section class="panel" role="dialog" aria-label="Theme Studio Karteneditor">
+        <header>
+          <h2>Theme Studio · Karteneditor</h2>
+          <button class="close" type="button" aria-label="Bearbeitungsmodus beenden">×</button>
+        </header>
+        <div class="intro">
+          <strong>Karte direkt auswählen</strong><br>
+          Klicke auf eine Karte im Dashboard. Mit STRG + Klick kannst du mehrere Karten auswählen.
+          Normale Kartenaktionen sind während dieses Modus gesperrt.
+        </div>
+        <form hidden>
+          <div class="card-target">
+            <strong data-field="card-name">Ausgewählte Karte</strong>
+            <span data-field="card-details">Die Regel gilt nur für diese Karteninstanz.</span>
+          </div>
+          <label>Gerät
+            <select data-field="device">
+              <option value="all">Alle Geräte</option>
+              <option value="desktop">Desktop</option>
+              <option value="tablet">Tablet</option>
+              <option value="mobile">Smartphone</option>
+            </select>
+          </label>
+          <div class="card-position-control" role="group" aria-label="Kartenposition">
+            <button class="card-position-up" data-card-nudge="0,-1" type="button" aria-label="Karte nach oben verschieben" disabled>↑</button>
+            <button class="card-position-left" data-card-nudge="-1,0" type="button" aria-label="Karte nach links verschieben" disabled>←</button>
+            <button class="card-move" type="button" title="Karte frei verschieben" aria-label="Karte frei verschieben" disabled>✥</button>
+            <button class="card-position-right" data-card-nudge="1,0" type="button" aria-label="Karte nach rechts verschieben" disabled>→</button>
+            <button class="card-position-down" data-card-nudge="0,1" type="button" aria-label="Karte nach unten verschieben" disabled>↓</button>
+          </div>
+          <div class="field-grid">
+            ${this._dashboardEditorNumberField("padding", "Innenabstand", 0, 100)}
+            ${this._dashboardEditorNumberField("width", "Breite", 40, 2000)}
+            ${this._dashboardEditorNumberField("minHeight", "Mindesthöhe", 20, 2000)}
+            ${this._dashboardEditorNumberField("columns", "Spaltenbreite", 1, 12, "Spalten")}
+            ${this._dashboardEditorNumberField("opacity", "Deckkraft", 0, 100, "%")}
+            ${this._dashboardEditorNumberField("fontSize", "Schriftgröße", 8, 48)}
+            ${this._dashboardEditorNumberField("borderRadius", "Runde Ecken", 0, 60)}
+          </div>
+          <input data-field="offsetX" type="hidden">
+          <input data-field="offsetY" type="hidden">
+          <div class="actions">
+            <button class="save" type="submit">Regel speichern</button>
+            <button class="cancel" type="button">Andere Karte wählen</button>
+            <button class="reset" type="button" disabled>Karte zurücksetzen</button>
+          </div>
+          <p class="status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    `;
+
+    root.querySelector(".close").addEventListener("click", () => {
+      this._stopDashboardEditor();
+    });
+    const header = root.querySelector("header");
+    const cardMove = root.querySelector(".card-move");
+    header.addEventListener("pointerdown", (event) => {
+      this._startDashboardEditorPanelDrag(event);
+    });
+    header.addEventListener("pointermove", (event) => {
+      this._moveDashboardEditorPanel(event);
+    });
+    header.addEventListener("pointerup", (event) => {
+      this._stopDashboardEditorPanelDrag(event);
+    });
+    header.addEventListener("pointercancel", (event) => {
+      this._stopDashboardEditorPanelDrag(event);
+    });
+    cardMove.addEventListener("pointerdown", (event) => {
+      this._startDashboardEditorCardDrag(event);
+    });
+    cardMove.addEventListener("pointermove", (event) => {
+      this._moveDashboardEditorCard(event);
+    });
+    cardMove.addEventListener("pointerup", (event) => {
+      this._stopDashboardEditorCardDrag(event);
+    });
+    cardMove.addEventListener("pointercancel", (event) => {
+      this._stopDashboardEditorCardDrag(event);
+    });
+    cardMove.addEventListener("keydown", (event) => {
+      this._nudgeDashboardEditorCard(event);
+    });
+    root.querySelectorAll("[data-card-nudge]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        const [horizontal, vertical] = button.dataset.cardNudge
+          .split(",")
+          .map(Number);
+        this._nudgeDashboardEditorCardBy(
+          horizontal,
+          vertical,
+          event.shiftKey ? 10 : 5
+        );
+      });
+    });
+    root.querySelector(".cancel").addEventListener("click", () => {
+      this._clearDashboardEditorSelection();
+    });
+    root.querySelector(".reset").addEventListener("click", () => {
+      this._resetDashboardEditorCard();
+    });
+    root.querySelector("form").addEventListener("input", (event) => {
+      const field = event.target.dataset.field;
+      if (field && field !== "device") {
+        this.dashboardEditorDirtyFields.add(field);
+      }
+      this._syncDashboardEditorResetButton();
+      this._applyDashboardEditorPreview();
+    });
+    root.querySelector("form").addEventListener("change", (event) => {
+      this._applyDashboardEditorPreview();
+    });
+    root.querySelector("form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      this._saveDashboardEditorRule();
+    });
+
+    const highlight = document.createElement("div");
+    highlight.setAttribute("data-theme-studio-dashboard-highlight", "");
+    Object.assign(highlight.style, {
+      position: "fixed",
+      zIndex: "2147483645",
+      display: "none",
+      border: "3px solid #26b2b3",
+      borderRadius: "8px",
+      boxShadow: "0 0 0 3px rgba(38,178,179,.28)",
+      pointerEvents: "none",
+      transition: "inset 80ms ease, width 80ms ease, height 80ms ease",
+    });
+
+    document.body.append(host, highlight);
+    this.dashboardEditorRoot = host;
+    this.dashboardEditorHighlight = highlight;
+  }
+
+  _dashboardEditorNumberField(name, label, minimum, maximum, unit = "px") {
+    return `
+      <label>${label} (${unit})
+        <input data-field="${name}" type="number" min="${minimum}" max="${maximum}" step="1" placeholder="unverändert">
+      </label>
+    `;
+  }
+
+  _startDashboardEditorPanelDrag(event) {
+    if (
+      event.button !== 0
+      || event.target.closest?.("button")
+      || !this.dashboardEditorRoot
+    ) {
+      return;
+    }
+
+    const rect = this.dashboardEditorRoot.getBoundingClientRect();
+    this.dashboardEditorPanelDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      left: rect.left,
+      top: rect.top,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.currentTarget.classList.add("dragging");
+    event.preventDefault();
+  }
+
+  _moveDashboardEditorPanel(event) {
+    const drag = this.dashboardEditorPanelDrag;
+    const host = this.dashboardEditorRoot;
+
+    if (!drag || drag.pointerId !== event.pointerId || !host) {
+      return;
+    }
+
+    const rect = host.getBoundingClientRect();
+    const left = Math.min(
+      Math.max(8, drag.left + event.clientX - drag.startX),
+      Math.max(8, window.innerWidth - rect.width - 8)
+    );
+    const top = Math.min(
+      Math.max(8, drag.top + event.clientY - drag.startY),
+      Math.max(8, window.innerHeight - Math.min(rect.height, window.innerHeight - 16) - 8)
+    );
+
+    host.style.left = `${Math.round(left)}px`;
+    host.style.top = `${Math.round(top)}px`;
+    host.style.right = "auto";
+    host.style.bottom = "auto";
+    event.preventDefault();
+  }
+
+  _stopDashboardEditorPanelDrag(event) {
+    if (
+      !this.dashboardEditorPanelDrag
+      || this.dashboardEditorPanelDrag.pointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    event.currentTarget.classList.remove("dragging");
+    this.dashboardEditorPanelDrag = null;
+  }
+
+  _startDashboardEditorCardDrag(event) {
+    if (event.button !== 0 || !this.dashboardEditorSelectedCard) {
+      return;
+    }
+
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const offsetX = root?.querySelector('[data-field="offsetX"]');
+    const offsetY = root?.querySelector('[data-field="offsetY"]');
+
+    if (!offsetX || !offsetY) {
+      return;
+    }
+
+    this.dashboardEditorCardDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: Number(offsetX.value || 0),
+      offsetY: Number(offsetY.value || 0),
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.currentTarget.classList.add("active");
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  _moveDashboardEditorCard(event) {
+    const drag = this.dashboardEditorCardDrag;
+
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const offsetX = root?.querySelector('[data-field="offsetX"]');
+    const offsetY = root?.querySelector('[data-field="offsetY"]');
+
+    if (!offsetX || !offsetY) {
+      return;
+    }
+
+    offsetX.value = String(Math.min(500, Math.max(
+      -500,
+      Math.round(drag.offsetX + event.clientX - drag.startX)
+    )));
+    offsetY.value = String(Math.min(500, Math.max(
+      -500,
+      Math.round(drag.offsetY + event.clientY - drag.startY)
+    )));
+    this.dashboardEditorDirtyFields.add("offsetX");
+    this.dashboardEditorDirtyFields.add("offsetY");
+    this._syncDashboardEditorResetButton();
+    this._applyDashboardEditorPreview();
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  _stopDashboardEditorCardDrag(event) {
+    if (
+      !this.dashboardEditorCardDrag
+      || this.dashboardEditorCardDrag.pointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    event.currentTarget.classList.remove("active");
+    this.dashboardEditorCardDrag = null;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  _nudgeDashboardEditorCard(event) {
+    const directions = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    };
+    const direction = directions[event.key];
+
+    if (!direction || !this.dashboardEditorSelectedCard) {
+      return;
+    }
+
+    const step = event.shiftKey ? 10 : 1;
+    this._nudgeDashboardEditorCardBy(direction[0], direction[1], step);
+    event.preventDefault();
+  }
+
+  _nudgeDashboardEditorCardBy(horizontal, vertical, step = 5) {
+    if (!this.dashboardEditorSelectedCard) {
+      return;
+    }
+
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const offsetX = root?.querySelector('[data-field="offsetX"]');
+    const offsetY = root?.querySelector('[data-field="offsetY"]');
+
+    if (!offsetX || !offsetY) {
+      return;
+    }
+
+    offsetX.value = String(Math.min(500, Math.max(
+      -500,
+      Number(offsetX.value || 0) + horizontal * step
+    )));
+    offsetY.value = String(Math.min(500, Math.max(
+      -500,
+      Number(offsetY.value || 0) + vertical * step
+    )));
+    this.dashboardEditorDirtyFields.add("offsetX");
+    this.dashboardEditorDirtyFields.add("offsetY");
+    this._syncDashboardEditorResetButton();
+    this._applyDashboardEditorPreview();
+  }
+
+  async _loadDashboardEditorSettings() {
+    const status = this.dashboardEditorRoot?.shadowRoot?.querySelector(
+      ".status"
+    );
+
+    try {
+      const result = await this._getHass()?.callWS({
+        type: "theme_studio/get_settings",
+      });
+
+      if (!result) {
+        throw new Error("Home Assistant ist noch nicht bereit.");
+      }
+
+      this.dashboardEditorSettings = {
+        mode: result.mode,
+        light: result.light,
+        dark: result.dark,
+        effects: result.effects,
+      };
+      this.dashboardEditorActiveProfileId = result.active_profile_id || "";
+      this.dashboardEditorThemeActive = result.theme_studio_active !== false;
+
+      if (status) {
+        status.textContent = "Bereit – Karte im Dashboard anklicken.";
+        status.className = "status";
+      }
+
+      if (this.dashboardEditorSelectedCard?.isConnected) {
+        this._selectDashboardEditorCard(
+          this.dashboardEditorSelectedCard
+        );
+      }
+    } catch (error) {
+      if (status) {
+        status.textContent = `Einstellungen konnten nicht geladen werden: ${error.message || error}`;
+        status.className = "status error";
+      }
+    }
+  }
+
+  _dashboardEditorCardFromEvent(event) {
+    const path = event.composedPath?.() || [];
+
+    if (path.includes(this.dashboardEditorRoot)) {
+      return null;
+    }
+
+    return path.find((element) =>
+      element?.localName === "ha-card"
+      && !this._isHeadingCard(element)
+      && !this._isInsideOverlay(element)
+    ) || null;
+  }
+
+  _handleDashboardEditorPointer(event) {
+    if (!this.dashboardEditorActive || this.dashboardEditorSelectedCard) {
+      return;
+    }
+
+    const card = this._dashboardEditorCardFromEvent(event);
+
+    if (card && card !== this.dashboardEditorHoveredCard) {
+      this.dashboardEditorHoveredCard = card;
+      this._positionDashboardEditorHighlight();
+    } else if (!card && this.dashboardEditorHoveredCard) {
+      this.dashboardEditorHoveredCard = null;
+      this._positionDashboardEditorHighlight();
+    }
+  }
+
+  _handleDashboardEditorCardClick(event) {
+    if (!this.dashboardEditorActive) {
+      return;
+    }
+
+    const card = this._dashboardEditorCardFromEvent(event);
+
+    if (!card) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    this._selectDashboardEditorCard(card, event.ctrlKey || event.metaKey);
+  }
+
+  _selectDashboardEditorCard(card, additive = false) {
+    if (additive && this.dashboardEditorSelectedCard) {
+      this._toggleDashboardEditorCard(card);
+      return;
+    }
+
+    this._clearDashboardEditorLiveStyle();
+    this.dashboardEditorSelectedCard = card;
+    this.dashboardEditorHoveredCard = card;
+    this.dashboardEditorSelectedTargets = this._markExpertCard(card);
+    this.expertCardTargetsByCard.set(card, this.dashboardEditorSelectedTargets);
+    this._positionDashboardEditorHighlight();
+
+    const entityIds = String(
+      card.getAttribute("data-theme-studio-entity") || ""
+    ).split(/\s+/).filter(Boolean);
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const form = root?.querySelector("form");
+    const intro = root?.querySelector(".intro");
+    const status = root?.querySelector(".status");
+    const nameOutput = root?.querySelector('[data-field="card-name"]');
+    const detailsOutput = root?.querySelector('[data-field="card-details"]');
+
+    if (!form || !nameOutput || !detailsOutput) {
+      return;
+    }
+
+    const cardKey = card.getAttribute("data-theme-studio-card-key")
+      || this._dashboardCardKey(card);
+    const cardName = this._dashboardEditorCardName(card, entityIds);
+    this.dashboardEditorSelectedCardKey = cardKey;
+    this.dashboardEditorSelectedCardName = cardName;
+    this.dashboardEditorSelectedEntityIds = entityIds;
+    this.dashboardEditorSelectedCards = [{
+      card,
+      cardKey,
+      cardName,
+      entityIds,
+      targets: this.dashboardEditorSelectedTargets,
+    }];
+    this.dashboardEditorSelectedRuleIds = new Map();
+    root.querySelectorAll(".card-position-control button").forEach((button) => {
+      button.disabled = false;
+    });
+    nameOutput.textContent = cardName;
+    detailsOutput.textContent = entityIds.length > 0
+      ? `Nur diese Karte · erkannt: ${entityIds.join(", ")}`
+      : "Nur diese Karte · keine Entität erforderlich";
+    root.querySelector(".save").disabled = !this.dashboardEditorSettings;
+    intro.hidden = true;
+    form.hidden = false;
+    this._loadDashboardEditorRule(cardKey, entityIds);
+  }
+
+  _toggleDashboardEditorCard(card) {
+    const cardKey = card.getAttribute("data-theme-studio-card-key")
+      || this._dashboardCardKey(card);
+    const currentIndex = this.dashboardEditorSelectedCards.findIndex(
+      (entry) => entry.cardKey === cardKey
+    );
+
+    if (currentIndex === 0 && this.dashboardEditorSelectedCards.length === 1) {
+      return;
+    }
+
+    this._clearDashboardEditorLiveStyle();
+
+    if (currentIndex >= 0) {
+      this.dashboardEditorSelectedCards.splice(currentIndex, 1);
+      this.dashboardEditorSelectedRuleIds.delete(cardKey);
+    } else {
+      const entityIds = String(
+        card.getAttribute("data-theme-studio-entity") || ""
+      ).split(/\s+/).filter(Boolean);
+      const targets = this._markExpertCard(card);
+      this.expertCardTargetsByCard.set(card, targets);
+      const { rule } = this._dashboardEditorFindRule(cardKey, entityIds);
+      this.dashboardEditorSelectedCards.push({
+        card,
+        cardKey,
+        cardName: this._dashboardEditorCardName(card, entityIds),
+        entityIds,
+        targets,
+      });
+      if (rule) {
+        this.dashboardEditorSelectedRuleIds.set(cardKey, rule.id);
+      }
+    }
+
+    const primary = this.dashboardEditorSelectedCards[0];
+    this.dashboardEditorSelectedCard = primary.card;
+    this.dashboardEditorSelectedCardKey = primary.cardKey;
+    this.dashboardEditorSelectedCardName = primary.cardName;
+    this.dashboardEditorSelectedEntityIds = primary.entityIds;
+    this.dashboardEditorExistingRuleId =
+      this.dashboardEditorSelectedRuleIds.get(primary.cardKey) || "";
+    this.dashboardEditorSelectedTargets = Array.from(new Set(
+      this.dashboardEditorSelectedCards.flatMap((entry) => entry.targets)
+    ));
+
+    if (this.dashboardEditorSelectedCards.length === 2 && currentIndex < 0) {
+      this.dashboardEditorDirtyFields = new Set();
+    }
+
+    this._updateDashboardEditorSelectionLabel();
+    if (this.dashboardEditorSelectedCards.length === 1) {
+      this._loadDashboardEditorRule(primary.cardKey, primary.entityIds);
+      this._positionDashboardEditorHighlight();
+      return;
+    }
+    this._syncDashboardEditorResetButton();
+    this._applyDashboardEditorPreview();
+    this._positionDashboardEditorHighlight();
+  }
+
+  _updateDashboardEditorSelectionLabel() {
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const count = this.dashboardEditorSelectedCards.length;
+    const nameOutput = root?.querySelector('[data-field="card-name"]');
+    const detailsOutput = root?.querySelector('[data-field="card-details"]');
+    const status = root?.querySelector(".status");
+
+    if (!nameOutput || !detailsOutput || count === 0) {
+      return;
+    }
+
+    if (count === 1) {
+      const entry = this.dashboardEditorSelectedCards[0];
+      nameOutput.textContent = entry.cardName;
+      detailsOutput.textContent = entry.entityIds.length > 0
+        ? `Nur diese Karte · erkannt: ${entry.entityIds.join(", ")}`
+        : "Nur diese Karte · keine Entität erforderlich";
+      return;
+    }
+
+    nameOutput.textContent = `${count} Karten ausgewählt`;
+    detailsOutput.textContent = "STRG + Klick fügt Karten hinzu oder entfernt sie";
+    if (status) {
+      status.textContent = "Nur Werte, die du jetzt änderst, werden auf alle ausgewählten Karten angewendet.";
+      status.className = "status";
+    }
+  }
+
+  _dashboardEditorCardName(card, entityIds) {
+    let current = card;
+
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      for (const config of this._configCandidates(current)) {
+        const name = config.name || config.title;
+
+        if (typeof name === "string" && name.trim()) {
+          return name.trim();
+        }
+      }
+
+      if (current !== card && this._isDashboardLayoutElement(current)) {
+        break;
+      }
+
+      current = current.parentElement || current.getRootNode?.()?.host || null;
+    }
+
+    const hass = this._getHass();
+    const firstEntity = entityIds[0];
+    return hass?.states?.[firstEntity]?.attributes?.friendly_name
+      || firstEntity
+      || "Ausgewählte Karte";
+  }
+
+  _loadDashboardEditorRule(cardKey, entityIds = []) {
+    const { rule, migratesLegacyRule } = this._dashboardEditorFindRule(
+      cardKey,
+      entityIds
+    );
+    const root = this.dashboardEditorRoot?.shadowRoot;
+
+    this.dashboardEditorExistingRuleId = rule?.id || "";
+    if (rule) {
+      this.dashboardEditorSelectedRuleIds.set(cardKey, rule.id);
+    }
+
+    if (!root) {
+      return;
+    }
+
+    root.querySelector('[data-field="device"]').value = rule?.device || "all";
+
+    this.dashboardEditorBaselineValues = this._dashboardEditorMeasuredValues();
+    this.dashboardEditorDirtyFields = new Set();
+
+    for (const field of [
+      "padding",
+      "width",
+      "minHeight",
+      "columns",
+      "offsetX",
+      "offsetY",
+      "opacity",
+      "fontSize",
+      "borderRadius",
+    ]) {
+      const hasSavedValue = rule?.[field] !== null
+        && rule?.[field] !== undefined;
+      root.querySelector(`[data-field="${field}"]`).value = hasSavedValue
+        ? rule[field]
+        : this.dashboardEditorBaselineValues[field];
+      if (hasSavedValue) {
+        this.dashboardEditorDirtyFields.add(field);
+      }
+    }
+
+    const status = root.querySelector(".status");
+    status.textContent = migratesLegacyRule
+      ? "Alte Entitätsregel geladen. Beim Speichern wird sie auf genau diese Karte begrenzt."
+      : rule
+        ? "Vorhandene Kartenregel geladen. Änderungen erscheinen sofort auf dieser Karte."
+        : "Neue Regel nur für diese Karte. Änderungen erscheinen sofort.";
+    status.className = "status";
+    this._syncDashboardEditorResetButton();
+    this._applyDashboardEditorPreview();
+  }
+
+  _dashboardEditorFindRule(cardKey, entityIds = []) {
+    const rules = this.dashboardEditorSettings?.effects?.expertRules || [];
+    let rule = rules.find((candidate) =>
+      candidate.targetType === "card"
+      && candidate.target === cardKey
+    ) || null;
+    let migratesLegacyRule = false;
+
+    if (!rule) {
+      const hass = this._getHass();
+      rule = rules.find((candidate) => {
+        if (
+          candidate.targetType !== "entity"
+          || !entityIds.includes(candidate.target)
+        ) {
+          return false;
+        }
+
+        const generatedName = hass?.states?.[candidate.target]
+          ?.attributes?.friendly_name || candidate.target;
+        return candidate.name === generatedName;
+      }) || null;
+      migratesLegacyRule = Boolean(rule);
+    }
+
+    return { rule, migratesLegacyRule };
+  }
+
+  _dashboardEditorMeasuredValues() {
+    const card = this.dashboardEditorSelectedCard;
+    const container = this.dashboardEditorSelectedTargets.find((target) =>
+      target.hasAttribute?.("data-theme-studio-card-container")
+    ) || card;
+
+    if (!card || !container) {
+      return {
+        padding: 0,
+        width: 40,
+        minHeight: 20,
+        columns: 1,
+        offsetX: 0,
+        offsetY: 0,
+        opacity: 100,
+        fontSize: 14,
+        borderRadius: 0,
+      };
+    }
+
+    const cardStyle = getComputedStyle(card);
+    const containerStyle = getComputedStyle(container);
+    const rect = card.getBoundingClientRect();
+    const rounded = (value, fallback, minimum, maximum) => {
+      const number = Number.parseFloat(value);
+      return Number.isFinite(number)
+        ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+        : fallback;
+    };
+    const columnText = `${containerStyle.gridColumnEnd} ${containerStyle.gridColumn}`;
+    const columnMatch = columnText.match(/span\s+(\d+)/i);
+
+    return {
+      padding: rounded(cardStyle.paddingTop, 0, 0, 100),
+      width: rounded(rect.width, 40, 40, 2000),
+      minHeight: rounded(rect.height, 20, 20, 2000),
+      columns: rounded(columnMatch?.[1], 1, 1, 12),
+      offsetX: 0,
+      offsetY: 0,
+      opacity: rounded(Number.parseFloat(cardStyle.opacity) * 100, 100, 0, 100),
+      fontSize: rounded(cardStyle.fontSize, 14, 8, 48),
+      borderRadius: rounded(cardStyle.borderTopLeftRadius, 0, 0, 60),
+    };
+  }
+
+  _syncDashboardEditorResetButton() {
+    const button = this.dashboardEditorRoot?.shadowRoot?.querySelector(".reset");
+    if (button) {
+      button.disabled = this.dashboardEditorSelectedRuleIds.size === 0
+        && this.dashboardEditorDirtyFields.size === 0;
+      button.textContent = this.dashboardEditorSelectedCards.length > 1
+        ? "Auswahl zurücksetzen"
+        : "Karte zurücksetzen";
+    }
+  }
+
+  _dashboardEditorFormNumber(name) {
+    const input = this.dashboardEditorRoot?.shadowRoot?.querySelector(
+      `[data-field="${name}"]`
+    );
+
+    if (!input || input.value === "") {
+      return null;
+    }
+
+    const value = Number(input.value);
+
+    if (!input.checkValidity() || !Number.isInteger(value)) {
+      throw new Error(`${input.parentElement.textContent.trim()}: ungültiger Wert.`);
+    }
+
+    return value;
+  }
+
+  _dashboardEditorRuleFromForm() {
+    const root = this.dashboardEditorRoot.shadowRoot;
+    const target = this.dashboardEditorSelectedCardKey;
+    const name = this.dashboardEditorSelectedCardName || "Ausgewählte Karte";
+    const rule = {
+      id: this.dashboardEditorExistingRuleId || this._newDashboardEditorRuleId(),
+      name: String(name).slice(0, 48),
+      enabled: true,
+      targetType: "card",
+      target,
+      device: root.querySelector('[data-field="device"]').value,
+      margin: null,
+      padding: this._dashboardEditorRuleValue("padding"),
+      gap: null,
+      width: this._dashboardEditorRuleValue("width"),
+      minHeight: this._dashboardEditorRuleValue("minHeight"),
+      columns: this._dashboardEditorRuleValue("columns"),
+      offsetX: this._dashboardEditorRuleValue("offsetX"),
+      offsetY: this._dashboardEditorRuleValue("offsetY"),
+      opacity: this._dashboardEditorRuleValue("opacity"),
+      fontSize: this._dashboardEditorRuleValue("fontSize"),
+      borderRadius: this._dashboardEditorRuleValue("borderRadius"),
+    };
+
+    if (!target) {
+      throw new Error("Die ausgewählte Karte konnte nicht eindeutig erkannt werden.");
+    }
+
+    if ([
+      "padding", "width", "minHeight", "columns",
+      "offsetX", "offsetY", "opacity", "fontSize", "borderRadius",
+    ].every((field) => rule[field] === null)) {
+      throw new Error("Bitte mindestens eine Änderung eintragen.");
+    }
+
+    return rule;
+  }
+
+  _dashboardEditorRuleValue(field) {
+    return this.dashboardEditorDirtyFields.has(field)
+      ? this._dashboardEditorFormNumber(field)
+      : null;
+  }
+
+  _applyDashboardEditorPreview() {
+    if (!this.dashboardEditorSelectedCard) {
+      return;
+    }
+
+    let rule;
+
+    try {
+      rule = this._dashboardEditorRuleFromForm();
+    } catch (_error) {
+      return;
+    }
+
+    this._clearDashboardEditorLiveStyle();
+
+    for (const target of this.dashboardEditorSelectedTargets) {
+      target.setAttribute("data-theme-studio-dashboard-edit", "");
+    }
+
+    const visual = [];
+    const placement = [];
+
+    if (rule.padding !== null) {
+      visual.push(`padding: ${rule.padding}px !important;`);
+    }
+    if (rule.minHeight !== null) {
+      visual.push(`min-height: ${rule.minHeight}px !important;`);
+    }
+    if (rule.opacity !== null) {
+      visual.push(`opacity: ${rule.opacity / 100} !important;`);
+    }
+    if (rule.fontSize !== null) {
+      visual.push(`font-size: ${rule.fontSize}px !important;`);
+      for (const variable of [
+        "--ha-font-size-xs",
+        "--ha-font-size-s",
+        "--ha-font-size-m",
+        "--ha-font-size-l",
+        "--mdc-typography-body1-font-size",
+        "--mdc-typography-body2-font-size",
+        "--paper-font-body1_-_font-size",
+        "--paper-font-body2_-_font-size",
+        "--state-card-primary-font-size",
+        "--state-card-secondary-font-size",
+        "--card-primary-font-size",
+        "--card-secondary-font-size",
+      ]) {
+        visual.push(`${variable}: ${rule.fontSize}px !important;`);
+      }
+    }
+    if (rule.borderRadius !== null) {
+      visual.push(`border-radius: ${rule.borderRadius}px !important;`);
+    }
+    if (rule.margin !== null) {
+      placement.push(`margin: ${rule.margin}px !important;`);
+    }
+    if (rule.width !== null) {
+      placement.push(`width: ${rule.width}px !important;`);
+    }
+    if (rule.columns !== null) {
+      placement.push(`grid-column: span ${rule.columns} !important;`);
+    }
+    if (rule.offsetX !== null || rule.offsetY !== null) {
+      placement.push(`transform: translate(${rule.offsetX || 0}px, ${rule.offsetY || 0}px) !important;`);
+    }
+    const css = `
+      ha-card[data-theme-studio-dashboard-edit] {
+        ${visual.join("\n")}
+      }
+      ha-card[data-theme-studio-dashboard-edit] * {
+        ${rule.fontSize === null ? "" : `font-size: ${rule.fontSize}px !important;`}
+      }
+      [data-theme-studio-card-container][data-theme-studio-dashboard-edit] {
+        ${placement.join("\n")}
+      }
+    `;
+    const roots = new Set(
+      this.dashboardEditorSelectedTargets.map((target) => target.getRootNode?.())
+    );
+
+    for (const root of roots) {
+      const destination = root?.nodeType === Node.DOCUMENT_NODE
+        ? root.head
+        : root;
+
+      if (!destination?.appendChild) {
+        continue;
+      }
+
+      const style = document.createElement("style");
+      style.setAttribute("data-theme-studio-dashboard-live-style", "");
+      style.textContent = css;
+      destination.appendChild(style);
+      this.dashboardEditorLiveStyles.add(style);
+    }
+
+    this._positionDashboardEditorHighlight();
+  }
+
+  async _saveDashboardEditorRule() {
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const status = root?.querySelector(".status");
+    const saveButton = root?.querySelector(".save");
+
+    if (!this.dashboardEditorSettings || !status || !saveButton) {
+      return;
+    }
+
+    let rule;
+
+    try {
+      rule = this._dashboardEditorRuleFromForm();
+    } catch (error) {
+      status.textContent = error.message;
+      status.className = "status error";
+      return;
+    }
+
+    const settings = JSON.parse(JSON.stringify(this.dashboardEditorSettings));
+    const rules = settings.effects.expertRules || [];
+    const entries = this.dashboardEditorSelectedCards.length > 0
+      ? this.dashboardEditorSelectedCards
+      : [{
+        cardKey: this.dashboardEditorSelectedCardKey,
+        cardName: this.dashboardEditorSelectedCardName,
+      }];
+    const newRuleCount = entries.filter((entry) => {
+      const ruleId = this.dashboardEditorSelectedRuleIds.get(entry.cardKey);
+      return !rules.some((candidate) =>
+        candidate.id === ruleId
+        || (
+          candidate.targetType === "card"
+          && candidate.target === entry.cardKey
+        )
+      );
+    }).length;
+
+    if (rules.length + newRuleCount > 64) {
+      status.textContent = "Es können höchstens 64 Regeln gespeichert werden.";
+      status.className = "status error";
+      return;
+    }
+
+    const savedRuleIds = new Map();
+    for (const entry of entries) {
+      const knownRuleId = this.dashboardEditorSelectedRuleIds.get(entry.cardKey);
+      const existingIndex = rules.findIndex((candidate) =>
+        candidate.id === knownRuleId
+        || (
+          candidate.targetType === "card"
+          && candidate.target === entry.cardKey
+        )
+      );
+      const existing = existingIndex >= 0 ? rules[existingIndex] : null;
+      const savedRule = {
+        ...(existing || rule),
+        id: existing?.id || this._newDashboardEditorRuleId(),
+        name: String(entry.cardName || "Ausgewählte Karte").slice(0, 48),
+        enabled: true,
+        targetType: "card",
+        target: entry.cardKey,
+        device: rule.device,
+        margin: null,
+        gap: null,
+      };
+
+      for (const field of [
+        "padding", "width", "minHeight", "columns", "offsetX",
+        "offsetY", "opacity", "fontSize", "borderRadius",
+      ]) {
+        if (this.dashboardEditorDirtyFields.has(field)) {
+          savedRule[field] = rule[field];
+        } else if (!existing) {
+          savedRule[field] = null;
+        }
+      }
+
+      if (existingIndex >= 0) {
+        rules.splice(existingIndex, 1, savedRule);
+      } else {
+        rules.push(savedRule);
+      }
+      savedRuleIds.set(entry.cardKey, savedRule.id);
+    }
+
+    settings.effects.expertRules = rules;
+    settings.effects.expertCssEnabled = true;
+    saveButton.disabled = true;
+    status.textContent = entries.length > 1
+      ? `${entries.length} Kartenregeln werden gespeichert und angewendet …`
+      : "Regel wird gespeichert und angewendet …";
+    status.className = "status";
+
+    try {
+      const result = await this._getHass().callWS({
+        type: "theme_studio/save_settings",
+        settings,
+        previous_theme_studio_active: this.dashboardEditorThemeActive,
+        ...(this.dashboardEditorActiveProfileId
+          ? { active_profile_id: this.dashboardEditorActiveProfileId }
+          : {}),
+      });
+
+      this.dashboardEditorSettings = JSON.parse(JSON.stringify(result.settings));
+      this.dashboardEditorSelectedRuleIds = savedRuleIds;
+      this.dashboardEditorExistingRuleId = savedRuleIds.get(
+        this.dashboardEditorSelectedCardKey
+      ) || "";
+      this.dashboardEditorThemeActive = true;
+      this._clearDashboardEditorLiveStyle();
+      status.textContent = entries.length > 1
+        ? `${entries.length} Kartenregeln wurden gespeichert und angewendet.`
+        : "Regel gespeichert und auf dem Dashboard angewendet.";
+      status.className = "status success";
+      this.themeComputedStyles = null;
+      this.glassLastScan = 0;
+      this._readThemeSettings();
+      this._startStartupSync();
+      this._syncDashboardEditorResetButton();
+    } catch (error) {
+      status.textContent = `Speichern fehlgeschlagen: ${error.message || error}`;
+      status.className = "status error";
+      this._applyDashboardEditorPreview();
+    } finally {
+      saveButton.disabled = false;
+    }
+  }
+
+  async _resetDashboardEditorCard() {
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const status = root?.querySelector(".status");
+    const resetButton = root?.querySelector(".reset");
+
+    if (!this.dashboardEditorSettings || !status || !resetButton) {
+      return;
+    }
+
+    if (this.dashboardEditorSelectedRuleIds.size === 0) {
+      this._clearDashboardEditorLiveStyle();
+      this._loadDashboardEditorRule(
+        this.dashboardEditorSelectedCardKey,
+        this.dashboardEditorSelectedEntityIds
+      );
+      this._updateDashboardEditorSelectionLabel();
+      this._syncDashboardEditorResetButton();
+      status.textContent = "Ungespeicherte Änderungen wurden verworfen.";
+      status.className = "status success";
+      return;
+    }
+
+    const selectionCount = this.dashboardEditorSelectedCards.length || 1;
+    const confirmation = selectionCount > 1
+      ? `Alle Anpassungen für ${selectionCount} ausgewählte Karten entfernen?`
+      : "Alle Anpassungen für diese Karte entfernen?";
+    if (!window.confirm(confirmation)) {
+      return;
+    }
+
+    const settings = JSON.parse(JSON.stringify(this.dashboardEditorSettings));
+    const rules = settings.effects.expertRules || [];
+    const selectedRuleIds = new Set(this.dashboardEditorSelectedRuleIds.values());
+    const selectedCardKeys = new Set(
+      this.dashboardEditorSelectedCards.map((entry) => entry.cardKey)
+    );
+    settings.effects.expertRules = rules.filter((candidate) =>
+      !selectedRuleIds.has(candidate.id)
+      && !(
+        candidate.targetType === "card"
+        && selectedCardKeys.has(candidate.target)
+      )
+    );
+    if (
+      settings.effects.expertRules.length === 0
+      && !String(settings.effects.expertCss || "").trim()
+    ) {
+      settings.effects.expertCssEnabled = false;
+    }
+
+    resetButton.disabled = true;
+    status.textContent = "Kartenanpassungen werden entfernt …";
+    status.className = "status";
+
+    try {
+      const result = await this._getHass().callWS({
+        type: "theme_studio/save_settings",
+        settings,
+        previous_theme_studio_active: this.dashboardEditorThemeActive,
+        ...(this.dashboardEditorActiveProfileId
+          ? { active_profile_id: this.dashboardEditorActiveProfileId }
+          : {}),
+      });
+
+      this.dashboardEditorSettings = JSON.parse(JSON.stringify(result.settings));
+      this.dashboardEditorExistingRuleId = "";
+      this.dashboardEditorSelectedRuleIds = new Map();
+      this.dashboardEditorDirtyFields = new Set();
+      this.dashboardEditorThemeActive = true;
+      this._clearDashboardEditorLiveStyle();
+      this.themeComputedStyles = null;
+      this.glassLastScan = 0;
+      this._readThemeSettings();
+      this._startStartupSync();
+      this._loadDashboardEditorRule(
+        this.dashboardEditorSelectedCardKey,
+        this.dashboardEditorSelectedEntityIds
+      );
+      if (selectionCount > 1) {
+        this.dashboardEditorDirtyFields = new Set();
+        this.dashboardEditorSelectedRuleIds = new Map();
+        this.dashboardEditorExistingRuleId = "";
+        this._updateDashboardEditorSelectionLabel();
+        this._syncDashboardEditorResetButton();
+      }
+      status.textContent = selectionCount > 1
+        ? `${selectionCount} Karten wurden auf ihre ursprüngliche Darstellung zurückgesetzt.`
+        : "Karte wurde auf ihre ursprüngliche Darstellung zurückgesetzt.";
+      status.className = "status success";
+    } catch (error) {
+      status.textContent = `Zurücksetzen fehlgeschlagen: ${error.message || error}`;
+      status.className = "status error";
+      this._syncDashboardEditorResetButton();
+    }
+  }
+
+  _newDashboardEditorRuleId() {
+    const bytes = new Uint8Array(6);
+
+    if (globalThis.crypto?.getRandomValues) {
+      globalThis.crypto.getRandomValues(bytes);
+    } else {
+      for (let index = 0; index < bytes.length; index += 1) {
+        bytes[index] = Math.floor(Math.random() * 256);
+      }
+    }
+
+    return Array.from(bytes, (value) =>
+      value.toString(16).padStart(2, "0")
+    ).join("");
+  }
+
+  _positionDashboardEditorHighlight() {
+    const cards = this.dashboardEditorSelectedCards.length > 0
+      ? this.dashboardEditorSelectedCards.map((entry) => entry.card)
+      : [this.dashboardEditorHoveredCard].filter(Boolean);
+    const highlights = [
+      this.dashboardEditorHighlight,
+      ...this.dashboardEditorExtraHighlights,
+    ].filter(Boolean);
+
+    while (highlights.length < cards.length && this.dashboardEditorHighlight) {
+      const extra = this.dashboardEditorHighlight.cloneNode(false);
+      document.body.appendChild(extra);
+      this.dashboardEditorExtraHighlights.push(extra);
+      highlights.push(extra);
+    }
+
+    while (this.dashboardEditorExtraHighlights.length > Math.max(0, cards.length - 1)) {
+      this.dashboardEditorExtraHighlights.pop()?.remove();
+    }
+
+    highlights.forEach((highlight, index) => {
+      const card = cards[index];
+      if (!card?.isConnected) {
+        highlight.style.display = "none";
+        return;
+      }
+
+      const rect = card.getBoundingClientRect();
+      highlight.style.display = "block";
+      highlight.style.left = `${rect.left - 3}px`;
+      highlight.style.top = `${rect.top - 3}px`;
+      highlight.style.width = `${rect.width + 6}px`;
+      highlight.style.height = `${rect.height + 6}px`;
+      highlight.style.borderColor = this.dashboardEditorSelectedCards.length > 0
+        ? "#ffb300"
+        : "#26b2b3";
+    });
+  }
+
+  _clearDashboardEditorLiveStyle() {
+    for (const style of this.dashboardEditorLiveStyles) {
+      style.remove();
+    }
+
+    for (const target of this.dashboardEditorSelectedTargets) {
+      target.removeAttribute("data-theme-studio-dashboard-edit");
+    }
+
+    this.dashboardEditorLiveStyles.clear();
+  }
+
+  _clearDashboardEditorSelection() {
+    this._clearDashboardEditorLiveStyle();
+    this.dashboardEditorSelectedCard = null;
+    this.dashboardEditorSelectedCardKey = "";
+    this.dashboardEditorSelectedCardName = "";
+    this.dashboardEditorSelectedEntityIds = [];
+    this.dashboardEditorHoveredCard = null;
+    this.dashboardEditorSelectedTargets = [];
+    this.dashboardEditorSelectedCards = [];
+    this.dashboardEditorSelectedRuleIds = new Map();
+    this.dashboardEditorExistingRuleId = "";
+    this.dashboardEditorBaselineValues = {};
+    this.dashboardEditorDirtyFields = new Set();
+    this.dashboardEditorPanelDrag = null;
+    this.dashboardEditorCardDrag = null;
+
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    if (root) {
+      root.querySelector("form").hidden = true;
+      root.querySelector(".intro").hidden = false;
+      root.querySelectorAll(".card-position-control button").forEach((button) => {
+        button.disabled = true;
+      });
+      root.querySelector(".card-move").classList.remove("active");
+      root.querySelector("header").classList.remove("dragging");
+    }
+
+    this._positionDashboardEditorHighlight();
+  }
+
+  _stopDashboardEditor(rescan = true) {
+    if (!this.dashboardEditorActive && !this.dashboardEditorRoot) {
+      return;
+    }
+
+    this._clearDashboardEditorSelection();
+    document.removeEventListener(
+      "click",
+      this.dashboardEditorClickHandler,
+      true
+    );
+    document.removeEventListener(
+      "pointerover",
+      this.dashboardEditorPointerHandler,
+      true
+    );
+    document.removeEventListener(
+      "keydown",
+      this.dashboardEditorKeyHandler,
+      true
+    );
+    window.removeEventListener(
+      "scroll",
+      this.dashboardEditorScrollHandler,
+      true
+    );
+
+    this.dashboardEditorRoot?.remove();
+    this.dashboardEditorHighlight?.remove();
+    for (const highlight of this.dashboardEditorExtraHighlights) {
+      highlight.remove();
+    }
+    this.dashboardEditorExtraHighlights = [];
+    this.dashboardEditorRoot = null;
+    this.dashboardEditorHighlight = null;
+    this.dashboardEditorActive = false;
+    this._syncDashboardToolbarButton();
+
+    try {
+      window.sessionStorage.removeItem(DASHBOARD_EDITOR_STORAGE_KEY);
+    } catch (_error) {
+      // Nothing else to clean up.
+    }
+
+    if (rescan) {
+      this.glassLastScan = 0;
+      this._syncLiquidGlassCards(true);
+    }
+  }
+
+  _escapeDashboardEditorHtml(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    })[character]);
+  }
+
   _entityIdsForElement(element) {
     const entityIds = new Set();
 
@@ -3067,6 +5190,7 @@ function startThemeStudioEffects() {
       current._clearAlertCards?.();
       current._clearLiquidGlassCards?.();
       current._clearTechFrameCards?.();
+      current._clearExpertCss?.();
       current._restoreConfigSurface?.();
       current.canvas?.remove?.();
     }
