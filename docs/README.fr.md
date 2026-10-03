@@ -144,6 +144,8 @@ Jusqu’à 24 fichiers JPG, PNG ou WebP peuvent être gérés dans **Arrière-pl
 
 Le mode CSS expert est propre à chaque utilisateur et ne s’applique qu’aux tableaux de bord. L’éditeur direct permet de sélectionner une carte réelle, de modifier en direct son espacement, sa taille, sa position, son nombre de colonnes, son opacité, la taille du texte ou l’arrondi, puis d’enregistrer une règle limitée à cette carte. Maintenez `Ctrl` pour sélectionner plusieurs cartes. Chaque carte conserve une clé stable et peut être réinitialisée individuellement ou avec tout le groupe. Les règles peuvent aussi être limitées à l’ordinateur, la tablette ou le téléphone. Une zone CSS libre reste disponible pour les réglages avancés et refuse les imports, URL distantes et constructions exécutables dangereuses.
 
+> **Compatibilité :** les effets de carte, le CSS expert et l’éditeur direct reposent sur la structure standard des cartes et mises en page Lovelace. Les tableaux de bord entièrement personnalisés ou les panneaux personnalisés qui génèrent leur propre structure HTML ou leurs propres composants Web ne sont pas pris en charge par ces fonctions. Les couleurs du thème et les variables Home Assistant compatibles peuvent encore s’appliquer, mais les effets de carte n’y sont pas garantis.
+
 ## Mise à jour
 
 ### Avec HACS

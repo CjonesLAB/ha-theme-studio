@@ -144,6 +144,8 @@ En **Fondo → Biblioteca de imágenes** pueden gestionarse hasta 24 archivos JP
 
 El modo CSS experto es específico de cada usuario y solo se aplica a los paneles. El editor directo permite seleccionar una tarjeta real, cambiar al instante su espacio, tamaño, posición, columnas, opacidad, tamaño de texto o esquinas y guardar una regla limitada a esa tarjeta. Mantén `Ctrl` para seleccionar varias tarjetas. Cada tarjeta conserva una clave estable y puede restablecerse de forma individual o junto con todo el grupo. Las reglas también pueden limitarse a ordenador, tableta o teléfono. El área de CSS libre sigue disponible para ajustes avanzados y rechaza importaciones, URL remotas y construcciones ejecutables peligrosas.
 
+> **Compatibilidad:** los efectos de tarjeta, el CSS experto y el editor directo dependen de la estructura estándar de tarjetas y diseños de Lovelace. Los paneles completamente personalizados o los paneles personalizados que generan su propia estructura HTML o sus propios componentes web no son compatibles con estas funciones. Los colores del tema y las variables compatibles de Home Assistant pueden seguir aplicándose, pero los efectos de tarjeta no están garantizados.
+
 ## Actualización
 
 ### Mediante HACS
