@@ -6,7 +6,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ![Direkter Karteneditor von Theme Studio 0.8.0 mit Live-Vorschau und Mehrfachauswahl](images/theme-studio-card-editor-v080.gif)
 
-> Aktuelle Entwicklungsversion: **0.8.0**
+> Aktuelle Entwicklungsversion: **0.8.1**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 

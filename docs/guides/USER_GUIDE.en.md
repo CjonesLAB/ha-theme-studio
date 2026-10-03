@@ -1,10 +1,10 @@
-# Theme Studio 0.8.0 - User Guide
+# Theme Studio 0.8.1 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through precise editing of individual dashboard cards. It applies to version **0.8.0**.
+This guide explains Theme Studio from installation through precise editing of individual dashboard cards. It applies to version **0.8.1**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 

@@ -6,7 +6,7 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 
 ![Theme Studio 0.8.0 direct card editor with live preview and multi-selection](docs/images/theme-studio-card-editor-v080.gif)
 
-> Current development version: **0.8.0**
+> Current development version: **0.8.1**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 
