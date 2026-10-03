@@ -12,6 +12,15 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
+## Benutzerhandbücher
+
+| Sprache | Direkt lesen | PDF herunterladen |
+| --- | --- | --- |
+| Deutsch | [Anleitung öffnen](guides/BENUTZERHANDBUCH.de.md) | [PDF herunterladen](downloads/theme-studio-benutzerhandbuch-de.pdf) |
+| English | [Open guide](guides/USER_GUIDE.en.md) | [Download](downloads/theme-studio-user-guide-en.pdf) |
+| Français | [Ouvrir le guide](guides/GUIDE_UTILISATEUR.fr.md) | [Télécharger](downloads/theme-studio-guide-utilisateur-fr.pdf) |
+| Español | [Abrir la guía](guides/GUIA_USUARIO.es.md) | [Descargar](downloads/theme-studio-guia-usuario-es.pdf) |
+
 ## Funktionen
 
 Jedes Profil ist genau ein eigenständiges **helles** oder **dunkles Design**. Unter **Neues Design erstellen** Name und Modus festlegen, danach direkt gestalten. **Design anwenden** aktiviert dessen Farben und festgelegten Modus. Innerhalb eines Designs gibt es keine Umschaltung und keine automatische Gegenmodus-Erzeugung mehr.
