@@ -12,7 +12,7 @@ assert.equal(p.event.detail.dark,false);
 assert.equal(p.event.detail.theme,'Theme Studio · private123456');
 assert.equal(p.activeMode,'dark','Applying mode must not replace another open draft');
 proto._setHomeAssistantDefaultAppearance.call(p);
-assert.equal(p.event.detail.theme,'');
+assert.equal(p.event.detail.theme,'default');
 assert.equal(p.event.detail.dark,undefined);
 assert.equal(p.event.detail.primaryColor,undefined);
 assert.equal(p.event.detail.accentColor,undefined);

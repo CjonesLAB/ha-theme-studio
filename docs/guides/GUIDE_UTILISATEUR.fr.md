@@ -1,10 +1,10 @@
-# Theme Studio 0.8.0 - Guide utilisateur
+# Theme Studio 0.8.1 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente l’ensemble de Theme Studio, de l’installation à la modification précise de cartes individuelles. Il s’applique à la version **0.8.0**.
+Ce guide présente l’ensemble de Theme Studio, de l’installation à la modification précise de cartes individuelles. Il s’applique à la version **0.8.1**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 

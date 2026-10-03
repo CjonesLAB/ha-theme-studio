@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.0";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.1";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -3322,6 +3322,24 @@ class ThemeStudioEffects {
           grid-template-columns: 1fr 1fr;
           gap: 0 9px;
         }
+        .selection-hint {
+          margin: -2px 0 10px;
+          color: #b8c4c7;
+          font-size: 12px;
+          line-height: 1.4;
+        }
+        .selection-hint kbd {
+          display: inline-block;
+          min-width: 24px;
+          padding: 1px 5px;
+          border: 1px solid rgba(255,255,255,.28);
+          border-radius: 5px;
+          color: #fff;
+          background: rgba(255,255,255,.08);
+          font: inherit;
+          font-weight: 700;
+          text-align: center;
+        }
         .actions {
           display: flex;
           flex-wrap: wrap;
@@ -3379,6 +3397,10 @@ class ThemeStudioEffects {
             <strong data-field="card-name">Ausgewählte Karte</strong>
             <span data-field="card-details">Die Regel gilt nur für diese Karteninstanz.</span>
           </div>
+          <p class="selection-hint">
+            Mehrere Karten auswählen: <kbd>Strg</kbd> gedrückt halten und weitere Karten anklicken.
+            Auf dem Mac <kbd>⌘</kbd> verwenden.
+          </p>
           <label>Gerät
             <select data-field="device">
               <option value="all">Alle Geräte</option>

@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.0";
-import "./theme-studio-effects.js?v=0.8.0";
+} from "./theme-studio-locales.js?v=0.8.1";
+import "./theme-studio-effects.js?v=0.8.1";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -197,11 +197,13 @@ class ThemeStudioPanel extends HTMLElement {
   _setHomeAssistantDefaultAppearance() {
     this.appearanceMode = "auto";
     this._appearanceSignature = null;
-    // An empty theme is Home Assistant's user-scoped "use default" setting.
+    // "default" explicitly selects Home Assistant's built-in theme. An empty
+    // value would instead select the installation's configured default theme,
+    // which may itself be a Theme Studio or another custom theme.
     // Clearing dark at the same time restores the native Auto/Light/Dark choice.
     this.dispatchEvent(new CustomEvent("settheme", {
       detail: {
-        theme: "",
+        theme: "default",
         dark: undefined,
         primaryColor: undefined,
         accentColor: undefined,

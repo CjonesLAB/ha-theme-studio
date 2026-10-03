@@ -205,6 +205,9 @@ def test_dashboard_editor_supports_ctrl_multi_selection() -> None:
     assert "event.ctrlKey || event.metaKey" in effects_source
     assert "_toggleDashboardEditorCard(card)" in effects_source
     assert "this.dashboardEditorSelectedCards.flatMap" in effects_source
+    assert 'class="selection-hint"' in effects_source
+    assert "Mehrere Karten auswählen:" in effects_source
+    assert "Auf dem Mac" in effects_source
     assert 'detailsOutput.textContent = "STRG + Klick fügt Karten hinzu oder entfernt sie"' in effects_source
     assert 'targetType: "card"' in effects_source
     assert 'savedRuleIds.set(entry.cardKey, savedRule.id)' in effects_source

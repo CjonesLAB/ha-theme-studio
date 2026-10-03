@@ -285,7 +285,7 @@ def header_footer(canvas, doc, title: str, language: str, first_page: bool = Fal
         canvas.setFont("GuideSans", 7.5)
         canvas.setFillColor(MUTED)
         canvas.drawString(18 * mm, height - 10.5 * mm, title)
-        canvas.drawRightString(width - 18 * mm, height - 10.5 * mm, "Version 0.8.0")
+        canvas.drawRightString(width - 18 * mm, height - 10.5 * mm, "Version 0.8.1")
     canvas.setStrokeColor(LINE)
     canvas.line(18 * mm, 14 * mm, width - 18 * mm, 14 * mm)
     canvas.setFont("GuideSans", 7.5)
@@ -302,7 +302,7 @@ def build_one(source_name: str, output_name: str, title: str, language: str) -> 
     document = SimpleDocTemplate(
         str(target), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm,
         topMargin=19 * mm, bottomMargin=19 * mm,
-        title=title, author="CjonesLAB", subject="Theme Studio 0.8.0",
+        title=title, author="CjonesLAB", subject="Theme Studio 0.8.1",
     )
     story = parse_markdown(source, style_map)
     document.build(
