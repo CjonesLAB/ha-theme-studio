@@ -214,3 +214,36 @@ def test_dashboard_editor_supports_ctrl_multi_selection() -> None:
     assert 'button.textContent = this.dashboardEditorSelectedCards.length > 1' in effects_source
     assert '"Auswahl zurücksetzen"' in effects_source
 
+
+def test_css_example_library_is_searchable_safe_and_keyboard_accessible() -> None:
+    """The library previews trusted snippets without silently applying them."""
+
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "theme-studio-panel.js"
+    ).read_text(encoding="utf-8")
+
+    insert_start = panel_source.index("  _insertCssLibraryExample(example, button) {")
+    insert_end = panel_source.index("\n  _openImportPreview()", insert_start)
+    insert_source = panel_source[insert_start:insert_end]
+
+    assert "const CSS_LIBRARY_EXAMPLES = [" in panel_source
+    assert 'id="css-library-overlay"' in panel_source
+    assert 'aria-labelledby="css-library-title"' in panel_source
+    assert 'id="css-library-search"' in panel_source
+    assert 'id="css-library-category"' in panel_source
+    assert 'data-css-library-action="copy"' in panel_source
+    assert 'data-css-library-action="insert"' in panel_source
+    assert "event.key === \"Escape\"" in panel_source
+    assert "this.cssLibraryReturnFocus?.focus?.();" in panel_source
+    assert 'support: "Offizielles Home-Assistant-Theme"' in panel_source
+    assert 'insertable: false' in panel_source
+    assert 'support: "Theme Studio getestet"' in panel_source
+    assert 'this.settings.effects.expertCssEnabled = true;' in insert_source
+    assert 'currentCss.includes(example.code.trim())' in insert_source
+    assert "this._saveAndApplySettings" not in insert_source
+    assert "Zum Aktivieren „Design anwenden“ wählen." in insert_source
+

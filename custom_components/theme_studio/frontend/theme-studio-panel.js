@@ -1,8 +1,146 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.1";
-import "./theme-studio-effects.js?v=0.8.1";
+} from "./theme-studio-locales.js?v=0.8.2-beta.1";
+import "./theme-studio-effects.js?v=0.8.2-beta.1";
+
+const CSS_LIBRARY_EXAMPLES = [
+  {
+    id: "compact-grid",
+    category: "Layout",
+    title: "Kompakte Rasterabstände",
+    description: "Verringert freie Flächen zwischen erkannten Dashboard-Karten.",
+    support: "Theme Studio getestet",
+    preview: "compact",
+    format: "css",
+    insertable: true,
+    code: `[data-theme-studio-layout] {
+  gap: 6px !important;
+}`,
+  },
+  {
+    id: "rounded-cards",
+    category: "Darstellung",
+    title: "Stärker abgerundete Karten",
+    description: "Gibt allen erkannten Karten deutlich rundere Ecken.",
+    support: "Theme Studio getestet",
+    preview: "rounded",
+    format: "css",
+    insertable: true,
+    code: `ha-card[data-theme-studio-card-key] {
+  border-radius: 28px !important;
+}`,
+  },
+  {
+    id: "soft-shadow",
+    category: "Darstellung",
+    title: "Weicher Kartenschatten",
+    description: "Hebt Karten dezent vom Dashboard-Hintergrund ab.",
+    support: "Theme Studio getestet",
+    preview: "shadow",
+    format: "css",
+    insertable: true,
+    code: `ha-card[data-theme-studio-card-key] {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24) !important;
+}`,
+  },
+  {
+    id: "glass-card",
+    category: "Darstellung",
+    title: "Dezente Glasoptik",
+    description: "Erzeugt eine transparente Karte mit Hintergrundunschärfe.",
+    support: "Theme Studio getestet",
+    preview: "glass",
+    format: "css",
+    insertable: true,
+    code: `ha-card[data-theme-studio-card-key] {
+  background: rgba(28, 42, 48, 0.72) !important;
+  backdrop-filter: blur(14px);
+}`,
+  },
+  {
+    id: "hover-lift",
+    category: "Effekte",
+    title: "Karte beim Überfahren anheben",
+    description: "Bewegt Karten mit der Maus leicht nach oben.",
+    support: "Theme Studio getestet",
+    preview: "lift",
+    format: "css",
+    insertable: true,
+    code: `ha-card[data-theme-studio-card-key] {
+  transition: translate 160ms ease, box-shadow 160ms ease;
+}
+
+ha-card[data-theme-studio-card-key]:hover {
+  translate: 0 -4px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28) !important;
+}`,
+  },
+  {
+    id: "entity-focus",
+    category: "Gezielte Karte",
+    title: "Eine Entitätskarte hervorheben",
+    description: "Wirkt nur auf Karten mit der angegebenen Entität.",
+    support: "Theme Studio getestet",
+    preview: "focus",
+    format: "css",
+    insertable: true,
+    code: `/* sensor.DEINE_ENTITAET ersetzen */
+ha-card[data-theme-studio-entity~="sensor.DEINE_ENTITAET"] {
+  outline: 2px solid var(--primary-color) !important;
+  outline-offset: 2px;
+}`,
+  },
+  {
+    id: "mobile-compact",
+    category: "Responsive",
+    title: "Auf Smartphones kompakter",
+    description: "Reduziert Kartenabstände und Innenabstände nur auf kleinen Displays.",
+    support: "Theme Studio getestet",
+    preview: "mobile",
+    format: "css",
+    insertable: true,
+    code: `@media (max-width: 600px) {
+  [data-theme-studio-layout] {
+    gap: 4px !important;
+  }
+
+  ha-card[data-theme-studio-card-key] {
+    padding: 6px !important;
+  }
+}`,
+  },
+  {
+    id: "state-colors",
+    category: "Home-Assistant-Theme",
+    title: "Zustandsfarben für Lichter",
+    description: "Offizielles Theme-Beispiel für aktive und inaktive Licht-Entitäten.",
+    support: "Offizielles Home-Assistant-Theme",
+    preview: "states",
+    format: "yaml",
+    insertable: false,
+    code: `frontend:
+  themes:
+    Mein Theme:
+      state-light-active-color: "#ffd54f"
+      state-light-inactive-color: "#78909c"`,
+  },
+  {
+    id: "theme-colors",
+    category: "Home-Assistant-Theme",
+    title: "Primär- und Akzentfarbe",
+    description: "Offizielles Theme-Beispiel für die zentralen Oberflächenfarben.",
+    support: "Offizielles Home-Assistant-Theme",
+    preview: "colors",
+    format: "yaml",
+    insertable: false,
+    code: `frontend:
+  themes:
+    Mein Theme:
+      primary-color: "#26b2b3"
+      accent-color: "#ff9800"`,
+  },
+];
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -36,6 +174,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.integrationVersion = "";
     this.pendingProfileImport = null;
     this.importPreviewReturnFocus = null;
+    this.cssLibraryReturnFocus = null;
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
     this.activeThemeName = "Theme Studio";
@@ -693,6 +832,297 @@ class ThemeStudioPanel extends HTMLElement {
           background: var(--card-background-color);
           color: var(--primary-text-color);
           box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+        }
+
+        .css-library-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1100;
+          display: grid;
+          place-items: center;
+          padding: 20px;
+          background: rgba(0, 0, 0, 0.68);
+          backdrop-filter: blur(6px);
+        }
+
+        .css-library-dialog {
+          display: flex;
+          width: min(980px, 100%);
+          max-height: min(850px, calc(100vh - 40px));
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid var(--divider-color);
+          border-radius: 20px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48);
+        }
+
+        .css-library-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 18px 20px;
+          border-bottom: 1px solid var(--divider-color);
+        }
+
+        .css-library-header h2 {
+          margin: 0 0 4px;
+          font-size: 21px;
+        }
+
+        .css-library-header p {
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .css-library-close {
+          display: inline-flex;
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 1px solid var(--divider-color);
+          border-radius: 50%;
+          background: transparent;
+          color: var(--primary-text-color);
+          font-size: 23px;
+        }
+
+        .css-library-controls {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+          gap: 10px;
+          padding: 14px 20px;
+          border-bottom: 1px solid var(--divider-color);
+          background: var(--secondary-background-color);
+        }
+
+        .css-library-controls input,
+        .css-library-controls select {
+          width: 100%;
+          min-height: 40px;
+          box-sizing: border-box;
+          padding: 0 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          outline: none;
+          background: var(--primary-background-color);
+          color: var(--primary-text-color);
+        }
+
+        .css-library-controls input:focus,
+        .css-library-controls select:focus {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 1px var(--primary-color);
+        }
+
+        .css-library-body {
+          overflow: auto;
+          padding: 16px 20px 20px;
+        }
+
+        .css-library-result-count {
+          margin: 0 0 12px;
+          color: var(--secondary-text-color);
+          font-size: 11px;
+        }
+
+        .css-library-legend {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 7px;
+          margin-bottom: 12px;
+          font-size: 10px;
+        }
+
+        .css-library-legend a {
+          margin-left: auto;
+          color: var(--primary-color);
+          text-decoration: none;
+        }
+
+        .css-library-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 13px;
+        }
+
+        .css-library-card {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid var(--divider-color);
+          border-radius: 14px;
+          background: var(--secondary-background-color);
+        }
+
+        .css-library-card-preview {
+          display: grid;
+          min-height: 92px;
+          place-items: center;
+          padding: 14px;
+          background:
+            radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--primary-color) 25%, transparent), transparent 40%),
+            var(--primary-background-color);
+        }
+
+        .css-library-mini-layout {
+          display: grid;
+          width: min(240px, 92%);
+          grid-template-columns: repeat(3, 1fr);
+          gap: 9px;
+        }
+
+        .css-library-mini-card {
+          min-height: 48px;
+          border: 1px solid color-mix(in srgb, var(--primary-color) 65%, var(--divider-color));
+          border-radius: 8px;
+          background: var(--card-background-color);
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+        }
+
+        .css-library-card-preview[data-preview="compact"] .css-library-mini-layout {
+          gap: 3px;
+        }
+
+        .css-library-card-preview[data-preview="rounded"] .css-library-mini-card {
+          border-radius: 22px;
+        }
+
+        .css-library-card-preview[data-preview="shadow"] .css-library-mini-card {
+          box-shadow: 0 10px 22px rgba(0, 0, 0, 0.38);
+        }
+
+        .css-library-card-preview[data-preview="glass"] .css-library-mini-card {
+          background: color-mix(in srgb, var(--card-background-color) 58%, transparent);
+          backdrop-filter: blur(8px);
+        }
+
+        .css-library-card-preview[data-preview="lift"] .css-library-mini-card:nth-child(2) {
+          translate: 0 -7px;
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
+        }
+
+        .css-library-card-preview[data-preview="focus"] .css-library-mini-card:nth-child(2) {
+          outline: 2px solid var(--primary-color);
+          outline-offset: 2px;
+        }
+
+        .css-library-card-preview[data-preview="mobile"] .css-library-mini-layout {
+          width: 112px;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 4px;
+        }
+
+        .css-library-card-preview[data-preview="states"] .css-library-mini-card:first-child {
+          border-color: #ffd54f;
+          background: color-mix(in srgb, #ffd54f 26%, var(--card-background-color));
+        }
+
+        .css-library-card-preview[data-preview="colors"] .css-library-mini-card:first-child {
+          background: #26b2b3;
+        }
+
+        .css-library-card-preview[data-preview="colors"] .css-library-mini-card:last-child {
+          background: #ff9800;
+        }
+
+        .css-library-card-content {
+          display: grid;
+          gap: 9px;
+          padding: 14px;
+        }
+
+        .css-library-card-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .css-library-card-heading h3 {
+          margin: 0;
+          font-size: 14px;
+        }
+
+        .css-library-card-content p {
+          min-height: 34px;
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 11px;
+          line-height: 1.45;
+        }
+
+        .css-library-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+
+        .css-library-badge {
+          padding: 3px 7px;
+          border: 1px solid var(--divider-color);
+          border-radius: 999px;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+          font-weight: 700;
+        }
+
+        .css-library-badge.supported {
+          border-color: color-mix(in srgb, var(--success-color, #43a047) 65%, var(--divider-color));
+          color: var(--success-color, #43a047);
+        }
+
+        .css-library-code {
+          max-height: 150px;
+          margin: 0;
+          overflow: auto;
+          padding: 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          background: var(--primary-background-color);
+          color: var(--primary-text-color);
+          font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+          white-space: pre;
+        }
+
+        .css-library-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+
+        .css-library-actions button {
+          min-height: 35px;
+          padding: 0 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          background: transparent;
+          color: var(--primary-text-color);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .css-library-actions .primary {
+          border-color: var(--primary-color);
+          background: var(--primary-color);
+          color: var(--text-primary-color, #ffffff);
+        }
+
+        .css-library-empty {
+          grid-column: 1 / -1;
+          padding: 30px;
+          border: 1px dashed var(--divider-color);
+          border-radius: 12px;
+          color: var(--secondary-text-color);
+          text-align: center;
         }
 
         .import-preview-header,
@@ -2498,6 +2928,12 @@ class ThemeStudioPanel extends HTMLElement {
           font-weight: 600;
         }
 
+        .expert-css-tools button.primary {
+          border-color: var(--primary-color);
+          background: var(--primary-color);
+          color: var(--text-primary-color, #ffffff);
+        }
+
         .expert-css-help {
           margin: 11px 0 0;
           color: var(--secondary-text-color);
@@ -2871,6 +3307,10 @@ class ThemeStudioPanel extends HTMLElement {
           .community-grid {
             grid-auto-columns: calc((100% - 11px) / 2);
           }
+
+          .css-library-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 620px) {
@@ -2885,6 +3325,20 @@ class ThemeStudioPanel extends HTMLElement {
 
           .expert-rule-actions {
             justify-content: flex-end;
+          }
+
+          .css-library-overlay {
+            padding: 0;
+          }
+
+          .css-library-dialog {
+            width: 100%;
+            max-height: 100vh;
+            border-radius: 0;
+          }
+
+          .css-library-controls {
+            grid-template-columns: 1fr;
           }
 
           .page {
@@ -3239,6 +3693,66 @@ class ThemeStudioPanel extends HTMLElement {
                 Profil importieren
               </button>
             </footer>
+          </section>
+        </div>
+
+        <div
+          id="css-library-overlay"
+          class="css-library-overlay"
+          hidden
+        >
+          <section
+            class="css-library-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="css-library-title"
+            aria-describedby="css-library-subtitle"
+          >
+            <header class="css-library-header">
+              <div>
+                <h2 id="css-library-title">CSS-Beispielbibliothek</h2>
+                <p id="css-library-subtitle">
+                  Geprüfte Beispiele ansehen, kopieren oder in Freies CSS übernehmen.
+                </p>
+              </div>
+              <button
+                id="css-library-close"
+                class="css-library-close"
+                type="button"
+                aria-label="CSS-Bibliothek schließen"
+                title="CSS-Bibliothek schließen"
+              >×</button>
+            </header>
+            <div class="css-library-controls">
+              <input
+                id="css-library-search"
+                type="search"
+                placeholder="Beispiele durchsuchen …"
+                aria-label="CSS-Beispiele durchsuchen"
+              >
+              <select id="css-library-category" aria-label="Kategorie auswählen">
+                <option value="all">Alle Kategorien</option>
+                <option value="Layout">Layout</option>
+                <option value="Darstellung">Darstellung</option>
+                <option value="Effekte">Effekte</option>
+                <option value="Gezielte Karte">Gezielte Karte</option>
+                <option value="Responsive">Responsive</option>
+                <option value="Home-Assistant-Theme">Home-Assistant-Theme</option>
+              </select>
+            </div>
+            <div class="css-library-body">
+              <div class="css-library-legend">
+                <span class="css-library-badge supported">Offizielles Home-Assistant-Theme</span>
+                <span class="css-library-badge">Theme Studio getestet</span>
+                <a
+                  href="https://www.home-assistant.io/integrations/frontend/#defining-themes"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >Home-Assistant-Theming-Dokumentation ↗</a>
+              </div>
+              <p id="css-library-result-count" class="css-library-result-count"></p>
+              <div id="css-library-grid" class="css-library-grid"></div>
+            </div>
           </section>
         </div>
 
@@ -4227,6 +4741,9 @@ class ThemeStudioPanel extends HTMLElement {
                   ></textarea>
 
                   <div class="expert-css-tools">
+                    <button id="css-library-open" class="primary" type="button">
+                      CSS-Bibliothek öffnen
+                    </button>
                     <button id="expert-css-example" type="button">
                       Beispiel einsetzen
                     </button>
@@ -4949,6 +5466,61 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("import-preview-overlay")
       .addEventListener("keydown", (event) => {
         this._handleImportPreviewKeydown(event);
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-open")
+      .addEventListener("click", () => {
+        this._openCssLibrary();
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-close")
+      .addEventListener("click", () => {
+        this._closeCssLibrary();
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-overlay")
+      .addEventListener("click", (event) => {
+        if (event.target.id === "css-library-overlay") {
+          this._closeCssLibrary();
+        }
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-overlay")
+      .addEventListener("keydown", (event) => {
+        this._handleCssLibraryKeydown(event);
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-search")
+      .addEventListener("input", () => {
+        this._renderCssLibrary();
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-category")
+      .addEventListener("change", () => {
+        this._renderCssLibrary();
+      });
+
+    this.shadowRoot
+      .getElementById("css-library-grid")
+      .addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-css-library-action]");
+        if (!button) return;
+        const example = CSS_LIBRARY_EXAMPLES.find(
+          (entry) => entry.id === button.dataset.cssLibraryId
+        );
+        if (!example) return;
+
+        if (button.dataset.cssLibraryAction === "copy") {
+          this._copyCssLibraryExample(example, button);
+        } else if (button.dataset.cssLibraryAction === "insert") {
+          this._insertCssLibraryExample(example, button);
+        }
       });
 
     this.shadowRoot
@@ -6577,6 +7149,213 @@ class ThemeStudioPanel extends HTMLElement {
       input.value = "";
       this._syncProfileControls();
     }
+  }
+
+  _openCssLibrary() {
+    const overlay = this.shadowRoot.getElementById("css-library-overlay");
+    const search = this.shadowRoot.getElementById("css-library-search");
+    const category = this.shadowRoot.getElementById("css-library-category");
+
+    this.cssLibraryReturnFocus = this.shadowRoot.activeElement;
+    search.value = "";
+    category.value = "all";
+    this._renderCssLibrary();
+    overlay.hidden = false;
+    window.requestAnimationFrame(() => search.focus());
+  }
+
+  _closeCssLibrary() {
+    const overlay = this.shadowRoot.getElementById("css-library-overlay");
+    overlay.hidden = true;
+    this.cssLibraryReturnFocus?.focus?.();
+    this.cssLibraryReturnFocus = null;
+  }
+
+  _handleCssLibraryKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      this._closeCssLibrary();
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+
+    const dialog = this.shadowRoot.querySelector(".css-library-dialog");
+    const focusable = Array.from(dialog.querySelectorAll(
+      "button:not([disabled]), a[href], input:not([disabled]), "
+      + "select:not([disabled]), [tabindex]:not([tabindex='-1'])"
+    ));
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && this.shadowRoot.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && this.shadowRoot.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  _renderCssLibrary() {
+    const search = this.shadowRoot
+      .getElementById("css-library-search")
+      .value.trim()
+      .toLocaleLowerCase();
+    const category = this.shadowRoot
+      .getElementById("css-library-category")
+      .value;
+    const examples = CSS_LIBRARY_EXAMPLES.filter((example) => {
+      if (category !== "all" && example.category !== category) return false;
+      const searchable = [
+        this._translate(example.title),
+        this._translate(example.description),
+        this._translate(example.category),
+        this._translate(example.support),
+        example.code,
+      ].join(" ").toLocaleLowerCase();
+      return !search || searchable.includes(search);
+    });
+
+    this.shadowRoot.getElementById("css-library-result-count").textContent =
+      `${examples.length} ${this._translate("Beispiele")}`;
+    this.shadowRoot.getElementById("css-library-grid").innerHTML = examples.length
+      ? examples.map((example) => this._cssLibraryCard(example)).join("")
+      : `<div class="css-library-empty">${this._translate("Keine passenden Beispiele gefunden.")}</div>`;
+  }
+
+  _cssLibraryCard(example) {
+    const title = this._translate(example.title);
+    const description = this._translate(example.description);
+    const category = this._translate(example.category);
+    const support = this._translate(example.support);
+    const format = example.format.toUpperCase();
+
+    return `
+      <article class="css-library-card">
+        <div class="css-library-card-preview" data-preview="${this._escapeHtml(example.preview)}" aria-hidden="true">
+          <div class="css-library-mini-layout">
+            <span class="css-library-mini-card"></span>
+            <span class="css-library-mini-card"></span>
+            <span class="css-library-mini-card"></span>
+          </div>
+        </div>
+        <div class="css-library-card-content">
+          <div class="css-library-card-heading">
+            <h3>${this._escapeHtml(title)}</h3>
+            <span class="css-library-badge">${this._escapeHtml(format)}</span>
+          </div>
+          <p>${this._escapeHtml(description)}</p>
+          <div class="css-library-badges">
+            <span class="css-library-badge">${this._escapeHtml(category)}</span>
+            <span class="css-library-badge supported">${this._escapeHtml(support)}</span>
+          </div>
+          <pre class="css-library-code"><code>${this._escapeHtml(example.code)}</code></pre>
+          <div class="css-library-actions">
+            <button
+              type="button"
+              data-css-library-action="copy"
+              data-css-library-id="${this._escapeHtml(example.id)}"
+            >Code kopieren</button>
+            ${example.insertable ? `
+              <button
+                class="primary"
+                type="button"
+                data-css-library-action="insert"
+                data-css-library-id="${this._escapeHtml(example.id)}"
+              >In Freies CSS übernehmen</button>
+            ` : ""}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  _showCssLibraryButtonResult(button, message) {
+    const originalText = button.textContent;
+    button.textContent = this._translate(message);
+    button.disabled = true;
+    window.setTimeout(() => {
+      if (!button.isConnected) return;
+      button.textContent = originalText;
+      button.disabled = false;
+    }, 1400);
+  }
+
+  async _copyCssLibraryExample(example, button) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(example.code);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = example.code;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        this.shadowRoot.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      this._showCssLibraryButtonResult(button, "Kopiert ✓");
+      this._setStatus("Code wurde kopiert.", "success");
+    } catch (error) {
+      this._showCssLibraryButtonResult(button, "Kopieren fehlgeschlagen");
+      this._setStatus("Code konnte nicht kopiert werden.", "error");
+    }
+  }
+
+  _insertCssLibraryExample(example, button) {
+    if (!example.insertable) return;
+    if (
+      !this.settings.effects.expertCssEnabled
+      && !this._confirm(
+        "Expertenmodus aktivieren? Fehlerhafte CSS-Regeln können Karten "
+        + "verschieben, verdecken oder unbedienbar machen."
+      )
+    ) {
+      return;
+    }
+
+    const currentCss = String(this.settings.effects.expertCss || "").trim();
+    if (currentCss.includes(example.code.trim())) {
+      this._showCssLibraryButtonResult(button, "Bereits enthalten ✓");
+      this._setStatus("Dieses Beispiel ist bereits in Freies CSS enthalten.", "success");
+      return;
+    }
+
+    const nextCss = [
+      currentCss,
+      `/* ${example.title} */\n${example.code}`,
+    ].filter(Boolean).join("\n\n");
+    const validationError = this._expertCssError(nextCss);
+    if (validationError) {
+      this._setStatus(validationError, "error");
+      return;
+    }
+
+    this._recordHistory();
+    this.settings.effects.expertCssEnabled = true;
+    this.settings.effects.expertCss = nextCss;
+    this._syncEffectControls();
+    this._finishSettingsChange();
+    this._closeCssLibrary();
+
+    const rawCssSection = this.shadowRoot.querySelector(".expert-raw-css");
+    const editor = this.shadowRoot.getElementById("expert-css");
+    rawCssSection.open = true;
+    window.requestAnimationFrame(() => {
+      editor.scrollIntoView({ behavior: "smooth", block: "center" });
+      editor.focus({ preventScroll: true });
+    });
+    this._setStatus(
+      "Beispiel wurde in Freies CSS übernommen. Zum Aktivieren „Design anwenden“ wählen.",
+      "success"
+    );
   }
 
   _openImportPreview() {

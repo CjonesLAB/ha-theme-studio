@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.1";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.1";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
