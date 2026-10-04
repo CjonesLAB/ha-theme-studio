@@ -193,6 +193,15 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert "_showDashboardEditorPlacementGuide(" in effects_source
     assert "_updateDashboardEditorPlacementGuide();" in effects_source
     assert "_hideDashboardEditorPlacementGuide(1100);" in effects_source
+    assert 'data-theme-studio-direct-move-hint' in effects_source
+    assert 'directMoveHint.textContent = "✥ Karte ziehen";' in effects_source
+    assert "Danach kannst du die markierte Karte direkt ziehen." in effects_source
+    assert 'highlight.style.pointerEvents = directlyMovable ? "auto" : "none";' in effects_source
+    assert "_prepareDashboardEditorDirectMoveDevice();" in effects_source
+    assert 'candidate.device === rule.device' in effects_source
+    assert 'candidate.device === currentDevice' in effects_source
+    assert 'window.innerWidth - 8 - drag.originRect.right' in effects_source
+    assert 'window.innerHeight - 8 - drag.originRect.bottom' in effects_source
 
 
 def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:

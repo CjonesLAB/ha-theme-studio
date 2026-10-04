@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.4";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.5";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -3562,7 +3562,8 @@ class ThemeStudioEffects {
         </header>
         <div class="intro">
           <strong>Karte direkt auswählen</strong><br>
-          Klicke auf eine Karte im Dashboard. Mit STRG + Klick kannst du mehrere Karten auswählen.
+          Tippe oder klicke auf eine Karte. Danach kannst du die markierte Karte direkt ziehen.
+          Mit STRG + Klick kannst du mehrere Karten auswählen.
           Normale Kartenaktionen sind während dieses Modus gesperrt.
         </div>
         <form hidden>
@@ -3688,6 +3689,35 @@ class ThemeStudioEffects {
       pointerEvents: "none",
       transition: "inset 80ms ease, width 80ms ease, height 80ms ease",
     });
+    const directMoveHint = document.createElement("span");
+    directMoveHint.setAttribute("data-theme-studio-direct-move-hint", "");
+    directMoveHint.textContent = "✥ Karte ziehen";
+    Object.assign(directMoveHint.style, {
+      position: "absolute",
+      left: "50%",
+      top: "-17px",
+      display: "none",
+      transform: "translateX(-50%)",
+      padding: "4px 9px",
+      borderRadius: "999px",
+      background: "#ffb300",
+      color: "#111820",
+      boxShadow: "0 3px 10px rgba(0,0,0,.35)",
+      font: "700 11px/1 system-ui, sans-serif",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+    });
+    highlight.appendChild(directMoveHint);
+    for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+      highlight.addEventListener(eventName, (event) => {
+        if (!this.dashboardEditorSelectedCard) return;
+        if (eventName === "pointerdown") this._startDashboardEditorCardDrag(event);
+        if (eventName === "pointermove") this._moveDashboardEditorCard(event);
+        if (eventName === "pointerup" || eventName === "pointercancel") {
+          this._stopDashboardEditorCardDrag(event);
+        }
+      });
+    }
 
     const gridGuide = document.createElement("div");
     gridGuide.setAttribute("data-theme-studio-dashboard-grid-guide", "");
@@ -3827,6 +3857,8 @@ class ThemeStudioEffects {
       return;
     }
 
+    this._prepareDashboardEditorDirectMoveDevice();
+
     this.dashboardEditorCardDrag = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -3844,6 +3876,28 @@ class ThemeStudioEffects {
     event.stopPropagation();
   }
 
+  _prepareDashboardEditorDirectMoveDevice() {
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const device = root?.querySelector('[data-field="device"]');
+    const currentDevice = this._dashboardEditorCurrentDevice();
+    if (!device || device.value === currentDevice) return;
+
+    device.value = currentDevice;
+    this.dashboardEditorExistingRuleId = "";
+    for (const entry of this.dashboardEditorSelectedCards) {
+      this.dashboardEditorSelectedRuleIds.delete(entry.cardKey);
+    }
+    const status = root.querySelector(".status");
+    if (status) {
+      status.textContent = currentDevice === "mobile"
+        ? "Direktes Verschieben wird als eigene Smartphone-Regel gespeichert."
+        : currentDevice === "tablet"
+          ? "Direktes Verschieben wird als eigene Tablet-Regel gespeichert."
+          : "Direktes Verschieben wird als eigene Desktop-Regel gespeichert.";
+      status.className = "status";
+    }
+  }
+
   _moveDashboardEditorCard(event) {
     const drag = this.dashboardEditorCardDrag;
 
@@ -3859,13 +3913,25 @@ class ThemeStudioEffects {
       return;
     }
 
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    const horizontalDelta = Math.min(
+      window.innerWidth - 8 - drag.originRect.right,
+      Math.max(8 - drag.originRect.left, deltaX)
+    );
+    const verticalDelta = drag.originRect.height <= window.innerHeight - 16
+      ? Math.min(
+        window.innerHeight - 8 - drag.originRect.bottom,
+        Math.max(8 - drag.originRect.top, deltaY)
+      )
+      : deltaY;
     offsetX.value = String(Math.min(500, Math.max(
       -500,
-      Math.round(drag.offsetX + event.clientX - drag.startX)
+      Math.round(drag.offsetX + horizontalDelta)
     )));
     offsetY.value = String(Math.min(500, Math.max(
       -500,
-      Math.round(drag.offsetY + event.clientY - drag.startY)
+      Math.round(drag.offsetY + verticalDelta)
     )));
     this.dashboardEditorDirtyFields.add("offsetX");
     this.dashboardEditorDirtyFields.add("offsetY");
@@ -4342,9 +4408,15 @@ class ThemeStudioEffects {
 
   _dashboardEditorFindRule(cardKey, entityIds = []) {
     const rules = this.dashboardEditorSettings?.effects?.expertRules || [];
+    const currentDevice = this._dashboardEditorCurrentDevice();
     let rule = rules.find((candidate) =>
       candidate.targetType === "card"
       && candidate.target === cardKey
+      && candidate.device === currentDevice
+    ) || rules.find((candidate) =>
+      candidate.targetType === "card"
+      && candidate.target === cardKey
+      && candidate.device === "all"
     ) || null;
     let migratesLegacyRule = false;
 
@@ -4658,6 +4730,7 @@ class ThemeStudioEffects {
         || (
           candidate.targetType === "card"
           && candidate.target === entry.cardKey
+          && candidate.device === rule.device
         )
       );
     }).length;
@@ -4676,6 +4749,7 @@ class ThemeStudioEffects {
         || (
           candidate.targetType === "card"
           && candidate.target === entry.cardKey
+          && candidate.device === rule.device
         )
       );
       const existing = existingIndex >= 0 ? rules[existingIndex] : null;
@@ -4901,6 +4975,13 @@ class ThemeStudioEffects {
       highlight.style.borderColor = this.dashboardEditorSelectedCards.length > 0
         ? "#ffb300"
         : "#26b2b3";
+      const directlyMovable = index === 0
+        && this.dashboardEditorSelectedCards.length > 0;
+      highlight.style.pointerEvents = directlyMovable ? "auto" : "none";
+      highlight.style.touchAction = directlyMovable ? "none" : "auto";
+      highlight.style.cursor = directlyMovable ? "grab" : "default";
+      const hint = highlight.querySelector?.("[data-theme-studio-direct-move-hint]");
+      if (hint) hint.style.display = directlyMovable ? "block" : "none";
     });
   }
 
