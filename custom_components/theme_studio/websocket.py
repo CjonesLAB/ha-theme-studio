@@ -1588,7 +1588,13 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
         if rule["margin"] is not None:
             placement.append(f'margin: {rule["margin"]}px !important;')
         if rule["width"] is not None:
-            placement.append(f'width: {rule["width"]}px !important;')
+            placement.extend(
+                (
+                    f'width: min({rule["width"]}px, 100%) !important;',
+                    "max-width: 100% !important;",
+                    "box-sizing: border-box !important;",
+                )
+            )
         if rule["columns"] is not None:
             placement.append(f'grid-column: span {rule["columns"]} !important;')
         if rule["offsetX"] is not None or rule["offsetY"] is not None:
@@ -1634,6 +1640,25 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
         if media:
             indented = "\n".join(f"  {line}" for line in css.splitlines())
             css = f"@media {media} {{\n{indented}\n}}"
+        elif target_type != "layout":
+            mobile_placement: list[str] = []
+            if rule["columns"] is not None:
+                mobile_placement.append("grid-column: auto !important;")
+            if rule["offsetX"] not in (None, 0):
+                offset_y = rule["offsetY"] or 0
+                mobile_placement.append(
+                    f"transform: translate(0px, {offset_y}px) !important;"
+                )
+
+            if mobile_placement:
+                body = "\n".join(
+                    f"    {property_value}" for property_value in mobile_placement
+                )
+                css += (
+                    "\n\n@media (max-width: 600px) {\n"
+                    f"  {container_selector} {{\n{body}\n  }}\n"
+                    "}"
+                )
 
         blocks.append(css)
 

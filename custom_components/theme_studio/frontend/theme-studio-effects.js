@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.1";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.2";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -3979,7 +3979,8 @@ class ThemeStudioEffects {
       return;
     }
 
-    root.querySelector('[data-field="device"]').value = rule?.device || "all";
+    root.querySelector('[data-field="device"]').value = rule?.device
+      || this._dashboardEditorCurrentDevice();
 
     this.dashboardEditorBaselineValues = this._dashboardEditorMeasuredValues();
     this.dashboardEditorDirtyFields = new Set();
@@ -4087,6 +4088,17 @@ class ThemeStudioEffects {
       fontSize: rounded(cardStyle.fontSize, 14, 8, 48),
       borderRadius: rounded(cardStyle.borderTopLeftRadius, 0, 0, 60),
     };
+  }
+
+  _dashboardEditorCurrentDevice() {
+    const width = Math.max(
+      document.documentElement?.clientWidth || 0,
+      window.innerWidth || 0
+    );
+
+    if (width <= 600) return "mobile";
+    if (width <= 1024) return "tablet";
+    return "desktop";
   }
 
   _syncDashboardEditorResetButton() {
@@ -4219,7 +4231,9 @@ class ThemeStudioEffects {
       placement.push(`margin: ${rule.margin}px !important;`);
     }
     if (rule.width !== null) {
-      placement.push(`width: ${rule.width}px !important;`);
+      placement.push(`width: min(${rule.width}px, 100%) !important;`);
+      placement.push("max-width: 100% !important;");
+      placement.push("box-sizing: border-box !important;");
     }
     if (rule.columns !== null) {
       placement.push(`grid-column: span ${rule.columns} !important;`);
@@ -4227,6 +4241,26 @@ class ThemeStudioEffects {
     if (rule.offsetX !== null || rule.offsetY !== null) {
       placement.push(`transform: translate(${rule.offsetX || 0}px, ${rule.offsetY || 0}px) !important;`);
     }
+    const responsivePlacement = [];
+    if (rule.device === "all" && rule.columns !== null) {
+      responsivePlacement.push("grid-column: auto !important;");
+    }
+    if (
+      rule.device === "all"
+      && rule.offsetX !== null
+      && rule.offsetX !== 0
+    ) {
+      responsivePlacement.push(
+        `transform: translate(0px, ${rule.offsetY || 0}px) !important;`
+      );
+    }
+    const mobileFallback = responsivePlacement.length === 0 ? "" : `
+      @media (max-width: 600px) {
+        [data-theme-studio-card-container][data-theme-studio-dashboard-edit] {
+          ${responsivePlacement.join("\n")}
+        }
+      }
+    `;
     const css = `
       ha-card[data-theme-studio-dashboard-edit] {
         ${visual.join("\n")}
@@ -4237,6 +4271,7 @@ class ThemeStudioEffects {
       [data-theme-studio-card-container][data-theme-studio-dashboard-edit] {
         ${placement.join("\n")}
       }
+      ${mobileFallback}
     `;
     const roots = new Set(
       this.dashboardEditorSelectedTargets.map((target) => target.getRootNode?.())

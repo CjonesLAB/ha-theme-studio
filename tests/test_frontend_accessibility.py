@@ -167,7 +167,13 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert '_dashboardEditorNumberField("offsetX"' not in effects_source
     assert '_dashboardEditorNumberField("offsetY"' not in effects_source
     assert 'rule.width === null ? "revert"' not in effects_source
-    assert 'placement.push(`width: ${rule.width}px !important;`);' in effects_source
+    assert 'placement.push(`width: min(${rule.width}px, 100%) !important;`);' in effects_source
+    assert 'placement.push("max-width: 100% !important;");' in effects_source
+    assert "_dashboardEditorCurrentDevice()" in effects_source
+    assert 'if (width <= 600) return "mobile";' in effects_source
+    assert 'if (width <= 1024) return "tablet";' in effects_source
+    assert 'rule.device === "all" && rule.columns !== null' in effects_source
+    assert 'transform: translate(0px, ${rule.offsetY || 0}px) !important;' in effects_source
 
 
 def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:
