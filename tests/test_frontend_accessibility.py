@@ -167,8 +167,8 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert '_dashboardEditorNumberField("offsetX"' not in effects_source
     assert '_dashboardEditorNumberField("offsetY"' not in effects_source
     assert 'rule.width === null ? "revert"' not in effects_source
-    assert 'placement.push(`width: min(${rule.width}px, 100%) !important;`);' in effects_source
-    assert 'placement.push("max-width: 100% !important;");' in effects_source
+    assert 'width: min(${rule.width}px, 100%, calc(100vw - 24px)) !important;' in effects_source
+    assert 'max-width: min(100%, calc(100vw - 24px)) !important;' in effects_source
     assert "_dashboardEditorCurrentDevice()" in effects_source
     assert 'if (width <= 600) return "mobile";' in effects_source
     assert 'if (width <= 1024) return "tablet";' in effects_source

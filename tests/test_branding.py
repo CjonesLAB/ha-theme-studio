@@ -10,7 +10,7 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.8.2-beta.2"
+RELEASE_VERSION = "0.8.2-beta.3"
 DOCUMENTED_RELEASE_VERSION = "0.8.1"
 
 
@@ -57,6 +57,7 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert "frontend.remove_extra_js_url(hass, url)" in setup
     assert "frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)" in setup
     assert "DATA_EFFECTS_MODULE_REGISTERED" in setup
+    assert "await async_refresh_theme_registry(hass)" in setup
 
     for readme in (
         ROOT / "README.md",

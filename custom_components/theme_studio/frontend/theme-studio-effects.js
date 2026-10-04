@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.2";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.3";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -4231,8 +4231,12 @@ class ThemeStudioEffects {
       placement.push(`margin: ${rule.margin}px !important;`);
     }
     if (rule.width !== null) {
-      placement.push(`width: min(${rule.width}px, 100%) !important;`);
-      placement.push("max-width: 100% !important;");
+      placement.push(
+        `width: min(${rule.width}px, 100%, calc(100vw - 24px)) !important;`
+      );
+      placement.push(
+        "max-width: min(100%, calc(100vw - 24px)) !important;"
+      );
       placement.push("box-sizing: border-box !important;");
     }
     if (rule.columns !== null) {

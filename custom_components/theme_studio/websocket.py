@@ -1590,8 +1590,11 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
         if rule["width"] is not None:
             placement.extend(
                 (
-                    f'width: min({rule["width"]}px, 100%) !important;',
-                    "max-width: 100% !important;",
+                    (
+                        f'width: min({rule["width"]}px, 100%, '
+                        "calc(100vw - 24px)) !important;"
+                    ),
+                    "max-width: min(100%, calc(100vw - 24px)) !important;",
                     "box-sizing: border-box !important;",
                 )
             )
@@ -1813,6 +1816,43 @@ def write_theme_file(
     )
 
     temporary_path.replace(theme_path)
+
+
+async def async_refresh_theme_registry(hass: HomeAssistant) -> None:
+    """Rebuild generated themes after an integration update or restart."""
+
+    raw_users = await get_user_store(hass).async_load()
+    user_states = (
+        dict(raw_users.get("users", {}))
+        if isinstance(raw_users, dict)
+        else {}
+    )
+    legacy_raw = await get_store(hass).async_load()
+    try:
+        legacy_settings = normalize_settings(legacy_raw or {})
+    except (vol.Invalid, TypeError, ValueError):
+        legacy_settings = default_settings()
+
+    content = build_theme_registry(legacy_settings, user_states)
+    theme_path = Path(
+        hass.config.path(
+            "themes",
+            THEME_FILENAME,
+        )
+    )
+    await hass.async_add_executor_job(
+        write_theme_file,
+        theme_path,
+        content,
+    )
+
+    if hass.services.has_service("frontend", "reload_themes"):
+        await hass.services.async_call(
+            "frontend",
+            "reload_themes",
+            {},
+            blocking=True,
+        )
 
 
 def validate_image_signature(

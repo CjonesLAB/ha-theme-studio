@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from homeassistant.components import frontend, panel_custom
@@ -10,7 +11,13 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, FRONTEND_REVISION
-from .websocket import async_register_websocket_commands
+from .websocket import (
+    async_refresh_theme_registry,
+    async_register_websocket_commands,
+)
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 PANEL_URL = "theme-studio"
@@ -83,6 +90,11 @@ async def async_setup_entry(
     if not hass.data[DOMAIN].get(DATA_WEBSOCKET_REGISTERED):
         async_register_websocket_commands(hass)
         hass.data[DOMAIN][DATA_WEBSOCKET_REGISTERED] = True
+
+    try:
+        await async_refresh_theme_registry(hass)
+    except Exception:  # noqa: BLE001 - setup remains available for recovery
+        _LOGGER.exception("Theme Studio themes could not be refreshed during setup")
 
     return True
 

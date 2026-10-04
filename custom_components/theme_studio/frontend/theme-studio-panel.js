@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.2-beta.2";
-import "./theme-studio-effects.js?v=0.8.2-beta.2";
+} from "./theme-studio-locales.js?v=0.8.2-beta.3";
+import "./theme-studio-effects.js?v=0.8.2-beta.3";
 
 const CSS_LIBRARY_EXAMPLES = [
   {

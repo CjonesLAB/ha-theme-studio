@@ -265,8 +265,8 @@ def test_all_device_card_rules_are_mobile_safe() -> None:
     normalized = normalize_effects(effects)
     css = build_expert_rules_css(normalized["expertRules"])
 
-    assert "width: min(720px, 100%) !important" in css
-    assert "max-width: 100% !important" in css
+    assert "width: min(720px, 100%, calc(100vw - 24px)) !important" in css
+    assert "max-width: min(100%, calc(100vw - 24px)) !important" in css
     assert "box-sizing: border-box !important" in css
     assert "@media (max-width: 600px)" in css
     assert "grid-column: auto !important" in css
