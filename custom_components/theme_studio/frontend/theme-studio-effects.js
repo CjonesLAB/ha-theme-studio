@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.5";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.6";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -119,6 +119,7 @@ class ThemeStudioEffects {
     this.dashboardEditorThemeActive = true;
     this.dashboardEditorPanelDrag = null;
     this.dashboardEditorCardDrag = null;
+    this.dashboardEditorSuppressClickUntil = 0;
     this.dashboardEditorBaselineValues = {};
     this.dashboardEditorDirtyFields = new Set();
     this.dashboardEditorExtraHighlights = [];
@@ -3324,6 +3325,8 @@ class ThemeStudioEffects {
       this._handleDashboardEditorCardClick(event);
     this.dashboardEditorPointerHandler = (event) =>
       this._handleDashboardEditorPointer(event);
+    this.dashboardEditorDirectPointerHandler = (event) =>
+      this._handleDashboardEditorDirectPointer(event);
     this.dashboardEditorScrollHandler = () =>
       this._positionDashboardEditorHighlight();
     this.dashboardEditorKeyHandler = (event) => {
@@ -3346,6 +3349,13 @@ class ThemeStudioEffects {
       this.dashboardEditorPointerHandler,
       true
     );
+    for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+      document.addEventListener(
+        eventName,
+        this.dashboardEditorDirectPointerHandler,
+        true
+      );
+    }
     document.addEventListener(
       "keydown",
       this.dashboardEditorKeyHandler,
@@ -3683,28 +3693,31 @@ class ThemeStudioEffects {
       position: "fixed",
       zIndex: "2147483645",
       display: "none",
-      border: "3px solid #26b2b3",
-      borderRadius: "8px",
-      boxShadow: "0 0 0 3px rgba(38,178,179,.28)",
+      border: "0",
+      borderRadius: "var(--ha-card-border-radius, 12px)",
+      background: "rgba(38,178,179,.08)",
+      boxShadow: "none",
       pointerEvents: "none",
-      transition: "inset 80ms ease, width 80ms ease, height 80ms ease",
+      transition: "inset 80ms ease, width 80ms ease, height 80ms ease, background 120ms ease",
     });
     const directMoveHint = document.createElement("span");
     directMoveHint.setAttribute("data-theme-studio-direct-move-hint", "");
-    directMoveHint.textContent = "✥ Karte ziehen";
+    directMoveHint.textContent = "✥";
     Object.assign(directMoveHint.style, {
       position: "absolute",
       left: "50%",
-      top: "-17px",
+      top: "50%",
       display: "none",
-      transform: "translateX(-50%)",
-      padding: "4px 9px",
-      borderRadius: "999px",
-      background: "#ffb300",
-      color: "#111820",
-      boxShadow: "0 3px 10px rgba(0,0,0,.35)",
-      font: "700 11px/1 system-ui, sans-serif",
-      whiteSpace: "nowrap",
+      width: "42px",
+      height: "42px",
+      alignItems: "center",
+      justifyContent: "center",
+      transform: "translate(-50%, -50%)",
+      borderRadius: "50%",
+      background: "rgba(15,40,44,.72)",
+      color: "#8ce8e9",
+      boxShadow: "0 3px 12px rgba(0,0,0,.28)",
+      font: "700 24px/1 system-ui, sans-serif",
       pointerEvents: "none",
     });
     highlight.appendChild(directMoveHint);
@@ -3844,7 +3857,7 @@ class ThemeStudioEffects {
     this.dashboardEditorPanelDrag = null;
   }
 
-  _startDashboardEditorCardDrag(event) {
+  _startDashboardEditorCardDrag(event, captureTarget = event.currentTarget) {
     if (event.button !== 0 || !this.dashboardEditorSelectedCard) {
       return;
     }
@@ -3866,12 +3879,15 @@ class ThemeStudioEffects {
       offsetX: Number(offsetX.value || 0),
       offsetY: Number(offsetY.value || 0),
       originRect: this.dashboardEditorSelectedCard.getBoundingClientRect(),
+      captureTarget,
+      directCardTouch: captureTarget === this.dashboardEditorSelectedCard,
+      moved: false,
     };
     this._showDashboardEditorPlacementGuide(
       this.dashboardEditorCardDrag.originRect
     );
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    event.currentTarget.classList.add("active");
+    captureTarget?.setPointerCapture?.(event.pointerId);
+    captureTarget?.classList?.add("active");
     event.preventDefault();
     event.stopPropagation();
   }
@@ -3915,6 +3931,9 @@ class ThemeStudioEffects {
 
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      drag.moved = true;
+    }
     const horizontalDelta = Math.min(
       window.innerWidth - 8 - drag.originRect.right,
       Math.max(8 - drag.originRect.left, deltaX)
@@ -3950,8 +3969,12 @@ class ThemeStudioEffects {
       return;
     }
 
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    event.currentTarget.classList.remove("active");
+    const captureTarget = this.dashboardEditorCardDrag.captureTarget;
+    if (this.dashboardEditorCardDrag.moved) {
+      this.dashboardEditorSuppressClickUntil = Date.now() + 500;
+    }
+    captureTarget?.releasePointerCapture?.(event.pointerId);
+    captureTarget?.classList?.remove("active");
     this.dashboardEditorCardDrag = null;
     this._hideDashboardEditorPlacementGuide(1100);
     event.preventDefault();
@@ -4031,9 +4054,7 @@ class ThemeStudioEffects {
       backgroundPosition: `${Math.round(rect.left)}px ${Math.round(rect.top)}px`,
     });
     this.dashboardEditorPositionLabel.style.display = "block";
-    this.dashboardEditorHighlight.style.boxShadow =
-      "0 0 0 3px rgba(38,178,179,.32), 0 0 24px rgba(38,178,179,.4)";
-    this.dashboardEditorHighlight.style.borderColor = "#26b2b3";
+    this.dashboardEditorHighlight.style.background = "rgba(38,178,179,.15)";
     this._updateDashboardEditorPlacementGuide();
   }
 
@@ -4051,9 +4072,7 @@ class ThemeStudioEffects {
     const signed = (value) => value > 0 ? `+${value}` : String(value);
     label.textContent = `${targetText} · X ${signed(offsetX)} px · Y ${signed(offsetY)} px`;
     if (this.dashboardEditorHighlight) {
-      this.dashboardEditorHighlight.style.borderColor = "#26b2b3";
-      this.dashboardEditorHighlight.style.boxShadow =
-        "0 0 0 3px rgba(38,178,179,.32), 0 0 24px rgba(38,178,179,.4)";
+      this.dashboardEditorHighlight.style.background = "rgba(38,178,179,.15)";
     }
 
     const labelWidth = Math.min(280, Math.max(190, label.offsetWidth || 190));
@@ -4082,8 +4101,7 @@ class ThemeStudioEffects {
         this.dashboardEditorPositionLabel.style.display = "none";
       }
       if (this.dashboardEditorHighlight) {
-        this.dashboardEditorHighlight.style.boxShadow =
-          "0 0 0 3px rgba(38,178,179,.28)";
+        this.dashboardEditorHighlight.style.background = "rgba(38,178,179,.1)";
       }
       this._positionDashboardEditorHighlight();
     };
@@ -4166,6 +4184,34 @@ class ThemeStudioEffects {
     }
   }
 
+  _handleDashboardEditorDirectPointer(event) {
+    if (!this.dashboardEditorActive) return;
+
+    if (event.type === "pointerdown") {
+      const card = this._dashboardEditorCardFromEvent(event);
+      if (!card) return;
+
+      const additive = event.ctrlKey || event.metaKey;
+      const alreadySelected = this.dashboardEditorSelectedCards.some(
+        (entry) => entry.card === card
+      );
+      if (!alreadySelected || additive) {
+        this._selectDashboardEditorCard(card, additive);
+      }
+      if (!additive && this.dashboardEditorSelectedCard === card) {
+        this._startDashboardEditorCardDrag(event, card);
+      }
+      return;
+    }
+
+    if (!this.dashboardEditorCardDrag?.directCardTouch) return;
+    if (event.type === "pointermove") {
+      this._moveDashboardEditorCard(event);
+    } else {
+      this._stopDashboardEditorCardDrag(event);
+    }
+  }
+
   _handleDashboardEditorCardClick(event) {
     if (!this.dashboardEditorActive) {
       return;
@@ -4174,6 +4220,16 @@ class ThemeStudioEffects {
     const card = this._dashboardEditorCardFromEvent(event);
 
     if (!card) {
+      return;
+    }
+
+    if (
+      Date.now() < this.dashboardEditorSuppressClickUntil
+      && card === this.dashboardEditorSelectedCard
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       return;
     }
 
@@ -4968,20 +5024,20 @@ class ThemeStudioEffects {
 
       const rect = card.getBoundingClientRect();
       highlight.style.display = "block";
-      highlight.style.left = `${rect.left - 3}px`;
-      highlight.style.top = `${rect.top - 3}px`;
-      highlight.style.width = `${rect.width + 6}px`;
-      highlight.style.height = `${rect.height + 6}px`;
-      highlight.style.borderColor = this.dashboardEditorSelectedCards.length > 0
-        ? "#ffb300"
-        : "#26b2b3";
+      highlight.style.left = `${rect.left}px`;
+      highlight.style.top = `${rect.top}px`;
+      highlight.style.width = `${rect.width}px`;
+      highlight.style.height = `${rect.height}px`;
+      highlight.style.background = this.dashboardEditorSelectedCards.length > 0
+        ? "rgba(38,178,179,.1)"
+        : "rgba(38,178,179,.06)";
       const directlyMovable = index === 0
         && this.dashboardEditorSelectedCards.length > 0;
       highlight.style.pointerEvents = directlyMovable ? "auto" : "none";
       highlight.style.touchAction = directlyMovable ? "none" : "auto";
       highlight.style.cursor = directlyMovable ? "grab" : "default";
       const hint = highlight.querySelector?.("[data-theme-studio-direct-move-hint]");
-      if (hint) hint.style.display = directlyMovable ? "block" : "none";
+      if (hint) hint.style.display = directlyMovable ? "flex" : "none";
     });
   }
 
@@ -5044,6 +5100,13 @@ class ThemeStudioEffects {
       this.dashboardEditorPointerHandler,
       true
     );
+    for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+      document.removeEventListener(
+        eventName,
+        this.dashboardEditorDirectPointerHandler,
+        true
+      );
+    }
     document.removeEventListener(
       "keydown",
       this.dashboardEditorKeyHandler,
