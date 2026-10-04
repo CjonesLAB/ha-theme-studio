@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.3";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.4";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -100,6 +100,10 @@ class ThemeStudioEffects {
     this.dashboardEditorActive = false;
     this.dashboardEditorRoot = null;
     this.dashboardEditorHighlight = null;
+    this.dashboardEditorOriginGuide = null;
+    this.dashboardEditorGridGuide = null;
+    this.dashboardEditorPositionLabel = null;
+    this.dashboardEditorGuideTimer = 0;
     this.dashboardEditorHoveredCard = null;
     this.dashboardEditorSelectedCard = null;
     this.dashboardEditorSelectedCardKey = "";
@@ -121,6 +125,8 @@ class ThemeStudioEffects {
     this.dashboardToolbarHost = null;
     this.dashboardToolbarThemeActive = false;
     this.dashboardToolbarExpertModeEnabled = false;
+    this.dashboardMobileMenuItem = null;
+    this.dashboardMenuSyncTimeoutIds = new Set();
     this.liquidGlass = DEFAULT_LIQUID_GLASS;
     this.cardShape = DEFAULT_CARD_SHAPE;
     this.techFrameCut = DEFAULT_TECH_FRAME_CUT;
@@ -205,6 +211,11 @@ class ThemeStudioEffects {
       this._startStartupSync();
       this._checkCardStates();
       this._startPolling();
+    };
+    this.dashboardMenuEventHandler = (event) => {
+      if (this._isDashboardMobileMenuTrigger(event)) {
+        this._scheduleDashboardMobileMenuSync();
+      }
     };
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
@@ -293,6 +304,11 @@ class ThemeStudioEffects {
     document.addEventListener(
       "visibilitychange",
       this.visibilityEventHandler
+    );
+    document.addEventListener(
+      "click",
+      this.dashboardMenuEventHandler,
+      true
     );
 
     this._startPolling();
@@ -434,6 +450,17 @@ class ThemeStudioEffects {
       "visibilitychange",
       this.visibilityEventHandler
     );
+    document.removeEventListener(
+      "click",
+      this.dashboardMenuEventHandler,
+      true
+    );
+    for (const timeoutId of this.dashboardMenuSyncTimeoutIds) {
+      window.clearTimeout(timeoutId);
+    }
+    this.dashboardMenuSyncTimeoutIds.clear();
+    this.dashboardMobileMenuItem?.remove();
+    this.dashboardMobileMenuItem = null;
     this._stopDynamicSync();
   }
 
@@ -494,6 +521,9 @@ class ThemeStudioEffects {
           outline: none;
         }
         .icon { font-size: 22px; line-height: 1; }
+        @media (max-width: 600px) {
+          :host { display: none !important; }
+        }
       </style>
       <button type="button" title="Einzelne Karte direkt bearbeiten" aria-label="Kartenmodus starten">
         <span class="icon" aria-hidden="true">✥</span>
@@ -541,6 +571,149 @@ class ThemeStudioEffects {
       && this._isDashboardPath()
       && !this.dashboardEditorActive
     );
+
+    if (!this._dashboardMobileMenuEnabled()) {
+      this.dashboardMobileMenuItem?.remove();
+      this.dashboardMobileMenuItem = null;
+    }
+
+  }
+
+  _dashboardMobileMenuEnabled() {
+    return window.matchMedia("(max-width: 600px)").matches
+      && this.dashboardToolbarThemeActive
+      && this.dashboardToolbarExpertModeEnabled
+      && this._isDashboardPath()
+      && !this.dashboardEditorActive;
+  }
+
+  _scheduleDashboardMobileMenuSync() {
+    for (const delay of [0, 40, 120, 250]) {
+      const timeoutId = window.setTimeout(() => {
+        this.dashboardMenuSyncTimeoutIds.delete(timeoutId);
+        this._syncDashboardMobileMenuItem();
+      }, delay);
+      this.dashboardMenuSyncTimeoutIds.add(timeoutId);
+    }
+  }
+
+  _isDashboardMobileMenuTrigger(event) {
+    if (!this._dashboardMobileMenuEnabled()) {
+      return false;
+    }
+
+    const signature = (event.composedPath?.() || [])
+      .slice(0, 8)
+      .map((element) => [
+        element?.localName,
+        element?.getAttribute?.("aria-label"),
+        element?.getAttribute?.("title"),
+        element?.getAttribute?.("icon"),
+      ].filter(Boolean).join(" "))
+      .join(" ")
+      .toLowerCase();
+
+    return /more|mehr|menu|menü|dots-vertical|overflow/.test(signature)
+      || (
+        Number.isFinite(event.clientX)
+        && event.clientX >= window.innerWidth - 96
+        && event.clientY <= 160
+      );
+  }
+
+  _syncDashboardMobileMenuItem() {
+    if (!this._dashboardMobileMenuEnabled()) {
+      this.dashboardMobileMenuItem?.remove();
+      this.dashboardMobileMenuItem = null;
+      return;
+    }
+
+    if (this.dashboardMobileMenuItem?.isConnected) {
+      return;
+    }
+
+    this.dashboardMobileMenuItem = null;
+    let editItem = null;
+    let menuLabel = "Kartenmodus";
+    const menuLabels = new Map([
+      ["Dashboard bearbeiten", "Kartenmodus"],
+      ["Edit dashboard", "Card mode"],
+      ["Modifier le tableau de bord", "Mode carte"],
+      ["Editar panel", "Modo tarjeta"],
+    ]);
+
+    this._visitElements(document, (element) => {
+      if (editItem) return;
+
+      const text = String(element.textContent || "").trim();
+      if (!menuLabels.has(text)) {
+        return;
+      }
+
+      let candidate = element;
+      for (let depth = 0; candidate && depth < 6; depth += 1) {
+        const name = String(candidate.localName || "");
+        if (
+          candidate.getAttribute?.("role") === "menuitem"
+          || ["ha-dropdown-item", "ha-list-item", "mwc-list-item", "paper-item"]
+            .includes(name)
+        ) {
+          editItem = candidate;
+          menuLabel = menuLabels.get(text);
+          break;
+        }
+        candidate = candidate.parentElement;
+      }
+    });
+
+    if (!editItem?.parentElement) {
+      return;
+    }
+
+    const item = editItem.cloneNode(true);
+    item.setAttribute("data-theme-studio-mobile-menu-item", "");
+    item.removeAttribute("selected");
+    item.removeAttribute("activated");
+    this._replaceDashboardMobileMenuText(item, menuLabel);
+
+    const oldIcon = item.querySelector?.("ha-icon, ha-svg-icon, mwc-icon");
+    const icon = document.createElement("span");
+    icon.textContent = "✥";
+    icon.setAttribute("aria-hidden", "true");
+    icon.style.cssText = "display:inline-flex;width:24px;justify-content:center;font-size:22px;line-height:1";
+    if (oldIcon) {
+      icon.slot = oldIcon.slot || "start";
+      oldIcon.replaceWith(icon);
+    } else {
+      icon.slot = "start";
+      item.prepend(icon);
+    }
+
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this._startDashboardEditor();
+      item.remove();
+      this.dashboardMobileMenuItem = null;
+    }, true);
+    editItem.parentElement.insertBefore(item, editItem);
+    this.dashboardMobileMenuItem = item;
+  }
+
+  _replaceDashboardMobileMenuText(root, replacement) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const value = walker.currentNode.nodeValue || "";
+      if ([
+        "Dashboard bearbeiten",
+        "Edit dashboard",
+        "Modifier le tableau de bord",
+        "Editar panel",
+      ].includes(value.trim())) {
+        walker.currentNode.nodeValue = value.replace(value.trim(), replacement);
+        return;
+      }
+    }
 
   }
 
@@ -3516,9 +3689,61 @@ class ThemeStudioEffects {
       transition: "inset 80ms ease, width 80ms ease, height 80ms ease",
     });
 
-    document.body.append(host, highlight);
+    const gridGuide = document.createElement("div");
+    gridGuide.setAttribute("data-theme-studio-dashboard-grid-guide", "");
+    Object.assign(gridGuide.style, {
+      position: "fixed",
+      zIndex: "2147483642",
+      inset: "0",
+      display: "none",
+      backgroundImage:
+        "linear-gradient(rgba(38,178,179,.16) 1px, transparent 1px), "
+        + "linear-gradient(90deg, rgba(38,178,179,.16) 1px, transparent 1px)",
+      backgroundSize: "10px 10px",
+      pointerEvents: "none",
+    });
+
+    const originGuide = document.createElement("div");
+    originGuide.setAttribute("data-theme-studio-dashboard-origin-guide", "");
+    originGuide.textContent = "Ausgang";
+    Object.assign(originGuide.style, {
+      position: "fixed",
+      zIndex: "2147483644",
+      display: "none",
+      border: "2px dashed rgba(255,179,0,.9)",
+      borderRadius: "8px",
+      background: "rgba(255,179,0,.08)",
+      boxSizing: "border-box",
+      padding: "4px 6px",
+      color: "#ffca4b",
+      font: "700 10px/1.2 system-ui, sans-serif",
+      pointerEvents: "none",
+    });
+
+    const positionLabel = document.createElement("div");
+    positionLabel.setAttribute("data-theme-studio-dashboard-position-label", "");
+    Object.assign(positionLabel.style, {
+      position: "fixed",
+      zIndex: "2147483645",
+      display: "none",
+      maxWidth: "min(280px, calc(100vw - 16px))",
+      padding: "6px 9px",
+      border: "1px solid rgba(38,178,179,.9)",
+      borderRadius: "8px",
+      background: "rgba(12,25,30,.96)",
+      color: "#ffffff",
+      boxShadow: "0 5px 16px rgba(0,0,0,.38)",
+      font: "600 12px/1.25 system-ui, sans-serif",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+    });
+
+    document.body.append(gridGuide, originGuide, host, highlight, positionLabel);
     this.dashboardEditorRoot = host;
     this.dashboardEditorHighlight = highlight;
+    this.dashboardEditorOriginGuide = originGuide;
+    this.dashboardEditorGridGuide = gridGuide;
+    this.dashboardEditorPositionLabel = positionLabel;
   }
 
   _dashboardEditorNumberField(name, label, minimum, maximum, unit = "px") {
@@ -3608,7 +3833,11 @@ class ThemeStudioEffects {
       startY: event.clientY,
       offsetX: Number(offsetX.value || 0),
       offsetY: Number(offsetY.value || 0),
+      originRect: this.dashboardEditorSelectedCard.getBoundingClientRect(),
     };
+    this._showDashboardEditorPlacementGuide(
+      this.dashboardEditorCardDrag.originRect
+    );
     event.currentTarget.setPointerCapture?.(event.pointerId);
     event.currentTarget.classList.add("active");
     event.preventDefault();
@@ -3642,6 +3871,7 @@ class ThemeStudioEffects {
     this.dashboardEditorDirtyFields.add("offsetY");
     this._syncDashboardEditorResetButton();
     this._applyDashboardEditorPreview();
+    this._updateDashboardEditorPlacementGuide();
     event.preventDefault();
     event.stopPropagation();
   }
@@ -3657,6 +3887,7 @@ class ThemeStudioEffects {
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     event.currentTarget.classList.remove("active");
     this.dashboardEditorCardDrag = null;
+    this._hideDashboardEditorPlacementGuide(1100);
     event.preventDefault();
     event.stopPropagation();
   }
@@ -3692,6 +3923,8 @@ class ThemeStudioEffects {
       return;
     }
 
+    const originRect = this.dashboardEditorSelectedCard.getBoundingClientRect();
+    this._showDashboardEditorPlacementGuide(originRect);
     offsetX.value = String(Math.min(500, Math.max(
       -500,
       Number(offsetX.value || 0) + horizontal * step
@@ -3704,6 +3937,96 @@ class ThemeStudioEffects {
     this.dashboardEditorDirtyFields.add("offsetY");
     this._syncDashboardEditorResetButton();
     this._applyDashboardEditorPreview();
+    this._updateDashboardEditorPlacementGuide();
+    this._hideDashboardEditorPlacementGuide(1100);
+  }
+
+  _showDashboardEditorPlacementGuide(rect) {
+    if (
+      !rect
+      || !this.dashboardEditorOriginGuide
+      || !this.dashboardEditorGridGuide
+      || !this.dashboardEditorPositionLabel
+    ) {
+      return;
+    }
+
+    window.clearTimeout(this.dashboardEditorGuideTimer);
+    this.dashboardEditorGuideTimer = 0;
+    Object.assign(this.dashboardEditorOriginGuide.style, {
+      display: "block",
+      left: `${Math.round(rect.left - 2)}px`,
+      top: `${Math.round(rect.top - 2)}px`,
+      width: `${Math.round(rect.width + 4)}px`,
+      height: `${Math.round(rect.height + 4)}px`,
+    });
+    Object.assign(this.dashboardEditorGridGuide.style, {
+      display: "block",
+      backgroundPosition: `${Math.round(rect.left)}px ${Math.round(rect.top)}px`,
+    });
+    this.dashboardEditorPositionLabel.style.display = "block";
+    this.dashboardEditorHighlight.style.boxShadow =
+      "0 0 0 3px rgba(38,178,179,.32), 0 0 24px rgba(38,178,179,.4)";
+    this.dashboardEditorHighlight.style.borderColor = "#26b2b3";
+    this._updateDashboardEditorPlacementGuide();
+  }
+
+  _updateDashboardEditorPlacementGuide() {
+    const card = this.dashboardEditorSelectedCard;
+    const label = this.dashboardEditorPositionLabel;
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    if (!card?.isConnected || !label || label.style.display === "none") return;
+
+    const rect = card.getBoundingClientRect();
+    const offsetX = Number(root?.querySelector('[data-field="offsetX"]')?.value || 0);
+    const offsetY = Number(root?.querySelector('[data-field="offsetY"]')?.value || 0);
+    const count = this.dashboardEditorSelectedCards.length;
+    const targetText = count > 1 ? `${count} Karten` : "Zielposition";
+    const signed = (value) => value > 0 ? `+${value}` : String(value);
+    label.textContent = `${targetText} · X ${signed(offsetX)} px · Y ${signed(offsetY)} px`;
+    if (this.dashboardEditorHighlight) {
+      this.dashboardEditorHighlight.style.borderColor = "#26b2b3";
+      this.dashboardEditorHighlight.style.boxShadow =
+        "0 0 0 3px rgba(38,178,179,.32), 0 0 24px rgba(38,178,179,.4)";
+    }
+
+    const labelWidth = Math.min(280, Math.max(190, label.offsetWidth || 190));
+    const left = Math.min(
+      Math.max(8, rect.left),
+      Math.max(8, window.innerWidth - labelWidth - 8)
+    );
+    const top = rect.top >= 42
+      ? rect.top - 34
+      : Math.min(window.innerHeight - 36, rect.bottom + 8);
+    label.style.left = `${Math.round(left)}px`;
+    label.style.top = `${Math.round(top)}px`;
+  }
+
+  _hideDashboardEditorPlacementGuide(delay = 0) {
+    window.clearTimeout(this.dashboardEditorGuideTimer);
+    const hide = () => {
+      this.dashboardEditorGuideTimer = 0;
+      if (this.dashboardEditorOriginGuide) {
+        this.dashboardEditorOriginGuide.style.display = "none";
+      }
+      if (this.dashboardEditorGridGuide) {
+        this.dashboardEditorGridGuide.style.display = "none";
+      }
+      if (this.dashboardEditorPositionLabel) {
+        this.dashboardEditorPositionLabel.style.display = "none";
+      }
+      if (this.dashboardEditorHighlight) {
+        this.dashboardEditorHighlight.style.boxShadow =
+          "0 0 0 3px rgba(38,178,179,.28)";
+      }
+      this._positionDashboardEditorHighlight();
+    };
+
+    if (delay > 0) {
+      this.dashboardEditorGuideTimer = window.setTimeout(hide, delay);
+    } else {
+      hide();
+    }
   }
 
   async _loadDashboardEditorSettings() {
@@ -4247,7 +4570,8 @@ class ThemeStudioEffects {
     }
     const responsivePlacement = [];
     if (rule.device === "all" && rule.columns !== null) {
-      responsivePlacement.push("grid-column: auto !important;");
+      responsivePlacement.push("grid-column: 1 / -1 !important;");
+      responsivePlacement.push("justify-self: start !important;");
     }
     if (
       rule.device === "all"
@@ -4593,6 +4917,7 @@ class ThemeStudioEffects {
   }
 
   _clearDashboardEditorSelection() {
+    this._hideDashboardEditorPlacementGuide();
     this._clearDashboardEditorLiveStyle();
     this.dashboardEditorSelectedCard = null;
     this.dashboardEditorSelectedCardKey = "";
@@ -4651,12 +4976,18 @@ class ThemeStudioEffects {
 
     this.dashboardEditorRoot?.remove();
     this.dashboardEditorHighlight?.remove();
+    this.dashboardEditorOriginGuide?.remove();
+    this.dashboardEditorGridGuide?.remove();
+    this.dashboardEditorPositionLabel?.remove();
     for (const highlight of this.dashboardEditorExtraHighlights) {
       highlight.remove();
     }
     this.dashboardEditorExtraHighlights = [];
     this.dashboardEditorRoot = null;
     this.dashboardEditorHighlight = null;
+    this.dashboardEditorOriginGuide = null;
+    this.dashboardEditorGridGuide = null;
+    this.dashboardEditorPositionLabel = null;
     this.dashboardEditorActive = false;
     this._syncDashboardToolbarButton();
 

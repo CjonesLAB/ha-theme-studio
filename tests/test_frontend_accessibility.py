@@ -134,6 +134,15 @@ def test_dashboard_header_exposes_direct_card_mode() -> None:
     assert 'panel.component_name === "lovelace"' in effects_source
     assert "hass?.panels || {}" in effects_source
     assert 'path.startsWith("/dashboard-")' in effects_source
+    assert '@media (max-width: 600px)' in effects_source
+    assert "_scheduleDashboardMobileMenuSync()" in effects_source
+    assert 'data-theme-studio-mobile-menu-item' in effects_source
+    assert '["Dashboard bearbeiten", "Kartenmodus"]' in effects_source
+    assert '["Edit dashboard", "Card mode"]' in effects_source
+    assert '["Modifier le tableau de bord", "Mode carte"]' in effects_source
+    assert '["Editar panel", "Modo tarjeta"]' in effects_source
+    assert '"Kartenmodus"' in effects_source
+    assert 'icon.textContent = "✥";' in effects_source
 
 
 def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
@@ -173,7 +182,17 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert 'if (width <= 600) return "mobile";' in effects_source
     assert 'if (width <= 1024) return "tablet";' in effects_source
     assert 'rule.device === "all" && rule.columns !== null' in effects_source
+    assert 'grid-column: 1 / -1 !important;' in effects_source
+    assert 'justify-self: start !important;' in effects_source
     assert 'transform: translate(0px, ${rule.offsetY || 0}px) !important;' in effects_source
+    assert 'data-theme-studio-dashboard-grid-guide' in effects_source
+    assert 'data-theme-studio-dashboard-origin-guide' in effects_source
+    assert 'data-theme-studio-dashboard-position-label' in effects_source
+    assert 'originGuide.textContent = "Ausgang";' in effects_source
+    assert 'const targetText = count > 1 ? `${count} Karten` : "Zielposition";' in effects_source
+    assert "_showDashboardEditorPlacementGuide(" in effects_source
+    assert "_updateDashboardEditorPlacementGuide();" in effects_source
+    assert "_hideDashboardEditorPlacementGuide(1100);" in effects_source
 
 
 def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:

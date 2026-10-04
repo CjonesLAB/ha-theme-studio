@@ -269,7 +269,8 @@ def test_all_device_card_rules_are_mobile_safe() -> None:
     assert "max-width: min(100%, calc(100vw - 24px)) !important" in css
     assert "box-sizing: border-box !important" in css
     assert "@media (max-width: 600px)" in css
-    assert "grid-column: auto !important" in css
+    assert "grid-column: 1 / -1 !important" in css
+    assert "justify-self: start !important" in css
     assert "transform: translate(0px, 12px) !important" in css
 
 

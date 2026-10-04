@@ -1646,7 +1646,8 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
         elif target_type != "layout":
             mobile_placement: list[str] = []
             if rule["columns"] is not None:
-                mobile_placement.append("grid-column: auto !important;")
+                mobile_placement.append("grid-column: 1 / -1 !important;")
+                mobile_placement.append("justify-self: start !important;")
             if rule["offsetX"] not in (None, 0):
                 offset_y = rule["offsetY"] or 0
                 mobile_placement.append(
