@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.9";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -3579,6 +3579,8 @@ class ThemeStudioEffects {
         .card-position-right { grid-column: 3; grid-row: 2; }
         .card-position-down { grid-column: 2; grid-row: 3; }
         .card-move.active { cursor: grabbing; color: #26b2b3; }
+        .experimental-note { margin: 12px 14px 0; padding: 10px 12px; border: 1px solid #d89b00; border-radius: 9px; color: #e3d3a4; background: rgba(216,155,0,.09); font-size: 11px; line-height: 1.45; }
+        .experimental-note strong { color: #ffd36a; }
         .intro, form { padding: 13px 14px; }
         .intro { color: #c8d2d6; }
         .intro strong { color: #fff; }
@@ -3678,6 +3680,7 @@ class ThemeStudioEffects {
           <h2>Theme Studio · Karteneditor</h2>
           <button class="close" type="button" aria-label="Bearbeitungsmodus beenden">×</button>
         </header>
+        <p class="experimental-note"><strong>Experimentell:</strong> Der Karteneditor greift direkt in die Lovelace-Darstellung ein und kann sich nach Home-Assistant-Updates anders verhalten. Auf Smartphones ist ausschließlich das Verschieben verfügbar.</p>
         <div class="intro">
           <strong>Karte direkt auswählen</strong><br>
           Tippe oder klicke auf eine Karte. Danach kannst du die markierte Karte direkt ziehen.

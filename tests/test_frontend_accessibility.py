@@ -215,6 +215,8 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert "directCardTouch: captureTarget === this.dashboardEditorSelectedCard" in effects_source
     assert "this.dashboardEditorSuppressClickUntil = Date.now() + 500;" in effects_source
     assert 'host.hidden = this._dashboardEditorCurrentDevice() === "mobile";' in effects_source
+    assert '<strong>Experimentell:</strong>' in effects_source
+    assert "Auf Smartphones ist ausschließlich das Verschieben verfügbar." in effects_source
     assert "_scheduleDashboardEditorMobileSave();" in effects_source
     assert "this._saveDashboardEditorRule();" in effects_source
     assert "_closeDashboardMobileMenu(item)" in effects_source

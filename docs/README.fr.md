@@ -6,9 +6,11 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 
 ![Éditeur direct de cartes Theme Studio 0.8.0 avec aperçu et sélection multiple](images/theme-studio-card-editor-v080.gif)
 
-> Version de développement actuelle : **0.8.1**
+> Version actuelle : **0.8.2**
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
+>
+> **Expérimental :** le CSS expert et l’éditeur direct modifient la présentation Lovelace et peuvent se comporter différemment après une mise à jour de Home Assistant. Sur smartphone, l’édition directe est volontairement limitée au déplacement des cartes. La taille, l’espacement, la typographie, l’opacité et les coins se règlent sur ordinateur ou tablette.
 
 Historique des versions : [Notes de version](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
@@ -73,7 +75,7 @@ La galerie suit automatiquement le mode du profil chargé. Elle affiche uniqueme
 - enregistrement de tous les réglages dans Home Assistant
 - création et activation directe d’un véritable thème Home Assistant
 - retour sécurisé au design Home Assistant d’origine
-- interface adaptée aux ordinateurs, tablettes et smartphones
+- interface adaptée aux ordinateurs, tablettes et smartphones ; sur smartphone, l’édition directe est limitée au déplacement des cartes
 
 Les réglages Theme Studio, les profils, le thème actif et le point de restauration sont privés pour chaque utilisateur Home Assistant. Lors du premier accès après la mise à jour depuis la version 0.6.4, le thème existant est copié dans l’espace personnel de cet utilisateur. La bibliothèque d’images d’arrière-plan reste partagée au sein de l’instance Home Assistant et est gérée par les administrateurs ; chaque utilisateur peut sélectionner une image partagée disponible.
 
@@ -152,6 +154,8 @@ Jusqu’à 24 fichiers JPG, PNG ou WebP peuvent être gérés dans **Arrière-pl
 ### CSS expert
 
 Le mode CSS expert est propre à chaque utilisateur et ne s’applique qu’aux tableaux de bord. L’éditeur direct permet de sélectionner une carte réelle, de modifier en direct son espacement, sa taille, sa position, son nombre de colonnes, son opacité, la taille du texte ou l’arrondi, puis d’enregistrer une règle limitée à cette carte. Maintenez `Ctrl` pour sélectionner plusieurs cartes. Chaque carte conserve une clé stable et peut être réinitialisée individuellement ou avec tout le groupe. Les règles peuvent aussi être limitées à l’ordinateur, la tablette ou le téléphone. Une zone CSS libre reste disponible pour les réglages avancés et refuse les imports, URL distantes et constructions exécutables dangereuses.
+
+> **Fonction expérimentale :** utilisez le CSS expert et l’éditeur direct avec prudence et conservez une sauvegarde. L’éditeur complet est disponible sur ordinateur et tablette. Sur smartphone, le mode compact permet uniquement de déplacer les cartes et enregistre automatiquement leur position ; tous les autres réglages doivent être effectués sur ordinateur ou tablette.
 
 > **Compatibilité :** les effets de carte, le CSS expert et l’éditeur direct reposent sur la structure standard des cartes et mises en page Lovelace. Les tableaux de bord entièrement personnalisés ou les panneaux personnalisés qui génèrent leur propre structure HTML ou leurs propres composants Web ne sont pas pris en charge par ces fonctions. Les couleurs du thème et les variables Home Assistant compatibles peuvent encore s’appliquer, mais les effets de carte n’y sont pas garantis.
 

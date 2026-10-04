@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.2-beta.9";
-import "./theme-studio-effects.js?v=0.8.2-beta.9";
+} from "./theme-studio-locales.js?v=0.8.2";
+import "./theme-studio-effects.js?v=0.8.2";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -5108,11 +5108,15 @@ class ThemeStudioPanel extends HTMLElement {
                   </label>
 
                   <p class="expert-css-warning">
-                    Achtung: Eigene CSS-Regeln können Darstellung,
-                    Bedienbarkeit und responsives Verhalten beeinflussen.
-                    Nach Home-Assistant-Updates können Anpassungen ausfallen.
-                    Der Expertenmodus gilt nur für dein Benutzerkonto und
-                    nicht für Einstellungen oder Dialogfenster.
+                    Experimentelle Funktion: Eigene CSS-Regeln können
+                    Darstellung, Bedienbarkeit und responsives Verhalten
+                    beeinflussen. Nach Home-Assistant-Updates können
+                    Anpassungen ausfallen. Auf Smartphones steht im direkten
+                    Kartenmodus nur das Verschieben zur Verfügung; Größen-,
+                    Abstands- und Darstellungswerte werden am Desktop oder
+                    Tablet bearbeitet. Der Expertenmodus gilt nur für dein
+                    Benutzerkonto und nicht für Einstellungen oder
+                    Dialogfenster.
                   </p>
 
                   <div class="expert-rule-heading">

@@ -1,10 +1,10 @@
-# Theme Studio 0.8.1 - Guía de usuario
+# Theme Studio 0.8.2 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio por completo, desde la instalación hasta la edición precisa de tarjetas individuales. Se aplica a la versión **0.8.1**.
+Esta guía explica Theme Studio por completo, desde la instalación hasta la edición precisa de tarjetas individuales. Se aplica a la versión **0.8.2**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
@@ -183,6 +183,8 @@ Una tarjeta sin estructura Lovelace estándar puede impedir que Theme Studio det
 
 El modo experto se encuentra en **Efectos del panel**. Es opcional y privado para el usuario actual.
 
+> **Experimental:** el CSS experto y el editor directo modifican la presentación de Lovelace y pueden comportarse de forma diferente después de una actualización de Home Assistant. Conserva una copia de seguridad y prueba los cambios con cuidado. El editor completo está disponible en ordenador y tableta. En teléfonos, el modo de tarjeta se limita al movimiento.
+
 ### 8.1 Activación
 
 1. Activa **Modo experto: CSS personalizado del panel**.
@@ -197,7 +199,7 @@ El icono permanece oculto en Ajustes, Terminal, File Editor, listas de tareas y 
 1. Pulsa el icono de Theme Studio.
 2. Pulsa la tarjeta deseada.
 3. Mantén `Ctrl` para seleccionar más tarjetas.
-4. Las tarjetas seleccionadas reciben un contorno visible.
+4. La tarjeta seleccionada conserva su aspecto exterior normal; solo se resalta de forma sutil su zona interior.
 
 ![Editor directo con vista previa y selección múltiple](../images/theme-studio-card-editor-v080.png)
 
@@ -216,6 +218,10 @@ Los controles incluyen:
 - esquinas redondeadas
 
 Los cambios se ven al instante. Arrastra libremente la gran cruz central o usa sus botones de dirección. El propio panel del editor puede moverse para llegar a tarjetas situadas detrás.
+
+En teléfonos no aparece ningún panel de edición. Inicia el modo de tarjeta desde el menú del panel, mueve una tarjeta directamente con un dedo y finaliza el modo desde el mismo menú. La posición final se guarda automáticamente como una regla específica del teléfono. El tamaño, el espaciado, las columnas, la opacidad, la tipografía, las esquinas, la selección múltiple y el restablecimiento siguen siendo funciones de ordenador y tableta.
+
+Theme Studio oculta su modo de tarjeta mientras está activo el editor de paneles nativo de Home Assistant, para evitar que ambos modos se superpongan.
 
 ### 8.4 Guardar y restablecer
 

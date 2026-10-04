@@ -1,10 +1,10 @@
-# Theme Studio 0.8.1 - User Guide
+# Theme Studio 0.8.2 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through precise editing of individual dashboard cards. It applies to version **0.8.1**.
+This guide explains Theme Studio from installation through precise editing of individual dashboard cards. It applies to version **0.8.2**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
@@ -185,6 +185,8 @@ Theme Studio may not detect an entity inside cards that do not expose a standard
 
 Expert mode is located under **Dashboard effects**. It is optional and private to the current user.
 
+> **Experimental:** Expert CSS and the direct card editor modify the Lovelace presentation and may behave differently after Home Assistant updates. Keep a backup and test changes carefully. Desktop and tablet provide the full editor. On smartphones, card mode is limited to moving cards.
+
 ### 8.1 Enable Expert mode
 
 1. Enable **Expert mode: custom dashboard CSS**.
@@ -199,7 +201,7 @@ The icon appears only on actual Lovelace dashboards while Expert mode is enabled
 1. Select the Theme Studio icon.
 2. Select the desired card.
 3. Hold `Ctrl` and select more cards for multiple selection.
-4. Selected cards receive a visible outline.
+4. The selected card keeps its normal outer appearance while its inner area is highlighted subtly.
 
 ![Direct card editor with live preview and multiple selection](../images/theme-studio-card-editor-v080.png)
 
@@ -218,6 +220,10 @@ Available controls include:
 - rounded corners
 
 Changes appear immediately. Drag the large center cross freely or use its direction buttons. The editor panel itself is movable so you can reach cards underneath it.
+
+On smartphones, no editor panel is shown. Open card mode from the dashboard menu, drag a card directly with one finger, and finish card mode from the same menu. The final position is saved automatically as a phone-specific rule. Size, spacing, column span, opacity, font size, corners, multiple selection, and reset remain desktop/tablet functions.
+
+Theme Studio hides its card-mode control while Home Assistant’s own dashboard editor is active, so both editing modes cannot overlap.
 
 ### 8.4 Save and reset
 

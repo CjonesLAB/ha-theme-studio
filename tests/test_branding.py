@@ -10,8 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.8.2-beta.9"
-DOCUMENTED_RELEASE_VERSION = "0.8.1"
+RELEASE_VERSION = "0.8.2"
+DOCUMENTED_RELEASE_VERSION = "0.8.2"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
@@ -59,13 +59,15 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert "DATA_EFFECTS_MODULE_REGISTERED" in setup
     assert "await async_refresh_theme_registry(hass)" in setup
 
-    for readme in (
-        ROOT / "README.md",
-        ROOT / "docs/README.de.md",
-        ROOT / "docs/README.fr.md",
-        ROOT / "docs/README.es.md",
-    ):
+    readmes = (
+        (ROOT / "README.md", "Experimental"),
+        (ROOT / "docs/README.de.md", "Experimentell"),
+        (ROOT / "docs/README.fr.md", "Expérimental"),
+        (ROOT / "docs/README.es.md", "Experimental"),
+    )
+    for readme, warning_label in readmes:
         content = readme.read_text(encoding="utf-8")
         assert DOCUMENTED_RELEASE_VERSION in content
+        assert warning_label in content
         assert "    extra_module_url:" not in content
         assert "fine-settings-cards-tech-frame-v063.png" in content

@@ -1,10 +1,10 @@
-# Theme Studio 0.8.1 - Benutzerhandbuch
+# Theme Studio 0.8.2 - Benutzerhandbuch
 
 [English](USER_GUIDE.en.md) | **Deutsch** | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [PDF herunterladen](../downloads/theme-studio-benutzerhandbuch-de.pdf) | [Aktuelle Version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Fehler melden](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur gezielten Bearbeitung einzelner Dashboard-Karten. Es gilt für Version **0.8.1**.
+Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur gezielten Bearbeitung einzelner Dashboard-Karten. Es gilt für Version **0.8.2**.
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
@@ -185,6 +185,8 @@ Wenn eine Karte keine Standard-Lovelace-Struktur besitzt, kann Theme Studio die 
 
 Der Expertenmodus befindet sich unter **Dashboard-Effekte**. Er ist optional und nur für das aktuelle Benutzerkonto aktiv.
 
+> **Experimentell:** Experten-CSS und der direkte Karteneditor greifen in die Lovelace-Darstellung ein und können sich nach Home-Assistant-Updates anders verhalten. Vorher ein Backup erstellen und Änderungen sorgfältig testen. Desktop und Tablet bieten den vollständigen Editor. Auf Smartphones ist der Kartenmodus auf das Verschieben beschränkt.
+
 ### 8.1 Aktivieren
 
 1. Den Schalter **Expertenmodus: eigenes Dashboard-CSS** aktivieren.
@@ -199,7 +201,7 @@ Das Symbol erscheint nur auf echten Lovelace-Dashboards und nur bei aktiviertem 
 1. Das Theme-Studio-Symbol anklicken.
 2. Die gewünschte Karte im Dashboard auswählen.
 3. Für eine Mehrfachauswahl `Strg` gedrückt halten und weitere Karten anklicken.
-4. Ausgewählte Karten erhalten eine sichtbare Umrandung.
+4. Die ausgewählte Karte behält ihre normale Außenansicht; nur der innere Bereich wird dezent hervorgehoben.
 
 ![Direkter Karteneditor mit Live-Vorschau und Mehrfachauswahl](../images/theme-studio-card-editor-v080.png)
 
@@ -218,6 +220,10 @@ Verfügbar sind:
 - runde Ecken
 
 Änderungen werden direkt im Dashboard angezeigt. Das große Kreuz in der Mitte kann in alle Richtungen gezogen oder über seine Richtungstasten bedient werden. Das Editorfenster selbst lässt sich verschieben, damit verdeckte Karten erreichbar bleiben.
+
+Auf Smartphones erscheint kein Editorfenster. Den Kartenmodus über das Dashboard-Menü starten, eine Karte mit einem Finger direkt verschieben und den Modus über dasselbe Menü beenden. Die endgültige Position wird automatisch als eigene Smartphone-Regel gespeichert. Größe, Abstände, Spaltenbreite, Deckkraft, Schriftgröße, Rundung, Mehrfachauswahl und Reset bleiben Funktionen für Desktop und Tablet.
+
+Während der normale Dashboard-Bearbeitungsmodus von Home Assistant aktiv ist, blendet Theme Studio seinen Kartenmodus aus. Beide Bearbeitungsarten können dadurch nicht gleichzeitig laufen.
 
 ### 8.4 Speichern und zurücksetzen
 

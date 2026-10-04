@@ -6,9 +6,11 @@ Theme Studio is a custom Home Assistant integration for creating, previewing, an
 
 ![Theme Studio 0.8.0 direct card editor with live preview and multi-selection](docs/images/theme-studio-card-editor-v080.gif)
 
-> Current development version: **0.8.1**
+> Current version: **0.8.2**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
+>
+> **Experimental:** Expert CSS and the direct card editor modify Lovelace presentation and may behave differently after Home Assistant updates. On smartphones, direct card editing is intentionally limited to moving cards. Size, spacing, typography, opacity, and corner controls require desktop or tablet.
 
 Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
@@ -74,7 +76,7 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - persistent storage of all settings in Home Assistant
 - generation and direct activation of a real Home Assistant theme
 - safe return to the original Home Assistant default design
-- responsive operation on desktop, tablet, and smartphone
+- responsive operation on desktop, tablet, and smartphone; direct card editing on smartphones is limited to moving cards
 
 Theme Studio settings, profiles, the active design, and the recovery point are private to each Home Assistant user. On first use after updating from 0.6.4, the existing design is copied into that user's private workspace. The background-image library remains shared across the Home Assistant instance and can be managed by administrators; every user can select an available shared image.
 
@@ -164,6 +166,8 @@ Card effects are only applied to the selected entities. This keeps large dashboa
 ### Expert CSS
 
 Under **Dashboard effects**, Expert CSS can be enabled after acknowledging the warning. The rules are private to the current Home Assistant user and are applied only to dashboards, not to settings pages or overlay dialogs. Disabling Expert CSS removes its styles and target markers completely.
+
+> **Experimental feature:** Use Expert CSS and the direct card editor carefully and keep a backup. Desktop and tablet provide the complete editor. On smartphones, the compact card mode only moves cards and saves the position automatically; all other values must be edited on desktop or tablet.
 
 > **Compatibility:** Card effects, Expert CSS, and the direct card editor rely on the standard Lovelace card and layout structure. Fully custom dashboards or custom panels that render their own HTML or web-component structure are not supported by these features. Theme colors and compatible Home Assistant theme variables may still apply, but card effects cannot be guaranteed there.
 
