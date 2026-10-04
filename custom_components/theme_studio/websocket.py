@@ -214,10 +214,10 @@ EXPERT_RULE_SCHEMA = vol.Schema(
             None, vol.All(vol.Coerce(int), vol.Range(min=1, max=12))
         ),
         vol.Required("offsetX"): vol.Any(
-            None, vol.All(vol.Coerce(int), vol.Range(min=-500, max=500))
+            None, vol.All(vol.Coerce(int), vol.Range(min=-2000, max=2000))
         ),
         vol.Required("offsetY"): vol.Any(
-            None, vol.All(vol.Coerce(int), vol.Range(min=-500, max=500))
+            None, vol.All(vol.Coerce(int), vol.Range(min=-2000, max=2000))
         ),
         vol.Required("opacity"): vol.Any(
             None, vol.All(vol.Coerce(int), vol.Range(min=0, max=100))
@@ -1588,7 +1588,16 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
         if rule["margin"] is not None:
             placement.append(f'margin: {rule["margin"]}px !important;')
         if rule["width"] is not None:
-            placement.append(f'width: {rule["width"]}px !important;')
+            placement.extend(
+                (
+                    (
+                        f'width: min({rule["width"]}px, 100%, '
+                        "calc(100vw - 24px)) !important;"
+                    ),
+                    "max-width: min(100%, calc(100vw - 24px)) !important;",
+                    "box-sizing: border-box !important;",
+                )
+            )
         if rule["columns"] is not None:
             placement.append(f'grid-column: span {rule["columns"]} !important;')
         if rule["offsetX"] is not None or rule["offsetY"] is not None:
@@ -1634,6 +1643,26 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
         if media:
             indented = "\n".join(f"  {line}" for line in css.splitlines())
             css = f"@media {media} {{\n{indented}\n}}"
+        elif target_type != "layout":
+            mobile_placement: list[str] = []
+            if rule["columns"] is not None:
+                mobile_placement.append("grid-column: 1 / -1 !important;")
+                mobile_placement.append("justify-self: start !important;")
+            if rule["offsetX"] not in (None, 0):
+                offset_y = rule["offsetY"] or 0
+                mobile_placement.append(
+                    f"transform: translate(0px, {offset_y}px) !important;"
+                )
+
+            if mobile_placement:
+                body = "\n".join(
+                    f"    {property_value}" for property_value in mobile_placement
+                )
+                css += (
+                    "\n\n@media (max-width: 600px) {\n"
+                    f"  {container_selector} {{\n{body}\n  }}\n"
+                    "}"
+                )
 
         blocks.append(css)
 
@@ -1788,6 +1817,43 @@ def write_theme_file(
     )
 
     temporary_path.replace(theme_path)
+
+
+async def async_refresh_theme_registry(hass: HomeAssistant) -> None:
+    """Rebuild generated themes after an integration update or restart."""
+
+    raw_users = await get_user_store(hass).async_load()
+    user_states = (
+        dict(raw_users.get("users", {}))
+        if isinstance(raw_users, dict)
+        else {}
+    )
+    legacy_raw = await get_store(hass).async_load()
+    try:
+        legacy_settings = normalize_settings(legacy_raw or {})
+    except (vol.Invalid, TypeError, ValueError):
+        legacy_settings = default_settings()
+
+    content = build_theme_registry(legacy_settings, user_states)
+    theme_path = Path(
+        hass.config.path(
+            "themes",
+            THEME_FILENAME,
+        )
+    )
+    await hass.async_add_executor_job(
+        write_theme_file,
+        theme_path,
+        content,
+    )
+
+    if hass.services.has_service("frontend", "reload_themes"):
+        await hass.services.async_call(
+            "frontend",
+            "reload_themes",
+            {},
+            blocking=True,
+        )
 
 
 def validate_image_signature(

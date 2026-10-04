@@ -134,6 +134,20 @@ def test_dashboard_header_exposes_direct_card_mode() -> None:
     assert 'panel.component_name === "lovelace"' in effects_source
     assert "hass?.panels || {}" in effects_source
     assert 'path.startsWith("/dashboard-")' in effects_source
+    assert "_isHomeAssistantDashboardEditMode()" in effects_source
+    assert 'element.lovelace?.editMode === true' in effects_source
+    assert 'new Set(["fertig", "done", "terminé", "listo"])' in effects_source
+    assert "_isDashboardEditModeToggle(event)" in effects_source
+    assert "now - this.dashboardEditModeCheckedAt < 5000" in effects_source
+    assert '@media (max-width: 600px)' in effects_source
+    assert "_scheduleDashboardMobileMenuSync()" in effects_source
+    assert 'data-theme-studio-mobile-menu-item' in effects_source
+    assert '["Dashboard bearbeiten", ["Kartenmodus", "Kartenmodus beenden"]]' in effects_source
+    assert '["Edit dashboard", ["Card mode", "Exit card mode"]]' in effects_source
+    assert '["Modifier le tableau de bord", ["Mode carte", "Quitter le mode carte"]]' in effects_source
+    assert '["Editar panel", ["Modo tarjeta", "Salir del modo tarjeta"]]' in effects_source
+    assert '"Kartenmodus"' in effects_source
+    assert 'icon.textContent = "✥";' in effects_source
 
 
 def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
@@ -167,7 +181,46 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert '_dashboardEditorNumberField("offsetX"' not in effects_source
     assert '_dashboardEditorNumberField("offsetY"' not in effects_source
     assert 'rule.width === null ? "revert"' not in effects_source
-    assert 'placement.push(`width: ${rule.width}px !important;`);' in effects_source
+    assert 'width: min(${rule.width}px, 100%, calc(100vw - 24px)) !important;' in effects_source
+    assert 'max-width: min(100%, calc(100vw - 24px)) !important;' in effects_source
+    assert "_dashboardEditorCurrentDevice()" in effects_source
+    assert 'if (width <= 600) return "mobile";' in effects_source
+    assert 'if (width <= 1024) return "tablet";' in effects_source
+    assert 'rule.device === "all" && rule.columns !== null' in effects_source
+    assert 'grid-column: 1 / -1 !important;' in effects_source
+    assert 'justify-self: start !important;' in effects_source
+    assert 'transform: translate(0px, ${rule.offsetY || 0}px) !important;' in effects_source
+    assert 'data-theme-studio-dashboard-grid-guide' in effects_source
+    assert 'data-theme-studio-dashboard-origin-guide' in effects_source
+    assert 'data-theme-studio-dashboard-position-label' in effects_source
+    assert 'originGuide.textContent = "Ausgang";' in effects_source
+    assert 'const targetText = count > 1 ? `${count} Karten` : "Zielposition";' in effects_source
+    assert "_showDashboardEditorPlacementGuide(" in effects_source
+    assert "_updateDashboardEditorPlacementGuide();" in effects_source
+    assert "_hideDashboardEditorPlacementGuide(1100);" in effects_source
+    assert 'data-theme-studio-direct-move-hint' in effects_source
+    assert 'directMoveHint.textContent = "✥";' in effects_source
+    assert 'border: "0"' in effects_source
+    assert 'background: "rgba(38,178,179,.08)"' in effects_source
+    assert "Danach kannst du die markierte Karte direkt ziehen." in effects_source
+    assert 'highlight.style.pointerEvents = directlyMovable ? "auto" : "none";' in effects_source
+    assert "_prepareDashboardEditorDirectMoveDevice();" in effects_source
+    assert 'candidate.device === rule.device' in effects_source
+    assert 'candidate.device === currentDevice' in effects_source
+    assert 'window.innerWidth - 8 - drag.originRect.right' in effects_source
+    assert 'window.innerHeight - 8 - drag.originRect.bottom' in effects_source
+    assert "_handleDashboardEditorDirectPointer(event)" in effects_source
+    assert 'event.type === "pointerdown"' in effects_source
+    assert "this._startDashboardEditorCardDrag(event, card);" in effects_source
+    assert "directCardTouch: captureTarget === this.dashboardEditorSelectedCard" in effects_source
+    assert "this.dashboardEditorSuppressClickUntil = Date.now() + 500;" in effects_source
+    assert 'host.hidden = this._dashboardEditorCurrentDevice() === "mobile";' in effects_source
+    assert '<strong>Experimentell:</strong>' in effects_source
+    assert "Auf Smartphones ist ausschließlich das Verschieben verfügbar." in effects_source
+    assert "_scheduleDashboardEditorMobileSave();" in effects_source
+    assert "this._saveDashboardEditorRule();" in effects_source
+    assert "_closeDashboardMobileMenu(item)" in effects_source
+    assert "Math.min(2000, Math.max(" in effects_source
 
 
 def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:
@@ -213,4 +266,43 @@ def test_dashboard_editor_supports_ctrl_multi_selection() -> None:
     assert 'savedRuleIds.set(entry.cardKey, savedRule.id)' in effects_source
     assert 'button.textContent = this.dashboardEditorSelectedCards.length > 1' in effects_source
     assert '"Auswahl zurücksetzen"' in effects_source
+
+
+def test_css_example_library_is_searchable_safe_and_keyboard_accessible() -> None:
+    """The library previews trusted snippets without silently applying them."""
+
+    panel_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "theme-studio-panel.js"
+    ).read_text(encoding="utf-8")
+
+    insert_start = panel_source.index("  _insertCssLibraryExample(example, button) {")
+    insert_end = panel_source.index("\n  _openImportPreview()", insert_start)
+    insert_source = panel_source[insert_start:insert_end]
+
+    assert "const CSS_LIBRARY_EXAMPLES = [" in panel_source
+    assert 'id="css-library-overlay"' in panel_source
+    assert 'aria-labelledby="css-library-title"' in panel_source
+    assert 'id="css-library-search"' in panel_source
+    assert 'id="css-library-category"' in panel_source
+    assert 'data-css-library-action="copy"' in panel_source
+    assert 'data-css-library-action="insert"' in panel_source
+    assert "event.key === \"Escape\"" in panel_source
+    assert "this.cssLibraryReturnFocus?.focus?.();" in panel_source
+    assert 'support: "Offizielles Home-Assistant-Theme"' in panel_source
+    assert 'insertable: false' in panel_source
+    assert 'support: "Theme Studio getestet"' in panel_source
+    assert panel_source.count("\n    id: \"") >= 32
+    assert 'id: "full-width-card"' in panel_source
+    assert 'id: "hide-entity-card"' in panel_source
+    assert 'id: "pulse-card"' in panel_source
+    assert 'id: "light-dark-modes"' in panel_source
+    assert 'support: "Experimentell"' in panel_source
+    assert 'this.settings.effects.expertCssEnabled = true;' in insert_source
+    assert 'currentCss.includes(example.code.trim())' in insert_source
+    assert "this._saveAndApplySettings" not in insert_source
+    assert "Zum Aktivieren „Design anwenden“ wählen." in insert_source
 

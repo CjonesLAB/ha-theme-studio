@@ -6,9 +6,11 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ![Direkter Karteneditor von Theme Studio 0.8.0 mit Live-Vorschau und Mehrfachauswahl](images/theme-studio-card-editor-v080.gif)
 
-> Aktuelle Entwicklungsversion: **0.8.1**
+> Aktuelle Version: **0.8.2**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
+>
+> **Experimentell:** Experten-CSS und der direkte Karteneditor greifen in die Lovelace-Darstellung ein und können sich nach Home-Assistant-Updates anders verhalten. Auf Smartphones ist die direkte Kartenbearbeitung bewusst auf das Verschieben beschränkt. Größe, Abstände, Schrift, Deckkraft und Ecken werden am Desktop oder Tablet bearbeitet.
 
 Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
@@ -74,7 +76,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - Speicherung aller Einstellungen in Home Assistant
 - Erzeugung und direkte Aktivierung eines echten Home-Assistant-Themes
 - sichere Rückkehr zum originalen Home-Assistant-Standarddesign
-- responsive Bedienung auf Desktop, Tablet und Smartphone
+- responsive Bedienung auf Desktop, Tablet und Smartphone; am Smartphone ist die direkte Kartenbearbeitung auf das Verschieben beschränkt
 
 Theme-Studio-Einstellungen, Profile, das aktive Design und der Wiederherstellungspunkt sind für jeden Home-Assistant-Benutzer privat. Beim ersten Zugriff nach dem Update von 0.6.4 wird das vorhandene Design in den persönlichen Bereich dieses Benutzers kopiert. Die Hintergrundbild-Bibliothek bleibt innerhalb der Home-Assistant-Instanz gemeinsam und wird von Administratoren verwaltet; jeder Benutzer kann ein verfügbares gemeinsames Bild auswählen.
 
@@ -153,6 +155,8 @@ Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-
 ### Expertenmodus für CSS
 
 Unter **Dashboard-Effekte** kann eigenes CSS nach Bestätigung des Warnhinweises eingeschaltet werden. Die Regeln gelten nur für den aktuellen Home-Assistant-Benutzer und ausschließlich in Dashboards – nicht in Einstellungen oder Overlay-Dialogen. Beim Ausschalten entfernt Theme Studio die Regeln und Zielmarkierungen vollständig.
+
+> **Experimentelle Funktion:** Experten-CSS und der direkte Karteneditor sollten vorsichtig und mit vorhandenem Backup verwendet werden. Desktop und Tablet bieten den vollständigen Editor. Auf Smartphones verschiebt der kompakte Kartenmodus ausschließlich Karten und speichert die Position automatisch; alle anderen Werte werden am Desktop oder Tablet bearbeitet.
 
 > **Kompatibilität:** Karteneffekte, Experten-CSS und der direkte Karteneditor benötigen die übliche Lovelace-Karten- und Layoutstruktur. Vollständig selbst entwickelte Dashboards oder Custom Panels mit eigener HTML- beziehungsweise Web-Component-Struktur werden von diesen Funktionen nicht unterstützt. Theme-Farben und kompatible Home-Assistant-Variablen können dort weiterhin wirken, Karteneffekte sind jedoch nicht gewährleistet.
 

@@ -1,10 +1,10 @@
-# Theme Studio 0.8.1 - Guide utilisateur
+# Theme Studio 0.8.2 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente l’ensemble de Theme Studio, de l’installation à la modification précise de cartes individuelles. Il s’applique à la version **0.8.1**.
+Ce guide présente l’ensemble de Theme Studio, de l’installation à la modification précise de cartes individuelles. Il s’applique à la version **0.8.2**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
@@ -183,6 +183,8 @@ Une carte sans structure Lovelace standard peut empêcher la détection de l’e
 
 Le mode expert se trouve sous **Effets du tableau de bord**. Il est facultatif et privé pour l’utilisateur actuel.
 
+> **Expérimental :** le CSS expert et l’éditeur direct modifient la présentation Lovelace et peuvent se comporter différemment après une mise à jour de Home Assistant. Conservez une sauvegarde et testez les changements avec prudence. L’éditeur complet est disponible sur ordinateur et tablette. Sur smartphone, le mode carte est limité au déplacement.
+
 ### 8.1 Activation
 
 1. Activez **Mode expert : CSS personnalisé du tableau de bord**.
@@ -197,7 +199,7 @@ L’icône reste masquée dans les paramètres, Terminal, File Editor, listes de
 1. Cliquez sur l’icône Theme Studio.
 2. Cliquez sur la carte souhaitée.
 3. Maintenez `Ctrl` pour sélectionner d’autres cartes.
-4. Les cartes sélectionnées reçoivent un contour visible.
+4. La carte sélectionnée conserve son aspect extérieur normal ; seule sa zone intérieure est légèrement mise en évidence.
 
 ![Éditeur direct avec aperçu et sélection multiple](../images/theme-studio-card-editor-v080.png)
 
@@ -216,6 +218,10 @@ Les réglages comprennent :
 - coins arrondis
 
 Les changements sont immédiats. Déplacez librement la grande croix centrale ou utilisez ses boutons directionnels. Le panneau de l’éditeur peut lui-même être déplacé pour atteindre les cartes placées derrière.
+
+Sur smartphone, aucun panneau d’édition n’est affiché. Démarrez le mode carte depuis le menu du tableau de bord, déplacez directement une carte avec un doigt, puis quittez le mode depuis le même menu. La position finale est enregistrée automatiquement dans une règle propre au téléphone. La taille, l’espacement, les colonnes, l’opacité, la typographie, les coins, la sélection multiple et la réinitialisation restent réservés à l’ordinateur et à la tablette.
+
+Theme Studio masque son mode carte lorsque l’éditeur de tableau de bord natif de Home Assistant est actif, afin d’éviter que les deux modes se chevauchent.
 
 ### 8.4 Enregistrement et réinitialisation
 

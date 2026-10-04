@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.1";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -100,6 +100,10 @@ class ThemeStudioEffects {
     this.dashboardEditorActive = false;
     this.dashboardEditorRoot = null;
     this.dashboardEditorHighlight = null;
+    this.dashboardEditorOriginGuide = null;
+    this.dashboardEditorGridGuide = null;
+    this.dashboardEditorPositionLabel = null;
+    this.dashboardEditorGuideTimer = 0;
     this.dashboardEditorHoveredCard = null;
     this.dashboardEditorSelectedCard = null;
     this.dashboardEditorSelectedCardKey = "";
@@ -115,12 +119,19 @@ class ThemeStudioEffects {
     this.dashboardEditorThemeActive = true;
     this.dashboardEditorPanelDrag = null;
     this.dashboardEditorCardDrag = null;
+    this.dashboardEditorSuppressClickUntil = 0;
+    this.dashboardEditorMobileSaveTimer = 0;
+    this.dashboardEditorMobileSavePromise = null;
     this.dashboardEditorBaselineValues = {};
     this.dashboardEditorDirtyFields = new Set();
     this.dashboardEditorExtraHighlights = [];
     this.dashboardToolbarHost = null;
     this.dashboardToolbarThemeActive = false;
     this.dashboardToolbarExpertModeEnabled = false;
+    this.dashboardEditModeCheckedAt = 0;
+    this.dashboardEditModeActive = false;
+    this.dashboardMobileMenuItem = null;
+    this.dashboardMenuSyncTimeoutIds = new Set();
     this.liquidGlass = DEFAULT_LIQUID_GLASS;
     this.cardShape = DEFAULT_CARD_SHAPE;
     this.techFrameCut = DEFAULT_TECH_FRAME_CUT;
@@ -205,6 +216,22 @@ class ThemeStudioEffects {
       this._startStartupSync();
       this._checkCardStates();
       this._startPolling();
+    };
+    this.dashboardMenuEventHandler = (event) => {
+      if (this._isDashboardMobileMenuTrigger(event)) {
+        this._scheduleDashboardMobileMenuSync();
+      }
+      if (this._isDashboardEditModeToggle(event)) {
+        this.dashboardEditModeCheckedAt = 0;
+        for (const delay of [60, 180]) {
+          const timeoutId = window.setTimeout(() => {
+            this.dashboardMenuSyncTimeoutIds.delete(timeoutId);
+            this.dashboardEditModeCheckedAt = 0;
+            this._syncDashboardToolbarButton();
+          }, delay);
+          this.dashboardMenuSyncTimeoutIds.add(timeoutId);
+        }
+      }
     };
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
@@ -293,6 +320,11 @@ class ThemeStudioEffects {
     document.addEventListener(
       "visibilitychange",
       this.visibilityEventHandler
+    );
+    document.addEventListener(
+      "click",
+      this.dashboardMenuEventHandler,
+      true
     );
 
     this._startPolling();
@@ -434,6 +466,17 @@ class ThemeStudioEffects {
       "visibilitychange",
       this.visibilityEventHandler
     );
+    document.removeEventListener(
+      "click",
+      this.dashboardMenuEventHandler,
+      true
+    );
+    for (const timeoutId of this.dashboardMenuSyncTimeoutIds) {
+      window.clearTimeout(timeoutId);
+    }
+    this.dashboardMenuSyncTimeoutIds.clear();
+    this.dashboardMobileMenuItem?.remove();
+    this.dashboardMobileMenuItem = null;
     this._stopDynamicSync();
   }
 
@@ -494,6 +537,9 @@ class ThemeStudioEffects {
           outline: none;
         }
         .icon { font-size: 22px; line-height: 1; }
+        @media (max-width: 600px) {
+          :host { display: none !important; }
+        }
       </style>
       <button type="button" title="Einzelne Karte direkt bearbeiten" aria-label="Kartenmodus starten">
         <span class="icon" aria-hidden="true">✥</span>
@@ -539,9 +585,243 @@ class ThemeStudioEffects {
       this.dashboardToolbarThemeActive
       && this.dashboardToolbarExpertModeEnabled
       && this._isDashboardPath()
+      && !this._isHomeAssistantDashboardEditMode()
       && !this.dashboardEditorActive
     );
 
+    if (!this._dashboardMobileMenuEnabled()) {
+      this.dashboardMobileMenuItem?.remove();
+      this.dashboardMobileMenuItem = null;
+    }
+
+  }
+
+  _dashboardMobileMenuEnabled() {
+    return window.matchMedia("(max-width: 600px)").matches
+      && this.dashboardToolbarThemeActive
+      && this.dashboardToolbarExpertModeEnabled
+      && this._isDashboardPath()
+      && !this._isHomeAssistantDashboardEditMode();
+  }
+
+  _isHomeAssistantDashboardEditMode() {
+    const now = Date.now();
+    if (now - this.dashboardEditModeCheckedAt < 5000) {
+      return this.dashboardEditModeActive;
+    }
+
+    const doneLabels = new Set(["fertig", "done", "terminé", "listo"]);
+    this.dashboardEditModeActive = this._visitElementsUntil(
+      document,
+      (element) => {
+        try {
+          if (
+            element.editMode === true
+            || element._editMode === true
+            || element.lovelace?.editMode === true
+          ) {
+            return true;
+          }
+        } catch (_error) {
+          // Some Home Assistant elements expose guarded state properties.
+        }
+
+        const name = String(element.localName || "");
+        if (!name.includes("button")) return false;
+        const label = String(
+          element.getAttribute?.("aria-label")
+          || element.textContent
+          || ""
+        ).trim().toLowerCase();
+        if (!doneLabels.has(label)) return false;
+        const rect = element.getBoundingClientRect?.();
+        return Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top < 120);
+      }
+    );
+    this.dashboardEditModeCheckedAt = now;
+    return this.dashboardEditModeActive;
+  }
+
+  _visitElementsUntil(root, predicate) {
+    if (!root?.querySelectorAll) return false;
+    for (const element of root.querySelectorAll("*")) {
+      if (predicate(element)) return true;
+      if (element.shadowRoot && this._visitElementsUntil(element.shadowRoot, predicate)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _scheduleDashboardMobileMenuSync() {
+    for (const delay of [0, 40, 120, 250]) {
+      const timeoutId = window.setTimeout(() => {
+        this.dashboardMenuSyncTimeoutIds.delete(timeoutId);
+        this._syncDashboardMobileMenuItem();
+      }, delay);
+      this.dashboardMenuSyncTimeoutIds.add(timeoutId);
+    }
+  }
+
+  _isDashboardMobileMenuTrigger(event) {
+    if (!this._dashboardMobileMenuEnabled()) {
+      return false;
+    }
+
+    const signature = (event.composedPath?.() || [])
+      .slice(0, 8)
+      .map((element) => [
+        element?.localName,
+        element?.getAttribute?.("aria-label"),
+        element?.getAttribute?.("title"),
+        element?.getAttribute?.("icon"),
+      ].filter(Boolean).join(" "))
+      .join(" ")
+      .toLowerCase();
+
+    return /more|mehr|menu|menü|dots-vertical|overflow/.test(signature)
+      || (
+        Number.isFinite(event.clientX)
+        && event.clientX >= window.innerWidth - 96
+        && event.clientY <= 160
+      );
+  }
+
+  _isDashboardEditModeToggle(event) {
+    if (!this._isDashboardPath()) return false;
+    const signature = (event.composedPath?.() || [])
+      .slice(0, 10)
+      .map((element) => [
+        element?.localName,
+        element?.textContent,
+        element?.getAttribute?.("aria-label"),
+        element?.getAttribute?.("title"),
+        element?.getAttribute?.("icon"),
+      ].filter(Boolean).join(" "))
+      .join(" ")
+      .toLowerCase();
+    return /dashboard bearbeiten|edit dashboard|modifier le tableau|editar panel|fertig|done|terminé|listo|mdi:pencil/.test(signature);
+  }
+
+  _syncDashboardMobileMenuItem() {
+    if (!this._dashboardMobileMenuEnabled()) {
+      this.dashboardMobileMenuItem?.remove();
+      this.dashboardMobileMenuItem = null;
+      return;
+    }
+
+    if (this.dashboardMobileMenuItem?.isConnected) {
+      return;
+    }
+
+    this.dashboardMobileMenuItem = null;
+    let editItem = null;
+    let menuLabel = this.dashboardEditorActive
+      ? "Kartenmodus beenden"
+      : "Kartenmodus";
+    const menuLabels = new Map([
+      ["Dashboard bearbeiten", ["Kartenmodus", "Kartenmodus beenden"]],
+      ["Edit dashboard", ["Card mode", "Exit card mode"]],
+      ["Modifier le tableau de bord", ["Mode carte", "Quitter le mode carte"]],
+      ["Editar panel", ["Modo tarjeta", "Salir del modo tarjeta"]],
+    ]);
+
+    this._visitElements(document, (element) => {
+      if (editItem) return;
+
+      const text = String(element.textContent || "").trim();
+      if (!menuLabels.has(text)) {
+        return;
+      }
+
+      let candidate = element;
+      for (let depth = 0; candidate && depth < 6; depth += 1) {
+        const name = String(candidate.localName || "");
+        if (
+          candidate.getAttribute?.("role") === "menuitem"
+          || ["ha-dropdown-item", "ha-list-item", "mwc-list-item", "paper-item"]
+            .includes(name)
+        ) {
+          editItem = candidate;
+          menuLabel = menuLabels.get(text)[this.dashboardEditorActive ? 1 : 0];
+          break;
+        }
+        candidate = candidate.parentElement;
+      }
+    });
+
+    if (!editItem?.parentElement) {
+      return;
+    }
+
+    const item = editItem.cloneNode(true);
+    item.setAttribute("data-theme-studio-mobile-menu-item", "");
+    item.removeAttribute("selected");
+    item.removeAttribute("activated");
+    this._replaceDashboardMobileMenuText(item, menuLabel);
+
+    const oldIcon = item.querySelector?.("ha-icon, ha-svg-icon, mwc-icon");
+    const icon = document.createElement("span");
+    icon.textContent = "✥";
+    icon.setAttribute("aria-hidden", "true");
+    icon.style.cssText = "display:inline-flex;width:24px;justify-content:center;font-size:22px;line-height:1";
+    if (oldIcon) {
+      icon.slot = oldIcon.slot || "start";
+      oldIcon.replaceWith(icon);
+    } else {
+      icon.slot = "start";
+      item.prepend(icon);
+    }
+
+    item.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (this.dashboardEditorActive) {
+        this._closeDashboardMobileMenu(item);
+        item.remove();
+        this.dashboardMobileMenuItem = null;
+        await this._finishDashboardMobileEditor();
+        return;
+      } else {
+        this._startDashboardEditor();
+      }
+      this._closeDashboardMobileMenu(item);
+      item.remove();
+      this.dashboardMobileMenuItem = null;
+    }, true);
+    editItem.parentElement.insertBefore(item, editItem);
+    this.dashboardMobileMenuItem = item;
+  }
+
+  _replaceDashboardMobileMenuText(root, replacement) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const value = walker.currentNode.nodeValue || "";
+      if ([
+        "Dashboard bearbeiten",
+        "Edit dashboard",
+        "Modifier le tableau de bord",
+        "Editar panel",
+      ].includes(value.trim())) {
+        walker.currentNode.nodeValue = value.replace(value.trim(), replacement);
+        return;
+      }
+    }
+
+  }
+
+  _closeDashboardMobileMenu(item) {
+    let current = item;
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      try {
+        if (typeof current.close === "function") current.close();
+        if ("open" in current) current.open = false;
+        current.removeAttribute?.("open");
+      } catch (_error) {
+        // Closing the surrounding Home Assistant menu is best effort.
+      }
+      current = current.parentElement || current.getRootNode?.()?.host || null;
+    }
   }
 
   _themeElements() {
@@ -3151,6 +3431,8 @@ class ThemeStudioEffects {
       this._handleDashboardEditorCardClick(event);
     this.dashboardEditorPointerHandler = (event) =>
       this._handleDashboardEditorPointer(event);
+    this.dashboardEditorDirectPointerHandler = (event) =>
+      this._handleDashboardEditorDirectPointer(event);
     this.dashboardEditorScrollHandler = () =>
       this._positionDashboardEditorHighlight();
     this.dashboardEditorKeyHandler = (event) => {
@@ -3173,6 +3455,13 @@ class ThemeStudioEffects {
       this.dashboardEditorPointerHandler,
       true
     );
+    for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+      document.addEventListener(
+        eventName,
+        this.dashboardEditorDirectPointerHandler,
+        true
+      );
+    }
     document.addEventListener(
       "keydown",
       this.dashboardEditorKeyHandler,
@@ -3196,6 +3485,7 @@ class ThemeStudioEffects {
 
     const host = document.createElement("div");
     host.setAttribute("data-theme-studio-dashboard-editor", "");
+    host.hidden = this._dashboardEditorCurrentDevice() === "mobile";
     const root = host.attachShadow({ mode: "open" });
 
     root.innerHTML = `
@@ -3209,6 +3499,7 @@ class ThemeStudioEffects {
           color: #f4f7f8;
           font: 13px/1.35 system-ui, sans-serif;
         }
+        :host([hidden]) { display: none !important; }
         * { box-sizing: border-box; }
         .panel {
           max-height: calc(100vh - 88px);
@@ -3288,6 +3579,8 @@ class ThemeStudioEffects {
         .card-position-right { grid-column: 3; grid-row: 2; }
         .card-position-down { grid-column: 2; grid-row: 3; }
         .card-move.active { cursor: grabbing; color: #26b2b3; }
+        .experimental-note { margin: 12px 14px 0; padding: 10px 12px; border: 1px solid #d89b00; border-radius: 9px; color: #e3d3a4; background: rgba(216,155,0,.09); font-size: 11px; line-height: 1.45; }
+        .experimental-note strong { color: #ffd36a; }
         .intro, form { padding: 13px 14px; }
         .intro { color: #c8d2d6; }
         .intro strong { color: #fff; }
@@ -3387,9 +3680,11 @@ class ThemeStudioEffects {
           <h2>Theme Studio · Karteneditor</h2>
           <button class="close" type="button" aria-label="Bearbeitungsmodus beenden">×</button>
         </header>
+        <p class="experimental-note"><strong>Experimentell:</strong> Der Karteneditor greift direkt in die Lovelace-Darstellung ein und kann sich nach Home-Assistant-Updates anders verhalten. Auf Smartphones ist ausschließlich das Verschieben verfügbar.</p>
         <div class="intro">
           <strong>Karte direkt auswählen</strong><br>
-          Klicke auf eine Karte im Dashboard. Mit STRG + Klick kannst du mehrere Karten auswählen.
+          Tippe oder klicke auf eine Karte. Danach kannst du die markierte Karte direkt ziehen.
+          Mit STRG + Klick kannst du mehrere Karten auswählen.
           Normale Kartenaktionen sind während dieses Modus gesperrt.
         </div>
         <form hidden>
@@ -3509,16 +3804,100 @@ class ThemeStudioEffects {
       position: "fixed",
       zIndex: "2147483645",
       display: "none",
-      border: "3px solid #26b2b3",
-      borderRadius: "8px",
-      boxShadow: "0 0 0 3px rgba(38,178,179,.28)",
+      border: "0",
+      borderRadius: "var(--ha-card-border-radius, 12px)",
+      background: "rgba(38,178,179,.08)",
+      boxShadow: "none",
       pointerEvents: "none",
-      transition: "inset 80ms ease, width 80ms ease, height 80ms ease",
+      transition: "inset 80ms ease, width 80ms ease, height 80ms ease, background 120ms ease",
+    });
+    const directMoveHint = document.createElement("span");
+    directMoveHint.setAttribute("data-theme-studio-direct-move-hint", "");
+    directMoveHint.textContent = "✥";
+    Object.assign(directMoveHint.style, {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      display: "none",
+      width: "42px",
+      height: "42px",
+      alignItems: "center",
+      justifyContent: "center",
+      transform: "translate(-50%, -50%)",
+      borderRadius: "50%",
+      background: "rgba(15,40,44,.72)",
+      color: "#8ce8e9",
+      boxShadow: "0 3px 12px rgba(0,0,0,.28)",
+      font: "700 24px/1 system-ui, sans-serif",
+      pointerEvents: "none",
+    });
+    highlight.appendChild(directMoveHint);
+    for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+      highlight.addEventListener(eventName, (event) => {
+        if (!this.dashboardEditorSelectedCard) return;
+        if (eventName === "pointerdown") this._startDashboardEditorCardDrag(event);
+        if (eventName === "pointermove") this._moveDashboardEditorCard(event);
+        if (eventName === "pointerup" || eventName === "pointercancel") {
+          this._stopDashboardEditorCardDrag(event);
+        }
+      });
+    }
+
+    const gridGuide = document.createElement("div");
+    gridGuide.setAttribute("data-theme-studio-dashboard-grid-guide", "");
+    Object.assign(gridGuide.style, {
+      position: "fixed",
+      zIndex: "2147483642",
+      inset: "0",
+      display: "none",
+      backgroundImage:
+        "linear-gradient(rgba(38,178,179,.16) 1px, transparent 1px), "
+        + "linear-gradient(90deg, rgba(38,178,179,.16) 1px, transparent 1px)",
+      backgroundSize: "10px 10px",
+      pointerEvents: "none",
     });
 
-    document.body.append(host, highlight);
+    const originGuide = document.createElement("div");
+    originGuide.setAttribute("data-theme-studio-dashboard-origin-guide", "");
+    originGuide.textContent = "Ausgang";
+    Object.assign(originGuide.style, {
+      position: "fixed",
+      zIndex: "2147483644",
+      display: "none",
+      border: "2px dashed rgba(255,179,0,.9)",
+      borderRadius: "8px",
+      background: "rgba(255,179,0,.08)",
+      boxSizing: "border-box",
+      padding: "4px 6px",
+      color: "#ffca4b",
+      font: "700 10px/1.2 system-ui, sans-serif",
+      pointerEvents: "none",
+    });
+
+    const positionLabel = document.createElement("div");
+    positionLabel.setAttribute("data-theme-studio-dashboard-position-label", "");
+    Object.assign(positionLabel.style, {
+      position: "fixed",
+      zIndex: "2147483645",
+      display: "none",
+      maxWidth: "min(280px, calc(100vw - 16px))",
+      padding: "6px 9px",
+      border: "1px solid rgba(38,178,179,.9)",
+      borderRadius: "8px",
+      background: "rgba(12,25,30,.96)",
+      color: "#ffffff",
+      boxShadow: "0 5px 16px rgba(0,0,0,.38)",
+      font: "600 12px/1.25 system-ui, sans-serif",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+    });
+
+    document.body.append(gridGuide, originGuide, host, highlight, positionLabel);
     this.dashboardEditorRoot = host;
     this.dashboardEditorHighlight = highlight;
+    this.dashboardEditorOriginGuide = originGuide;
+    this.dashboardEditorGridGuide = gridGuide;
+    this.dashboardEditorPositionLabel = positionLabel;
   }
 
   _dashboardEditorNumberField(name, label, minimum, maximum, unit = "px") {
@@ -3589,7 +3968,7 @@ class ThemeStudioEffects {
     this.dashboardEditorPanelDrag = null;
   }
 
-  _startDashboardEditorCardDrag(event) {
+  _startDashboardEditorCardDrag(event, captureTarget = event.currentTarget) {
     if (event.button !== 0 || !this.dashboardEditorSelectedCard) {
       return;
     }
@@ -3602,17 +3981,48 @@ class ThemeStudioEffects {
       return;
     }
 
+    this._prepareDashboardEditorDirectMoveDevice();
+
     this.dashboardEditorCardDrag = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       offsetX: Number(offsetX.value || 0),
       offsetY: Number(offsetY.value || 0),
+      originRect: this.dashboardEditorSelectedCard.getBoundingClientRect(),
+      captureTarget,
+      directCardTouch: captureTarget === this.dashboardEditorSelectedCard,
+      moved: false,
     };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    event.currentTarget.classList.add("active");
+    this._showDashboardEditorPlacementGuide(
+      this.dashboardEditorCardDrag.originRect
+    );
+    captureTarget?.setPointerCapture?.(event.pointerId);
+    captureTarget?.classList?.add("active");
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  _prepareDashboardEditorDirectMoveDevice() {
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    const device = root?.querySelector('[data-field="device"]');
+    const currentDevice = this._dashboardEditorCurrentDevice();
+    if (!device || device.value === currentDevice) return;
+
+    device.value = currentDevice;
+    this.dashboardEditorExistingRuleId = "";
+    for (const entry of this.dashboardEditorSelectedCards) {
+      this.dashboardEditorSelectedRuleIds.delete(entry.cardKey);
+    }
+    const status = root.querySelector(".status");
+    if (status) {
+      status.textContent = currentDevice === "mobile"
+        ? "Direktes Verschieben wird als eigene Smartphone-Regel gespeichert."
+        : currentDevice === "tablet"
+          ? "Direktes Verschieben wird als eigene Tablet-Regel gespeichert."
+          : "Direktes Verschieben wird als eigene Desktop-Regel gespeichert.";
+      status.className = "status";
+    }
   }
 
   _moveDashboardEditorCard(event) {
@@ -3630,18 +4040,34 @@ class ThemeStudioEffects {
       return;
     }
 
-    offsetX.value = String(Math.min(500, Math.max(
-      -500,
-      Math.round(drag.offsetX + event.clientX - drag.startX)
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      drag.moved = true;
+    }
+    const horizontalDelta = Math.min(
+      window.innerWidth - 8 - drag.originRect.right,
+      Math.max(8 - drag.originRect.left, deltaX)
+    );
+    const verticalDelta = drag.originRect.height <= window.innerHeight - 16
+      ? Math.min(
+        window.innerHeight - 8 - drag.originRect.bottom,
+        Math.max(8 - drag.originRect.top, deltaY)
+      )
+      : deltaY;
+    offsetX.value = String(Math.min(2000, Math.max(
+      -2000,
+      Math.round(drag.offsetX + horizontalDelta)
     )));
-    offsetY.value = String(Math.min(500, Math.max(
-      -500,
-      Math.round(drag.offsetY + event.clientY - drag.startY)
+    offsetY.value = String(Math.min(2000, Math.max(
+      -2000,
+      Math.round(drag.offsetY + verticalDelta)
     )));
     this.dashboardEditorDirtyFields.add("offsetX");
     this.dashboardEditorDirtyFields.add("offsetY");
     this._syncDashboardEditorResetButton();
     this._applyDashboardEditorPreview();
+    this._updateDashboardEditorPlacementGuide();
     event.preventDefault();
     event.stopPropagation();
   }
@@ -3654,11 +4080,58 @@ class ThemeStudioEffects {
       return;
     }
 
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    event.currentTarget.classList.remove("active");
+    const drag = this.dashboardEditorCardDrag;
+    const captureTarget = drag.captureTarget;
+    if (drag.moved) {
+      this.dashboardEditorSuppressClickUntil = Date.now() + 500;
+    }
+    captureTarget?.releasePointerCapture?.(event.pointerId);
+    captureTarget?.classList?.remove("active");
     this.dashboardEditorCardDrag = null;
+    this._hideDashboardEditorPlacementGuide(1100);
+    if (
+      drag.moved
+      && drag.directCardTouch
+      && this._dashboardEditorCurrentDevice() === "mobile"
+    ) {
+      this._scheduleDashboardEditorMobileSave();
+    }
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  _scheduleDashboardEditorMobileSave(attempt = 0) {
+    window.clearTimeout(this.dashboardEditorMobileSaveTimer);
+    this.dashboardEditorMobileSaveTimer = window.setTimeout(() => {
+      this.dashboardEditorMobileSaveTimer = 0;
+      if (!this.dashboardEditorActive) return;
+      if (!this.dashboardEditorSettings && attempt < 20) {
+        this._scheduleDashboardEditorMobileSave(attempt + 1);
+        return;
+      }
+      if (this.dashboardEditorSettings) {
+        this.dashboardEditorMobileSavePromise = this._saveDashboardEditorRule()
+          .finally(() => {
+            this.dashboardEditorMobileSavePromise = null;
+          });
+      }
+    }, attempt === 0 ? 220 : 150);
+  }
+
+  async _finishDashboardMobileEditor() {
+    window.clearTimeout(this.dashboardEditorMobileSaveTimer);
+    this.dashboardEditorMobileSaveTimer = 0;
+    if (this.dashboardEditorMobileSavePromise) {
+      await this.dashboardEditorMobileSavePromise;
+    }
+    if (
+      this.dashboardEditorSettings
+      && this.dashboardEditorDirtyFields.size > 0
+    ) {
+      await this._saveDashboardEditorRule();
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 180));
+    this._stopDashboardEditor();
   }
 
   _nudgeDashboardEditorCard(event) {
@@ -3692,18 +4165,105 @@ class ThemeStudioEffects {
       return;
     }
 
-    offsetX.value = String(Math.min(500, Math.max(
-      -500,
+    const originRect = this.dashboardEditorSelectedCard.getBoundingClientRect();
+    this._showDashboardEditorPlacementGuide(originRect);
+    offsetX.value = String(Math.min(2000, Math.max(
+      -2000,
       Number(offsetX.value || 0) + horizontal * step
     )));
-    offsetY.value = String(Math.min(500, Math.max(
-      -500,
+    offsetY.value = String(Math.min(2000, Math.max(
+      -2000,
       Number(offsetY.value || 0) + vertical * step
     )));
     this.dashboardEditorDirtyFields.add("offsetX");
     this.dashboardEditorDirtyFields.add("offsetY");
     this._syncDashboardEditorResetButton();
     this._applyDashboardEditorPreview();
+    this._updateDashboardEditorPlacementGuide();
+    this._hideDashboardEditorPlacementGuide(1100);
+  }
+
+  _showDashboardEditorPlacementGuide(rect) {
+    if (
+      !rect
+      || !this.dashboardEditorOriginGuide
+      || !this.dashboardEditorGridGuide
+      || !this.dashboardEditorPositionLabel
+    ) {
+      return;
+    }
+
+    window.clearTimeout(this.dashboardEditorGuideTimer);
+    this.dashboardEditorGuideTimer = 0;
+    Object.assign(this.dashboardEditorOriginGuide.style, {
+      display: "block",
+      left: `${Math.round(rect.left - 2)}px`,
+      top: `${Math.round(rect.top - 2)}px`,
+      width: `${Math.round(rect.width + 4)}px`,
+      height: `${Math.round(rect.height + 4)}px`,
+    });
+    Object.assign(this.dashboardEditorGridGuide.style, {
+      display: "block",
+      backgroundPosition: `${Math.round(rect.left)}px ${Math.round(rect.top)}px`,
+    });
+    this.dashboardEditorPositionLabel.style.display = "block";
+    this.dashboardEditorHighlight.style.background = "rgba(38,178,179,.15)";
+    this._updateDashboardEditorPlacementGuide();
+  }
+
+  _updateDashboardEditorPlacementGuide() {
+    const card = this.dashboardEditorSelectedCard;
+    const label = this.dashboardEditorPositionLabel;
+    const root = this.dashboardEditorRoot?.shadowRoot;
+    if (!card?.isConnected || !label || label.style.display === "none") return;
+
+    const rect = card.getBoundingClientRect();
+    const offsetX = Number(root?.querySelector('[data-field="offsetX"]')?.value || 0);
+    const offsetY = Number(root?.querySelector('[data-field="offsetY"]')?.value || 0);
+    const count = this.dashboardEditorSelectedCards.length;
+    const targetText = count > 1 ? `${count} Karten` : "Zielposition";
+    const signed = (value) => value > 0 ? `+${value}` : String(value);
+    label.textContent = `${targetText} · X ${signed(offsetX)} px · Y ${signed(offsetY)} px`;
+    if (this.dashboardEditorHighlight) {
+      this.dashboardEditorHighlight.style.background = "rgba(38,178,179,.15)";
+    }
+
+    const labelWidth = Math.min(280, Math.max(190, label.offsetWidth || 190));
+    const left = Math.min(
+      Math.max(8, rect.left),
+      Math.max(8, window.innerWidth - labelWidth - 8)
+    );
+    const top = rect.top >= 42
+      ? rect.top - 34
+      : Math.min(window.innerHeight - 36, rect.bottom + 8);
+    label.style.left = `${Math.round(left)}px`;
+    label.style.top = `${Math.round(top)}px`;
+  }
+
+  _hideDashboardEditorPlacementGuide(delay = 0) {
+    window.clearTimeout(this.dashboardEditorGuideTimer);
+    const hide = () => {
+      this.dashboardEditorGuideTimer = 0;
+      if (this.dashboardEditorOriginGuide) {
+        this.dashboardEditorOriginGuide.style.display = "none";
+      }
+      if (this.dashboardEditorGridGuide) {
+        this.dashboardEditorGridGuide.style.display = "none";
+      }
+      if (this.dashboardEditorPositionLabel) {
+        this.dashboardEditorPositionLabel.style.display = "none";
+      }
+      if (this.dashboardEditorHighlight) {
+        this.dashboardEditorHighlight.style.background = "rgba(38,178,179,.1)";
+      }
+      this._positionDashboardEditorHighlight();
+    };
+
+    if (delay > 0) {
+      this.dashboardEditorGuideTimer = window.setTimeout(hide, delay);
+    } else {
+      hide();
+    }
   }
 
   async _loadDashboardEditorSettings() {
@@ -3777,6 +4337,34 @@ class ThemeStudioEffects {
     }
   }
 
+  _handleDashboardEditorDirectPointer(event) {
+    if (!this.dashboardEditorActive) return;
+
+    if (event.type === "pointerdown") {
+      const card = this._dashboardEditorCardFromEvent(event);
+      if (!card) return;
+
+      const additive = event.ctrlKey || event.metaKey;
+      const alreadySelected = this.dashboardEditorSelectedCards.some(
+        (entry) => entry.card === card
+      );
+      if (!alreadySelected || additive) {
+        this._selectDashboardEditorCard(card, additive);
+      }
+      if (!additive && this.dashboardEditorSelectedCard === card) {
+        this._startDashboardEditorCardDrag(event, card);
+      }
+      return;
+    }
+
+    if (!this.dashboardEditorCardDrag?.directCardTouch) return;
+    if (event.type === "pointermove") {
+      this._moveDashboardEditorCard(event);
+    } else {
+      this._stopDashboardEditorCardDrag(event);
+    }
+  }
+
   _handleDashboardEditorCardClick(event) {
     if (!this.dashboardEditorActive) {
       return;
@@ -3785,6 +4373,16 @@ class ThemeStudioEffects {
     const card = this._dashboardEditorCardFromEvent(event);
 
     if (!card) {
+      return;
+    }
+
+    if (
+      Date.now() < this.dashboardEditorSuppressClickUntil
+      && card === this.dashboardEditorSelectedCard
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       return;
     }
 
@@ -3979,7 +4577,8 @@ class ThemeStudioEffects {
       return;
     }
 
-    root.querySelector('[data-field="device"]').value = rule?.device || "all";
+    root.querySelector('[data-field="device"]').value = rule?.device
+      || this._dashboardEditorCurrentDevice();
 
     this.dashboardEditorBaselineValues = this._dashboardEditorMeasuredValues();
     this.dashboardEditorDirtyFields = new Set();
@@ -4018,9 +4617,15 @@ class ThemeStudioEffects {
 
   _dashboardEditorFindRule(cardKey, entityIds = []) {
     const rules = this.dashboardEditorSettings?.effects?.expertRules || [];
+    const currentDevice = this._dashboardEditorCurrentDevice();
     let rule = rules.find((candidate) =>
       candidate.targetType === "card"
       && candidate.target === cardKey
+      && candidate.device === currentDevice
+    ) || rules.find((candidate) =>
+      candidate.targetType === "card"
+      && candidate.target === cardKey
+      && candidate.device === "all"
     ) || null;
     let migratesLegacyRule = false;
 
@@ -4087,6 +4692,17 @@ class ThemeStudioEffects {
       fontSize: rounded(cardStyle.fontSize, 14, 8, 48),
       borderRadius: rounded(cardStyle.borderTopLeftRadius, 0, 0, 60),
     };
+  }
+
+  _dashboardEditorCurrentDevice() {
+    const width = Math.max(
+      document.documentElement?.clientWidth || 0,
+      window.innerWidth || 0
+    );
+
+    if (width <= 600) return "mobile";
+    if (width <= 1024) return "tablet";
+    return "desktop";
   }
 
   _syncDashboardEditorResetButton() {
@@ -4219,7 +4835,13 @@ class ThemeStudioEffects {
       placement.push(`margin: ${rule.margin}px !important;`);
     }
     if (rule.width !== null) {
-      placement.push(`width: ${rule.width}px !important;`);
+      placement.push(
+        `width: min(${rule.width}px, 100%, calc(100vw - 24px)) !important;`
+      );
+      placement.push(
+        "max-width: min(100%, calc(100vw - 24px)) !important;"
+      );
+      placement.push("box-sizing: border-box !important;");
     }
     if (rule.columns !== null) {
       placement.push(`grid-column: span ${rule.columns} !important;`);
@@ -4227,6 +4849,27 @@ class ThemeStudioEffects {
     if (rule.offsetX !== null || rule.offsetY !== null) {
       placement.push(`transform: translate(${rule.offsetX || 0}px, ${rule.offsetY || 0}px) !important;`);
     }
+    const responsivePlacement = [];
+    if (rule.device === "all" && rule.columns !== null) {
+      responsivePlacement.push("grid-column: 1 / -1 !important;");
+      responsivePlacement.push("justify-self: start !important;");
+    }
+    if (
+      rule.device === "all"
+      && rule.offsetX !== null
+      && rule.offsetX !== 0
+    ) {
+      responsivePlacement.push(
+        `transform: translate(0px, ${rule.offsetY || 0}px) !important;`
+      );
+    }
+    const mobileFallback = responsivePlacement.length === 0 ? "" : `
+      @media (max-width: 600px) {
+        [data-theme-studio-card-container][data-theme-studio-dashboard-edit] {
+          ${responsivePlacement.join("\n")}
+        }
+      }
+    `;
     const css = `
       ha-card[data-theme-studio-dashboard-edit] {
         ${visual.join("\n")}
@@ -4237,6 +4880,7 @@ class ThemeStudioEffects {
       [data-theme-studio-card-container][data-theme-studio-dashboard-edit] {
         ${placement.join("\n")}
       }
+      ${mobileFallback}
     `;
     const roots = new Set(
       this.dashboardEditorSelectedTargets.map((target) => target.getRootNode?.())
@@ -4295,6 +4939,7 @@ class ThemeStudioEffects {
         || (
           candidate.targetType === "card"
           && candidate.target === entry.cardKey
+          && candidate.device === rule.device
         )
       );
     }).length;
@@ -4313,6 +4958,7 @@ class ThemeStudioEffects {
         || (
           candidate.targetType === "card"
           && candidate.target === entry.cardKey
+          && candidate.device === rule.device
         )
       );
       const existing = existingIndex >= 0 ? rules[existingIndex] : null;
@@ -4371,7 +5017,9 @@ class ThemeStudioEffects {
         this.dashboardEditorSelectedCardKey
       ) || "";
       this.dashboardEditorThemeActive = true;
-      this._clearDashboardEditorLiveStyle();
+      if (this._dashboardEditorCurrentDevice() !== "mobile") {
+        this._clearDashboardEditorLiveStyle();
+      }
       status.textContent = entries.length > 1
         ? `${entries.length} Kartenregeln wurden gespeichert und angewendet.`
         : "Regel gespeichert und auf dem Dashboard angewendet.";
@@ -4531,13 +5179,20 @@ class ThemeStudioEffects {
 
       const rect = card.getBoundingClientRect();
       highlight.style.display = "block";
-      highlight.style.left = `${rect.left - 3}px`;
-      highlight.style.top = `${rect.top - 3}px`;
-      highlight.style.width = `${rect.width + 6}px`;
-      highlight.style.height = `${rect.height + 6}px`;
-      highlight.style.borderColor = this.dashboardEditorSelectedCards.length > 0
-        ? "#ffb300"
-        : "#26b2b3";
+      highlight.style.left = `${rect.left}px`;
+      highlight.style.top = `${rect.top}px`;
+      highlight.style.width = `${rect.width}px`;
+      highlight.style.height = `${rect.height}px`;
+      highlight.style.background = this.dashboardEditorSelectedCards.length > 0
+        ? "rgba(38,178,179,.1)"
+        : "rgba(38,178,179,.06)";
+      const directlyMovable = index === 0
+        && this.dashboardEditorSelectedCards.length > 0;
+      highlight.style.pointerEvents = directlyMovable ? "auto" : "none";
+      highlight.style.touchAction = directlyMovable ? "none" : "auto";
+      highlight.style.cursor = directlyMovable ? "grab" : "default";
+      const hint = highlight.querySelector?.("[data-theme-studio-direct-move-hint]");
+      if (hint) hint.style.display = directlyMovable ? "flex" : "none";
     });
   }
 
@@ -4554,6 +5209,7 @@ class ThemeStudioEffects {
   }
 
   _clearDashboardEditorSelection() {
+    this._hideDashboardEditorPlacementGuide();
     this._clearDashboardEditorLiveStyle();
     this.dashboardEditorSelectedCard = null;
     this.dashboardEditorSelectedCardKey = "";
@@ -4589,6 +5245,8 @@ class ThemeStudioEffects {
     }
 
     this._clearDashboardEditorSelection();
+    window.clearTimeout(this.dashboardEditorMobileSaveTimer);
+    this.dashboardEditorMobileSaveTimer = 0;
     document.removeEventListener(
       "click",
       this.dashboardEditorClickHandler,
@@ -4599,6 +5257,13 @@ class ThemeStudioEffects {
       this.dashboardEditorPointerHandler,
       true
     );
+    for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+      document.removeEventListener(
+        eventName,
+        this.dashboardEditorDirectPointerHandler,
+        true
+      );
+    }
     document.removeEventListener(
       "keydown",
       this.dashboardEditorKeyHandler,
@@ -4612,12 +5277,18 @@ class ThemeStudioEffects {
 
     this.dashboardEditorRoot?.remove();
     this.dashboardEditorHighlight?.remove();
+    this.dashboardEditorOriginGuide?.remove();
+    this.dashboardEditorGridGuide?.remove();
+    this.dashboardEditorPositionLabel?.remove();
     for (const highlight of this.dashboardEditorExtraHighlights) {
       highlight.remove();
     }
     this.dashboardEditorExtraHighlights = [];
     this.dashboardEditorRoot = null;
     this.dashboardEditorHighlight = null;
+    this.dashboardEditorOriginGuide = null;
+    this.dashboardEditorGridGuide = null;
+    this.dashboardEditorPositionLabel = null;
     this.dashboardEditorActive = false;
     this._syncDashboardToolbarButton();
 
