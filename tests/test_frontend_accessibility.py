@@ -137,10 +137,10 @@ def test_dashboard_header_exposes_direct_card_mode() -> None:
     assert '@media (max-width: 600px)' in effects_source
     assert "_scheduleDashboardMobileMenuSync()" in effects_source
     assert 'data-theme-studio-mobile-menu-item' in effects_source
-    assert '["Dashboard bearbeiten", "Kartenmodus"]' in effects_source
-    assert '["Edit dashboard", "Card mode"]' in effects_source
-    assert '["Modifier le tableau de bord", "Mode carte"]' in effects_source
-    assert '["Editar panel", "Modo tarjeta"]' in effects_source
+    assert '["Dashboard bearbeiten", ["Kartenmodus", "Kartenmodus beenden"]]' in effects_source
+    assert '["Edit dashboard", ["Card mode", "Exit card mode"]]' in effects_source
+    assert '["Modifier le tableau de bord", ["Mode carte", "Quitter le mode carte"]]' in effects_source
+    assert '["Editar panel", ["Modo tarjeta", "Salir del modo tarjeta"]]' in effects_source
     assert '"Kartenmodus"' in effects_source
     assert 'icon.textContent = "✥";' in effects_source
 
@@ -209,6 +209,10 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert "this._startDashboardEditorCardDrag(event, card);" in effects_source
     assert "directCardTouch: captureTarget === this.dashboardEditorSelectedCard" in effects_source
     assert "this.dashboardEditorSuppressClickUntil = Date.now() + 500;" in effects_source
+    assert 'host.hidden = this._dashboardEditorCurrentDevice() === "mobile";' in effects_source
+    assert "_scheduleDashboardEditorMobileSave();" in effects_source
+    assert "this._saveDashboardEditorRule();" in effects_source
+    assert "_closeDashboardMobileMenu(item)" in effects_source
 
 
 def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:

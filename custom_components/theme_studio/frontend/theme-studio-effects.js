@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.6";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.7";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -120,6 +120,7 @@ class ThemeStudioEffects {
     this.dashboardEditorPanelDrag = null;
     this.dashboardEditorCardDrag = null;
     this.dashboardEditorSuppressClickUntil = 0;
+    this.dashboardEditorMobileSaveTimer = 0;
     this.dashboardEditorBaselineValues = {};
     this.dashboardEditorDirtyFields = new Set();
     this.dashboardEditorExtraHighlights = [];
@@ -584,8 +585,7 @@ class ThemeStudioEffects {
     return window.matchMedia("(max-width: 600px)").matches
       && this.dashboardToolbarThemeActive
       && this.dashboardToolbarExpertModeEnabled
-      && this._isDashboardPath()
-      && !this.dashboardEditorActive;
+      && this._isDashboardPath();
   }
 
   _scheduleDashboardMobileMenuSync() {
@@ -635,12 +635,14 @@ class ThemeStudioEffects {
 
     this.dashboardMobileMenuItem = null;
     let editItem = null;
-    let menuLabel = "Kartenmodus";
+    let menuLabel = this.dashboardEditorActive
+      ? "Kartenmodus beenden"
+      : "Kartenmodus";
     const menuLabels = new Map([
-      ["Dashboard bearbeiten", "Kartenmodus"],
-      ["Edit dashboard", "Card mode"],
-      ["Modifier le tableau de bord", "Mode carte"],
-      ["Editar panel", "Modo tarjeta"],
+      ["Dashboard bearbeiten", ["Kartenmodus", "Kartenmodus beenden"]],
+      ["Edit dashboard", ["Card mode", "Exit card mode"]],
+      ["Modifier le tableau de bord", ["Mode carte", "Quitter le mode carte"]],
+      ["Editar panel", ["Modo tarjeta", "Salir del modo tarjeta"]],
     ]);
 
     this._visitElements(document, (element) => {
@@ -660,7 +662,7 @@ class ThemeStudioEffects {
             .includes(name)
         ) {
           editItem = candidate;
-          menuLabel = menuLabels.get(text);
+          menuLabel = menuLabels.get(text)[this.dashboardEditorActive ? 1 : 0];
           break;
         }
         candidate = candidate.parentElement;
@@ -693,7 +695,12 @@ class ThemeStudioEffects {
     item.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopImmediatePropagation();
-      this._startDashboardEditor();
+      if (this.dashboardEditorActive) {
+        this._stopDashboardEditor();
+      } else {
+        this._startDashboardEditor();
+      }
+      this._closeDashboardMobileMenu(item);
       item.remove();
       this.dashboardMobileMenuItem = null;
     }, true);
@@ -716,6 +723,20 @@ class ThemeStudioEffects {
       }
     }
 
+  }
+
+  _closeDashboardMobileMenu(item) {
+    let current = item;
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      try {
+        if (typeof current.close === "function") current.close();
+        if ("open" in current) current.open = false;
+        current.removeAttribute?.("open");
+      } catch (_error) {
+        // Closing the surrounding Home Assistant menu is best effort.
+      }
+      current = current.parentElement || current.getRootNode?.()?.host || null;
+    }
   }
 
   _themeElements() {
@@ -3379,6 +3400,7 @@ class ThemeStudioEffects {
 
     const host = document.createElement("div");
     host.setAttribute("data-theme-studio-dashboard-editor", "");
+    host.hidden = this._dashboardEditorCurrentDevice() === "mobile";
     const root = host.attachShadow({ mode: "open" });
 
     root.innerHTML = `
@@ -3392,6 +3414,7 @@ class ThemeStudioEffects {
           color: #f4f7f8;
           font: 13px/1.35 system-ui, sans-serif;
         }
+        :host([hidden]) { display: none !important; }
         * { box-sizing: border-box; }
         .panel {
           max-height: calc(100vh - 88px);
@@ -3969,16 +3992,39 @@ class ThemeStudioEffects {
       return;
     }
 
-    const captureTarget = this.dashboardEditorCardDrag.captureTarget;
-    if (this.dashboardEditorCardDrag.moved) {
+    const drag = this.dashboardEditorCardDrag;
+    const captureTarget = drag.captureTarget;
+    if (drag.moved) {
       this.dashboardEditorSuppressClickUntil = Date.now() + 500;
     }
     captureTarget?.releasePointerCapture?.(event.pointerId);
     captureTarget?.classList?.remove("active");
     this.dashboardEditorCardDrag = null;
     this._hideDashboardEditorPlacementGuide(1100);
+    if (
+      drag.moved
+      && drag.directCardTouch
+      && this._dashboardEditorCurrentDevice() === "mobile"
+    ) {
+      this._scheduleDashboardEditorMobileSave();
+    }
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  _scheduleDashboardEditorMobileSave(attempt = 0) {
+    window.clearTimeout(this.dashboardEditorMobileSaveTimer);
+    this.dashboardEditorMobileSaveTimer = window.setTimeout(() => {
+      this.dashboardEditorMobileSaveTimer = 0;
+      if (!this.dashboardEditorActive) return;
+      if (!this.dashboardEditorSettings && attempt < 20) {
+        this._scheduleDashboardEditorMobileSave(attempt + 1);
+        return;
+      }
+      if (this.dashboardEditorSettings) {
+        this._saveDashboardEditorRule();
+      }
+    }, attempt === 0 ? 220 : 150);
   }
 
   _nudgeDashboardEditorCard(event) {
@@ -5090,6 +5136,8 @@ class ThemeStudioEffects {
     }
 
     this._clearDashboardEditorSelection();
+    window.clearTimeout(this.dashboardEditorMobileSaveTimer);
+    this.dashboardEditorMobileSaveTimer = 0;
     document.removeEventListener(
       "click",
       this.dashboardEditorClickHandler,
