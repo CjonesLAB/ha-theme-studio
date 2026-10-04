@@ -134,6 +134,11 @@ def test_dashboard_header_exposes_direct_card_mode() -> None:
     assert 'panel.component_name === "lovelace"' in effects_source
     assert "hass?.panels || {}" in effects_source
     assert 'path.startsWith("/dashboard-")' in effects_source
+    assert "_isHomeAssistantDashboardEditMode()" in effects_source
+    assert 'element.lovelace?.editMode === true' in effects_source
+    assert 'new Set(["fertig", "done", "terminé", "listo"])' in effects_source
+    assert "_isDashboardEditModeToggle(event)" in effects_source
+    assert "now - this.dashboardEditModeCheckedAt < 5000" in effects_source
     assert '@media (max-width: 600px)' in effects_source
     assert "_scheduleDashboardMobileMenuSync()" in effects_source
     assert 'data-theme-studio-mobile-menu-item' in effects_source

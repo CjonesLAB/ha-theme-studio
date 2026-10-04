@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.8";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.9";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -128,6 +128,8 @@ class ThemeStudioEffects {
     this.dashboardToolbarHost = null;
     this.dashboardToolbarThemeActive = false;
     this.dashboardToolbarExpertModeEnabled = false;
+    this.dashboardEditModeCheckedAt = 0;
+    this.dashboardEditModeActive = false;
     this.dashboardMobileMenuItem = null;
     this.dashboardMenuSyncTimeoutIds = new Set();
     this.liquidGlass = DEFAULT_LIQUID_GLASS;
@@ -218,6 +220,17 @@ class ThemeStudioEffects {
     this.dashboardMenuEventHandler = (event) => {
       if (this._isDashboardMobileMenuTrigger(event)) {
         this._scheduleDashboardMobileMenuSync();
+      }
+      if (this._isDashboardEditModeToggle(event)) {
+        this.dashboardEditModeCheckedAt = 0;
+        for (const delay of [60, 180]) {
+          const timeoutId = window.setTimeout(() => {
+            this.dashboardMenuSyncTimeoutIds.delete(timeoutId);
+            this.dashboardEditModeCheckedAt = 0;
+            this._syncDashboardToolbarButton();
+          }, delay);
+          this.dashboardMenuSyncTimeoutIds.add(timeoutId);
+        }
       }
     };
     this.cardIndex = new Map();
@@ -572,6 +585,7 @@ class ThemeStudioEffects {
       this.dashboardToolbarThemeActive
       && this.dashboardToolbarExpertModeEnabled
       && this._isDashboardPath()
+      && !this._isHomeAssistantDashboardEditMode()
       && !this.dashboardEditorActive
     );
 
@@ -586,7 +600,57 @@ class ThemeStudioEffects {
     return window.matchMedia("(max-width: 600px)").matches
       && this.dashboardToolbarThemeActive
       && this.dashboardToolbarExpertModeEnabled
-      && this._isDashboardPath();
+      && this._isDashboardPath()
+      && !this._isHomeAssistantDashboardEditMode();
+  }
+
+  _isHomeAssistantDashboardEditMode() {
+    const now = Date.now();
+    if (now - this.dashboardEditModeCheckedAt < 5000) {
+      return this.dashboardEditModeActive;
+    }
+
+    const doneLabels = new Set(["fertig", "done", "terminé", "listo"]);
+    this.dashboardEditModeActive = this._visitElementsUntil(
+      document,
+      (element) => {
+        try {
+          if (
+            element.editMode === true
+            || element._editMode === true
+            || element.lovelace?.editMode === true
+          ) {
+            return true;
+          }
+        } catch (_error) {
+          // Some Home Assistant elements expose guarded state properties.
+        }
+
+        const name = String(element.localName || "");
+        if (!name.includes("button")) return false;
+        const label = String(
+          element.getAttribute?.("aria-label")
+          || element.textContent
+          || ""
+        ).trim().toLowerCase();
+        if (!doneLabels.has(label)) return false;
+        const rect = element.getBoundingClientRect?.();
+        return Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top < 120);
+      }
+    );
+    this.dashboardEditModeCheckedAt = now;
+    return this.dashboardEditModeActive;
+  }
+
+  _visitElementsUntil(root, predicate) {
+    if (!root?.querySelectorAll) return false;
+    for (const element of root.querySelectorAll("*")) {
+      if (predicate(element)) return true;
+      if (element.shadowRoot && this._visitElementsUntil(element.shadowRoot, predicate)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _scheduleDashboardMobileMenuSync() {
@@ -621,6 +685,22 @@ class ThemeStudioEffects {
         && event.clientX >= window.innerWidth - 96
         && event.clientY <= 160
       );
+  }
+
+  _isDashboardEditModeToggle(event) {
+    if (!this._isDashboardPath()) return false;
+    const signature = (event.composedPath?.() || [])
+      .slice(0, 10)
+      .map((element) => [
+        element?.localName,
+        element?.textContent,
+        element?.getAttribute?.("aria-label"),
+        element?.getAttribute?.("title"),
+        element?.getAttribute?.("icon"),
+      ].filter(Boolean).join(" "))
+      .join(" ")
+      .toLowerCase();
+    return /dashboard bearbeiten|edit dashboard|modifier le tableau|editar panel|fertig|done|terminé|listo|mdi:pencil/.test(signature);
   }
 
   _syncDashboardMobileMenuItem() {
