@@ -10,7 +10,7 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.8.2-beta.7"
+RELEASE_VERSION = "0.8.2-beta.8"
 DOCUMENTED_RELEASE_VERSION = "0.8.1"
 
 

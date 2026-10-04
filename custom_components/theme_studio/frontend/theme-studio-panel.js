@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.2-beta.7";
-import "./theme-studio-effects.js?v=0.8.2-beta.7";
+} from "./theme-studio-locales.js?v=0.8.2-beta.8";
+import "./theme-studio-effects.js?v=0.8.2-beta.8";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -5179,8 +5179,8 @@ class ThemeStudioPanel extends HTMLElement {
                       ${this._expertRuleNumberField("width", "Breite", 40, 2000, "px")}
                       ${this._expertRuleNumberField("min-height", "Mindesthöhe", 20, 2000, "px")}
                       ${this._expertRuleNumberField("columns", "Spaltenbreite", 1, 12, "Spalten")}
-                      ${this._expertRuleNumberField("offset-x", "Horizontal verschieben", -500, 500, "px")}
-                      ${this._expertRuleNumberField("offset-y", "Vertikal verschieben", -500, 500, "px")}
+                      ${this._expertRuleNumberField("offset-x", "Horizontal verschieben", -2000, 2000, "px")}
+                      ${this._expertRuleNumberField("offset-y", "Vertikal verschieben", -2000, 2000, "px")}
                       ${this._expertRuleNumberField("opacity", "Deckkraft", 0, 100, "%")}
                       ${this._expertRuleNumberField("font-size", "Schriftgröße", 8, 48, "px")}
                       ${this._expertRuleNumberField("border-radius", "Runde Ecken", 0, 60, "px")}

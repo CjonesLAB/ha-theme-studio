@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.7";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.2-beta.8";
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -121,6 +121,7 @@ class ThemeStudioEffects {
     this.dashboardEditorCardDrag = null;
     this.dashboardEditorSuppressClickUntil = 0;
     this.dashboardEditorMobileSaveTimer = 0;
+    this.dashboardEditorMobileSavePromise = null;
     this.dashboardEditorBaselineValues = {};
     this.dashboardEditorDirtyFields = new Set();
     this.dashboardEditorExtraHighlights = [];
@@ -692,11 +693,15 @@ class ThemeStudioEffects {
       item.prepend(icon);
     }
 
-    item.addEventListener("click", (event) => {
+    item.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopImmediatePropagation();
       if (this.dashboardEditorActive) {
-        this._stopDashboardEditor();
+        this._closeDashboardMobileMenu(item);
+        item.remove();
+        this.dashboardMobileMenuItem = null;
+        await this._finishDashboardMobileEditor();
+        return;
       } else {
         this._startDashboardEditor();
       }
@@ -3967,12 +3972,12 @@ class ThemeStudioEffects {
         Math.max(8 - drag.originRect.top, deltaY)
       )
       : deltaY;
-    offsetX.value = String(Math.min(500, Math.max(
-      -500,
+    offsetX.value = String(Math.min(2000, Math.max(
+      -2000,
       Math.round(drag.offsetX + horizontalDelta)
     )));
-    offsetY.value = String(Math.min(500, Math.max(
-      -500,
+    offsetY.value = String(Math.min(2000, Math.max(
+      -2000,
       Math.round(drag.offsetY + verticalDelta)
     )));
     this.dashboardEditorDirtyFields.add("offsetX");
@@ -4022,9 +4027,28 @@ class ThemeStudioEffects {
         return;
       }
       if (this.dashboardEditorSettings) {
-        this._saveDashboardEditorRule();
+        this.dashboardEditorMobileSavePromise = this._saveDashboardEditorRule()
+          .finally(() => {
+            this.dashboardEditorMobileSavePromise = null;
+          });
       }
     }, attempt === 0 ? 220 : 150);
+  }
+
+  async _finishDashboardMobileEditor() {
+    window.clearTimeout(this.dashboardEditorMobileSaveTimer);
+    this.dashboardEditorMobileSaveTimer = 0;
+    if (this.dashboardEditorMobileSavePromise) {
+      await this.dashboardEditorMobileSavePromise;
+    }
+    if (
+      this.dashboardEditorSettings
+      && this.dashboardEditorDirtyFields.size > 0
+    ) {
+      await this._saveDashboardEditorRule();
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 180));
+    this._stopDashboardEditor();
   }
 
   _nudgeDashboardEditorCard(event) {
@@ -4060,12 +4084,12 @@ class ThemeStudioEffects {
 
     const originRect = this.dashboardEditorSelectedCard.getBoundingClientRect();
     this._showDashboardEditorPlacementGuide(originRect);
-    offsetX.value = String(Math.min(500, Math.max(
-      -500,
+    offsetX.value = String(Math.min(2000, Math.max(
+      -2000,
       Number(offsetX.value || 0) + horizontal * step
     )));
-    offsetY.value = String(Math.min(500, Math.max(
-      -500,
+    offsetY.value = String(Math.min(2000, Math.max(
+      -2000,
       Number(offsetY.value || 0) + vertical * step
     )));
     this.dashboardEditorDirtyFields.add("offsetX");
@@ -4910,7 +4934,9 @@ class ThemeStudioEffects {
         this.dashboardEditorSelectedCardKey
       ) || "";
       this.dashboardEditorThemeActive = true;
-      this._clearDashboardEditorLiveStyle();
+      if (this._dashboardEditorCurrentDevice() !== "mobile") {
+        this._clearDashboardEditorLiveStyle();
+      }
       status.textContent = entries.length > 1
         ? `${entries.length} Kartenregeln wurden gespeichert und angewendet.`
         : "Regel gespeichert und auf dem Dashboard angewendet.";

@@ -214,10 +214,10 @@ EXPERT_RULE_SCHEMA = vol.Schema(
             None, vol.All(vol.Coerce(int), vol.Range(min=1, max=12))
         ),
         vol.Required("offsetX"): vol.Any(
-            None, vol.All(vol.Coerce(int), vol.Range(min=-500, max=500))
+            None, vol.All(vol.Coerce(int), vol.Range(min=-2000, max=2000))
         ),
         vol.Required("offsetY"): vol.Any(
-            None, vol.All(vol.Coerce(int), vol.Range(min=-500, max=500))
+            None, vol.All(vol.Coerce(int), vol.Range(min=-2000, max=2000))
         ),
         vol.Required("opacity"): vol.Any(
             None, vol.All(vol.Coerce(int), vol.Range(min=0, max=100))

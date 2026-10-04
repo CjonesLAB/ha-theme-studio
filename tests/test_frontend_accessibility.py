@@ -213,6 +213,7 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
     assert "_scheduleDashboardEditorMobileSave();" in effects_source
     assert "this._saveDashboardEditorRule();" in effects_source
     assert "_closeDashboardMobileMenu(item)" in effects_source
+    assert "Math.min(2000, Math.max(" in effects_source
 
 
 def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:
