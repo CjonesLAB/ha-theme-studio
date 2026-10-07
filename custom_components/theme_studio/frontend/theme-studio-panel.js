@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.1";
-import "./theme-studio-effects.js?v=0.9.0-beta.1";
+} from "./theme-studio-locales.js?v=0.9.0-beta.2";
+import "./theme-studio-effects.js?v=0.9.0-beta.2";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -966,6 +966,11 @@ class ThemeStudioPanel extends HTMLElement {
             minmax(520px, 1.35fr);
           gap: 18px;
           align-items: start;
+          overflow-anchor: none;
+        }
+
+        .mobile-preview-back {
+          display: none;
         }
 
         .builder-controls {
@@ -3966,6 +3971,39 @@ class ThemeStudioPanel extends HTMLElement {
             scroll-margin-top: 178px;
           }
 
+          .builder-grid[data-mobile-view="preview"] .builder-controls {
+            display: none;
+          }
+
+          .builder-grid[data-mobile-view="editor"] .preview-panel {
+            display: none;
+          }
+
+          .builder-grid[data-mobile-view="editor"] .builder-controls {
+            display: grid;
+          }
+
+          .mobile-preview-back {
+            display: inline-flex;
+            width: 100%;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            padding: 0 14px;
+            border: 1px solid var(--divider-color);
+            border-radius: 12px;
+            background: var(--card-background-color);
+            color: var(--primary-text-color);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+          }
+
+          .mobile-preview-back-arrow {
+            font-size: 22px;
+            line-height: 1;
+          }
+
           .preview-app-header {
             min-height: 31px;
             padding: 0 9px;
@@ -4553,8 +4591,16 @@ class ThemeStudioPanel extends HTMLElement {
           </div>
         </section>
 
-        <section class="builder-grid">
+        <section class="builder-grid" data-mobile-view="preview">
           <div class="builder-controls">
+            <button
+              id="mobile-preview-back"
+              class="mobile-preview-back"
+              type="button"
+            >
+              <span class="mobile-preview-back-arrow" aria-hidden="true">←</span>
+              <span>Zur Vorschau</span>
+            </button>
             <div class="panel">
             <div class="panel-heading">
               <h2>Feineinstellungen</h2>
@@ -5948,12 +5994,17 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    if (window.matchMedia("(max-width: 620px)").matches) {
+    const isMobile = window.matchMedia("(max-width: 620px)").matches;
+
+    if (isMobile) {
       this.shadowRoot
         .querySelectorAll("details.editor-section")
         .forEach((candidate) => {
           candidate.open = candidate === section;
         });
+      this.shadowRoot
+        .querySelector(".builder-grid")
+        ?.setAttribute("data-mobile-view", "editor");
     } else {
       section.open = true;
     }
@@ -5970,12 +6021,16 @@ class ThemeStudioPanel extends HTMLElement {
     section.classList.remove("editor-section-focus");
     window.requestAnimationFrame(() => {
       section.classList.add("editor-section-focus");
-      section.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "start",
-      });
+
+      if (!isMobile) {
+        section.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "nearest",
+        });
+      }
+
       section.querySelector("summary")?.focus({ preventScroll: true });
       this.editorSectionFocusTimer = window.setTimeout(() => {
         section.classList.remove("editor-section-focus");
@@ -5983,8 +6038,27 @@ class ThemeStudioPanel extends HTMLElement {
     });
   }
 
+  _showMobilePreview() {
+    const builderGrid = this.shadowRoot.querySelector(".builder-grid");
+
+    if (!builderGrid) {
+      return;
+    }
+
+    builderGrid.setAttribute("data-mobile-view", "preview");
+    window.requestAnimationFrame(() => {
+      this.shadowRoot
+        .querySelector(".preview-section-button.active")
+        ?.focus({ preventScroll: true });
+    });
+  }
+
   _bindEvents() {
     const previewPanel = this.shadowRoot.getElementById("preview-panel");
+
+    this.shadowRoot
+      .getElementById("mobile-preview-back")
+      .addEventListener("click", () => this._showMobilePreview());
 
     previewPanel.addEventListener("click", (event) => {
       const target = event.target.closest("[data-editor-section]");

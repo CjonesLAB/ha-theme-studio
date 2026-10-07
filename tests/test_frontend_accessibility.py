@@ -37,7 +37,12 @@ def test_mobile_first_preview_opens_native_design_sections() -> None:
     assert '_openEditorSection(target.dataset.editorSection)' in PANEL_SOURCE
     assert 'window.matchMedia("(max-width: 620px)").matches' in PANEL_SOURCE
     assert 'candidate.open = candidate === section;' in PANEL_SOURCE
-    assert 'scrollIntoView({' in PANEL_SOURCE
+    assert 'data-mobile-view="preview"' in PANEL_SOURCE
+    assert 'setAttribute("data-mobile-view", "editor")' in PANEL_SOURCE
+    assert 'id="mobile-preview-back"' in PANEL_SOURCE
+    assert '_showMobilePreview()' in PANEL_SOURCE
+    assert 'if (!isMobile) {' in PANEL_SOURCE
+    assert 'block: "nearest"' in PANEL_SOURCE
     assert 'min-height: 48px;' in PANEL_SOURCE
 
 

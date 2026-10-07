@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.1";
+const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.2";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
