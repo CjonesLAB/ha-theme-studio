@@ -41,6 +41,15 @@ def test_mobile_first_preview_opens_native_design_sections() -> None:
     assert 'setAttribute("data-mobile-view", "editor")' in PANEL_SOURCE
     assert 'id="mobile-preview-back"' in PANEL_SOURCE
     assert '_showMobilePreview()' in PANEL_SOURCE
+    assert 'id="preview-card-choices"' in PANEL_SOURCE
+    assert PANEL_SOURCE.count("data-preview-card-choice\n") == 4
+    assert 'aria-labelledby="preview-card-choice-title"' in PANEL_SOURCE
+    assert '?.focus({ preventScroll: true });' in PANEL_SOURCE
+    assert 'data-preview-context="card"' in PANEL_SOURCE
+    assert '_showPreviewCardChoices(previewCard)' in PANEL_SOURCE
+    assert 'data-card-context="surface"' in PANEL_SOURCE
+    assert 'data-card-context="text"' in PANEL_SOURCE
+    assert 'data-card-context="icon"' in PANEL_SOURCE
     assert 'if (!isMobile) {' in PANEL_SOURCE
     assert 'block: "nearest"' in PANEL_SOURCE
     assert 'position: relative;\n            top: auto;' in PANEL_SOURCE

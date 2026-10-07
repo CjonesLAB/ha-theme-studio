@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.5";
-import "./theme-studio-effects.js?v=0.9.0-beta.5";
+} from "./theme-studio-locales.js?v=0.9.0-beta.6";
+import "./theme-studio-effects.js?v=0.9.0-beta.6";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2932,6 +2932,79 @@ class ThemeStudioPanel extends HTMLElement {
           filter: brightness(1.08);
         }
 
+        .preview-card.preview-context-selected {
+          background-color: color-mix(
+            in srgb,
+            var(--primary-color) 14%,
+            var(--preview-card)
+          );
+        }
+
+        .preview-card-choices[hidden] {
+          display: none !important;
+        }
+
+        .preview-card-choices {
+          margin-top: 10px;
+          padding: 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 12px;
+          background: var(--secondary-background-color);
+        }
+
+        .preview-card-choice-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 5px;
+        }
+
+        .preview-card-choice-heading strong {
+          font-size: 13px;
+        }
+
+        .preview-card-choice-close {
+          width: 44px;
+          height: 44px;
+          padding: 0;
+          border: 0;
+          border-radius: 50%;
+          background: transparent;
+          color: var(--primary-text-color);
+          font-size: 22px;
+          cursor: pointer;
+        }
+
+        .preview-card-choice-hint {
+          margin: 0 0 10px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .preview-card-choice-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .preview-card-choice-button {
+          min-height: 48px;
+          padding: 8px 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font: inherit;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .card-context-group + .card-context-group {
+          margin-top: 14px;
+        }
+
         details.editor-section {
           scroll-margin-top: calc(
             var(--theme-studio-preview-sticky-top, 82px) + 12px
@@ -4006,6 +4079,20 @@ class ThemeStudioPanel extends HTMLElement {
             line-height: 1;
           }
 
+          #editor-section-cards[data-card-context]
+          .card-context-group {
+            display: none;
+          }
+
+          #editor-section-cards[data-card-context="surface"]
+          .card-context-surface,
+          #editor-section-cards[data-card-context="text"]
+          .card-context-text,
+          #editor-section-cards[data-card-context="icon"]
+          .card-context-icon {
+            display: block;
+          }
+
           .preview-app-header {
             min-height: 31px;
             padding: 0 9px;
@@ -4637,6 +4724,7 @@ class ThemeStudioPanel extends HTMLElement {
             <details id="editor-section-cards" class="editor-section">
               <summary>Karten</summary>
               <div class="details-content">
+                <div class="card-context-group card-context-surface">
                 <div class="effect-options">
                   <button
                     class="effect-option glass-style-option effect-none"
@@ -4732,16 +4820,6 @@ class ThemeStudioPanel extends HTMLElement {
                 )}
 
                 ${this._colorField(
-                  "card-text-color",
-                  "Textfarbe"
-                )}
-
-                ${this._colorField(
-                  "card-icon-color",
-                  "Symbolfarbe"
-                )}
-
-                ${this._colorField(
                   "card-border-color",
                   "Rahmenfarbe"
                 )}
@@ -4773,6 +4851,21 @@ class ThemeStudioPanel extends HTMLElement {
                   0,
                   36
                 )}
+                </div>
+
+                <div class="card-context-group card-context-text">
+                  ${this._colorField(
+                    "card-text-color",
+                    "Textfarbe"
+                  )}
+                </div>
+
+                <div class="card-context-group card-context-icon">
+                  ${this._colorField(
+                    "card-icon-color",
+                    "Symbolfarbe"
+                  )}
+                </div>
               </div>
             </details>
 
@@ -5532,6 +5625,55 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </div>
           </div>
+          <section
+            id="preview-card-choices"
+            class="preview-card-choices"
+            role="group"
+            aria-labelledby="preview-card-choice-title"
+            hidden
+          >
+            <div class="preview-card-choice-heading">
+              <strong id="preview-card-choice-title">Was möchtest du bearbeiten?</strong>
+              <button
+                id="preview-card-choice-close"
+                class="preview-card-choice-close"
+                type="button"
+                aria-label="Auswahl schließen"
+              >×</button>
+            </div>
+            <p class="preview-card-choice-hint">
+              Die Auswahl gilt für das gesamte Design, nicht nur für diese Karte.
+            </p>
+            <div class="preview-card-choice-grid">
+              <button
+                class="preview-card-choice-button"
+                type="button"
+                data-preview-card-choice
+                data-editor-section="editor-section-cards"
+                data-card-context="surface"
+              >Oberfläche</button>
+              <button
+                class="preview-card-choice-button"
+                type="button"
+                data-preview-card-choice
+                data-editor-section="editor-section-cards"
+                data-card-context="text"
+              >Text</button>
+              <button
+                class="preview-card-choice-button"
+                type="button"
+                data-preview-card-choice
+                data-editor-section="editor-section-cards"
+                data-card-context="icon"
+              >Symbol</button>
+              <button
+                class="preview-card-choice-button"
+                type="button"
+                data-preview-card-choice
+                data-editor-section="editor-section-effects"
+              >Zustände</button>
+            </div>
+          </section>
           <p class="preview-edit-hint">
             Tippe auf einen Bereich der Vorschau oder wähle eine Kategorie.
           </p>
@@ -5933,7 +6075,7 @@ class ThemeStudioPanel extends HTMLElement {
     return `
       <div
         class="preview-card preview-edit-target"
-        data-editor-section="editor-section-cards"
+        data-preview-context="card"
         role="button"
         tabindex="0"
         aria-label="Kartendarstellung bearbeiten"
@@ -5989,7 +6131,7 @@ class ThemeStudioPanel extends HTMLElement {
     });
   }
 
-  _openEditorSection(sectionId) {
+  _openEditorSection(sectionId, { cardContext = null } = {}) {
     const section = this.shadowRoot.getElementById(sectionId);
 
     if (!section?.classList.contains("editor-section")) {
@@ -5997,6 +6139,14 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     const isMobile = window.matchMedia("(max-width: 620px)").matches;
+
+    if (sectionId === "editor-section-cards") {
+      if (cardContext) {
+        section.setAttribute("data-card-context", cardContext);
+      } else {
+        section.removeAttribute("data-card-context");
+      }
+    }
 
     if (isMobile) {
       this.shadowRoot
@@ -6050,6 +6200,40 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     builderGrid.setAttribute("data-mobile-view", "preview");
+    this._hidePreviewCardChoices();
+  }
+
+  _showPreviewCardChoices(card) {
+    if (!window.matchMedia("(max-width: 620px)").matches) {
+      this._openEditorSection("editor-section-cards");
+      return;
+    }
+
+    this.shadowRoot
+      .querySelectorAll(".preview-card.preview-context-selected")
+      .forEach((candidate) => {
+        candidate.classList.remove("preview-context-selected");
+      });
+    card.classList.add("preview-context-selected");
+    const choices = this.shadowRoot.getElementById("preview-card-choices");
+    choices.hidden = false;
+    choices
+      .querySelector("[data-preview-card-choice]")
+      ?.focus({ preventScroll: true });
+  }
+
+  _hidePreviewCardChoices() {
+    const choices = this.shadowRoot.getElementById("preview-card-choices");
+
+    if (choices) {
+      choices.hidden = true;
+    }
+
+    this.shadowRoot
+      .querySelectorAll(".preview-card.preview-context-selected")
+      .forEach((candidate) => {
+        candidate.classList.remove("preview-context-selected");
+      });
   }
 
   _bindEvents() {
@@ -6059,7 +6243,28 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("mobile-preview-back")
       .addEventListener("click", () => this._showMobilePreview());
 
+    this.shadowRoot
+      .getElementById("preview-card-choice-close")
+      .addEventListener("click", () => this._hidePreviewCardChoices());
+
     previewPanel.addEventListener("click", (event) => {
+      const choice = event.target.closest("[data-preview-card-choice]");
+
+      if (choice) {
+        this._hidePreviewCardChoices();
+        this._openEditorSection(choice.dataset.editorSection, {
+          cardContext: choice.dataset.cardContext || null,
+        });
+        return;
+      }
+
+      const previewCard = event.target.closest('[data-preview-context="card"]');
+
+      if (previewCard) {
+        this._showPreviewCardChoices(previewCard);
+        return;
+      }
+
       const target = event.target.closest("[data-editor-section]");
 
       if (target) {
@@ -6073,6 +6278,14 @@ class ThemeStudioPanel extends HTMLElement {
       }
 
       const target = event.target.closest("[data-editor-section]");
+
+      const previewCard = event.target.closest('[data-preview-context="card"]');
+
+      if (previewCard) {
+        event.preventDefault();
+        this._showPreviewCardChoices(previewCard);
+        return;
+      }
 
       if (!target || target.tagName === "BUTTON") {
         return;
