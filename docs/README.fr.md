@@ -4,7 +4,7 @@
 
 Theme Studio est une intégration personnalisée pour Home Assistant permettant de créer, prévisualiser et appliquer directement vos propres designs d’interface.
 
-![Réglages de design des cartes Theme Studio](images/fine-settings-cards-tech-frame-v063.png)
+![Vue d’ensemble de Theme Studio 0.8.3](images/theme-studio-overview-v083.png)
 
 > Version actuelle : **0.8.3**
 >
