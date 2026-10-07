@@ -43,6 +43,7 @@ def test_mobile_first_preview_opens_native_design_sections() -> None:
     assert '_showMobilePreview()' in PANEL_SOURCE
     assert 'if (!isMobile) {' in PANEL_SOURCE
     assert 'block: "nearest"' in PANEL_SOURCE
+    assert 'position: relative;\n            top: auto;' in PANEL_SOURCE
     assert 'min-height: 48px;' in PANEL_SOURCE
 
 

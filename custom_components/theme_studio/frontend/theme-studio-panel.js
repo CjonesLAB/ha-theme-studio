@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.2";
-import "./theme-studio-effects.js?v=0.9.0-beta.2";
+} from "./theme-studio-locales.js?v=0.9.0-beta.3";
+import "./theme-studio-effects.js?v=0.9.0-beta.3";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3818,6 +3818,8 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .preview-panel {
+            position: relative;
+            top: auto;
             z-index: 90;
             order: -1;
             padding: 8px;
@@ -6031,7 +6033,9 @@ class ThemeStudioPanel extends HTMLElement {
         });
       }
 
-      section.querySelector("summary")?.focus({ preventScroll: true });
+      if (!isMobile) {
+        section.querySelector("summary")?.focus({ preventScroll: true });
+      }
       this.editorSectionFocusTimer = window.setTimeout(() => {
         section.classList.remove("editor-section-focus");
       }, 1200);
@@ -6046,11 +6050,6 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     builderGrid.setAttribute("data-mobile-view", "preview");
-    window.requestAnimationFrame(() => {
-      this.shadowRoot
-        .querySelector(".preview-section-button.active")
-        ?.focus({ preventScroll: true });
-    });
   }
 
   _bindEvents() {
