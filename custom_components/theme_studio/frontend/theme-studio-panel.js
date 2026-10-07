@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.2";
-import "./theme-studio-effects.js?v=0.8.2";
+} from "./theme-studio-locales.js?v=0.8.3";
+import "./theme-studio-effects.js?v=0.8.3";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3127,6 +3127,39 @@ class ThemeStudioPanel extends HTMLElement {
           line-height: 1.45;
         }
 
+        .legacy-position-notice {
+          margin: 12px 0;
+          padding: 11px;
+          border: 1px solid color-mix(in srgb, var(--error-color, #db4437) 65%, transparent);
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--error-color, #db4437) 9%, transparent);
+        }
+
+        .legacy-position-notice strong,
+        .legacy-position-notice p {
+          display: block;
+          margin: 0;
+        }
+
+        .legacy-position-notice p {
+          margin-top: 5px;
+          color: var(--secondary-text-color);
+          font-size: 10px;
+          line-height: 1.45;
+        }
+
+        .legacy-position-notice button {
+          min-height: 36px;
+          margin-top: 9px;
+          padding: 0 11px;
+          border: 1px solid color-mix(in srgb, var(--error-color, #db4437) 70%, transparent);
+          border-radius: 8px;
+          color: var(--primary-text-color);
+          background: transparent;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
         .expert-rule-heading {
           display: flex;
           align-items: center;
@@ -3243,43 +3276,6 @@ class ThemeStudioPanel extends HTMLElement {
           padding: 11px;
           border: 1px solid var(--divider-color);
           border-radius: 9px;
-        }
-
-        .dashboard-editor-launch {
-          margin: 12px 0 15px;
-          padding: 11px;
-          border: 1px solid var(--divider-color);
-          border-radius: 8px;
-          background: color-mix(
-            in srgb,
-            var(--primary-color) 8%,
-            transparent
-          );
-        }
-
-        .dashboard-editor-launch p {
-          margin: 0 0 9px;
-          color: var(--secondary-text-color);
-          font-size: 9px;
-          line-height: 1.45;
-        }
-
-        .dashboard-editor-launch strong {
-          display: block;
-          margin-bottom: 4px;
-          font-size: 11px;
-        }
-
-        .dashboard-editor-launch button {
-          min-height: 36px;
-          padding: 0 13px;
-          border: 1px solid var(--primary-color);
-          border-radius: 8px;
-          background: var(--primary-color);
-          color: var(--text-primary-color, #fff);
-          font-size: 10px;
-          font-weight: 700;
-          cursor: pointer;
         }
 
         .expert-rule-grid,
@@ -4523,12 +4519,6 @@ class ThemeStudioPanel extends HTMLElement {
                   </button>
                 </div>
 
-                <div class="dashboard-editor-launch">
-                  <strong>Einzelne Karte direkt bearbeiten</strong>
-                  <p>Eine Karte auf dem echten Dashboard auswählen und Größe, Abstand oder Position dort sofort anpassen.</p>
-                  <button id="expert-dashboard-editor-button" type="button">Dashboard-Bearbeitungsmodus starten</button>
-                </div>
-
                 <div id="glass-controls" hidden>
                   ${this._rangeField(
                     "glass-transparency",
@@ -5111,13 +5101,20 @@ class ThemeStudioPanel extends HTMLElement {
                     Experimentelle Funktion: Eigene CSS-Regeln können
                     Darstellung, Bedienbarkeit und responsives Verhalten
                     beeinflussen. Nach Home-Assistant-Updates können
-                    Anpassungen ausfallen. Auf Smartphones steht im direkten
-                    Kartenmodus nur das Verschieben zur Verfügung; Größen-,
-                    Abstands- und Darstellungswerte werden am Desktop oder
-                    Tablet bearbeitet. Der Expertenmodus gilt nur für dein
+                    Anpassungen ausfallen. Der direkte Karten- und
+                    Verschiebemodus wurde in Version 0.8.3 aus
+                    Kompatibilitätsgründen entfernt. Das Kartenlayout wird
+                    wieder vollständig mit den Werkzeugen von Home Assistant
+                    bearbeitet. Der Expertenmodus gilt nur für dein
                     Benutzerkonto und nicht für Einstellungen oder
                     Dialogfenster.
                   </p>
+
+                  <div id="legacy-position-notice" class="legacy-position-notice" hidden>
+                    <strong>Alte Positionsregeln erkannt</strong>
+                    <p>Vorhandene horizontale und vertikale Verschiebungen bleiben zunächst erhalten. Du kannst ausschließlich diese Positionswerte entfernen; alle anderen Kartenwerte bleiben unverändert.</p>
+                    <button id="legacy-position-disable" type="button">Alle Positionsanpassungen deaktivieren</button>
+                  </div>
 
                   <div class="expert-rule-heading">
                     <h4>Visuelle CSS-Regeln</h4>
@@ -5127,10 +5124,7 @@ class ThemeStudioPanel extends HTMLElement {
                   <div id="expert-rule-list" class="expert-rule-list"></div>
 
                   <div class="expert-rule-management-actions">
-                    <p>
-                      Kartenspezifische Regeln erstellst du am einfachsten
-                      direkt im Dashboard.
-                    </p>
+                    <p>Visuelle Regeln bleiben für bestehende Darstellungsanpassungen verfügbar. Die Kartenposition wird ausschließlich im Home-Assistant-Dashboard bearbeitet.</p>
                     <button
                       id="expert-rule-create"
                       type="button"
@@ -5183,8 +5177,6 @@ class ThemeStudioPanel extends HTMLElement {
                       ${this._expertRuleNumberField("width", "Breite", 40, 2000, "px")}
                       ${this._expertRuleNumberField("min-height", "Mindesthöhe", 20, 2000, "px")}
                       ${this._expertRuleNumberField("columns", "Spaltenbreite", 1, 12, "Spalten")}
-                      ${this._expertRuleNumberField("offset-x", "Horizontal verschieben", -2000, 2000, "px")}
-                      ${this._expertRuleNumberField("offset-y", "Vertikal verschieben", -2000, 2000, "px")}
                       ${this._expertRuleNumberField("opacity", "Deckkraft", 0, 100, "%")}
                       ${this._expertRuleNumberField("font-size", "Schriftgröße", 8, 48, "px")}
                       ${this._expertRuleNumberField("border-radius", "Runde Ecken", 0, 60, "px")}
@@ -6389,9 +6381,9 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
-      .getElementById("expert-dashboard-editor-button")
+      .getElementById("legacy-position-disable")
       .addEventListener("click", () => {
-        this._openDashboardEditor();
+        this._disableLegacyPositionRules();
       });
 
     this.shadowRoot
@@ -8914,54 +8906,6 @@ class ThemeStudioPanel extends HTMLElement {
     return succeeded;
   }
 
-  async _openDashboardEditor() {
-    const button = this.shadowRoot.getElementById(
-      "expert-dashboard-editor-button"
-    );
-    const originalLabel = button.textContent;
-
-    button.disabled = true;
-    button.textContent = "Dashboard wird vorbereitet …";
-
-    const saved = await this._saveAndApplySettings();
-
-    if (!saved) {
-      button.disabled = false;
-      button.textContent = originalLabel;
-      return;
-    }
-
-    try {
-      window.sessionStorage.setItem(
-        "theme-studio-dashboard-editor",
-        "1"
-      );
-    } catch (_error) {
-      // The global effects instance can still start the editor directly.
-    }
-
-    window.themeStudioEffects?._startDashboardEditor?.();
-
-    let destination = "/lovelace";
-
-    try {
-      const remembered = window.sessionStorage.getItem(
-        "theme-studio-last-dashboard-path"
-      );
-
-      if (remembered?.startsWith("/") && !remembered.startsWith("/config")) {
-        destination = remembered;
-      }
-    } catch (_error) {
-      // Fall back to the default dashboard route.
-    }
-
-    window.history.pushState(null, "", destination);
-    window.dispatchEvent(new CustomEvent("location-changed", {
-      detail: { replace: false },
-    }));
-  }
-
   _syncRecoveryButton() {
     const button = this.shadowRoot?.getElementById(
       "restore-last-button"
@@ -9509,6 +9453,7 @@ class ThemeStudioPanel extends HTMLElement {
       this.settings.effects.expertRules
     ) ? this.settings.effects.expertRules : [];
     this._renderExpertRules();
+    this._syncLegacyPositionNotice();
     this._syncExpertRuleTargetForm();
   }
 
@@ -9591,6 +9536,9 @@ class ThemeStudioPanel extends HTMLElement {
       target = "";
     }
 
+    const existingRule = this.settings.effects.expertRules.find(
+      (candidate) => candidate.id === this.editingExpertRuleId
+    );
     const rule = {
       id: this.editingExpertRuleId || this._newExpertRuleId(),
       name: name.slice(0, 48),
@@ -9606,8 +9554,8 @@ class ThemeStudioPanel extends HTMLElement {
       width: this._expertRuleFieldValue("width"),
       minHeight: this._expertRuleFieldValue("min-height"),
       columns: this._expertRuleFieldValue("columns"),
-      offsetX: this._expertRuleFieldValue("offset-x"),
-      offsetY: this._expertRuleFieldValue("offset-y"),
+      offsetX: existingRule?.offsetX ?? null,
+      offsetY: existingRule?.offsetY ?? null,
       opacity: this._expertRuleFieldValue("opacity"),
       fontSize: this._expertRuleFieldValue("font-size"),
       borderRadius: this._expertRuleFieldValue("border-radius"),
@@ -9708,6 +9656,8 @@ class ThemeStudioPanel extends HTMLElement {
         ...this._cloneSettings(rule),
         id: this._newExpertRuleId(),
         name: `${rule.name} Kopie`.slice(0, 48),
+        offsetX: null,
+        offsetY: null,
       });
     } else if (action === "toggle") {
       this._recordHistory();
@@ -9740,8 +9690,6 @@ class ThemeStudioPanel extends HTMLElement {
       width: rule.width,
       "min-height": rule.minHeight,
       columns: rule.columns,
-      "offset-x": rule.offsetX,
-      "offset-y": rule.offsetY,
       opacity: rule.opacity,
       "font-size": rule.fontSize,
       "border-radius": rule.borderRadius,
@@ -9774,8 +9722,6 @@ class ThemeStudioPanel extends HTMLElement {
       "width",
       "min-height",
       "columns",
-      "offset-x",
-      "offset-y",
       "opacity",
       "font-size",
       "border-radius",
@@ -9895,6 +9841,43 @@ class ThemeStudioPanel extends HTMLElement {
         </div>
       </div>
     `).join("");
+  }
+
+  _syncLegacyPositionNotice() {
+    const notice = this.shadowRoot.getElementById("legacy-position-notice");
+    if (!notice) {
+      return;
+    }
+    notice.hidden = !(this.settings.effects.expertRules || []).some(
+      (rule) => rule.offsetX !== null || rule.offsetY !== null
+    );
+  }
+
+  _disableLegacyPositionRules() {
+    const affectedRules = (this.settings.effects.expertRules || []).filter(
+      (rule) => rule.offsetX !== null || rule.offsetY !== null
+    );
+    if (affectedRules.length === 0) {
+      this._syncLegacyPositionNotice();
+      return;
+    }
+    if (!this._confirm(
+      "Positionswerte aus allen betroffenen Regeln entfernen? Alle anderen Kartenwerte bleiben erhalten."
+    )) {
+      return;
+    }
+    this._recordHistory();
+    for (const rule of affectedRules) {
+      rule.offsetX = null;
+      rule.offsetY = null;
+    }
+    this._renderExpertRules();
+    this._syncLegacyPositionNotice();
+    this._finishSettingsChange();
+    this._setStatus(
+      "Alle alten Positionsanpassungen wurden deaktiviert. Bitte Design anwenden.",
+      "success"
+    );
   }
 
   _expertCssError(css) {

@@ -1,10 +1,10 @@
-# Theme Studio 0.8.2 - Guía de usuario
+# Theme Studio 0.8.3 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio por completo, desde la instalación hasta la edición precisa de tarjetas individuales. Se aplica a la versión **0.8.2**.
+Esta guía explica Theme Studio por completo, desde la instalación hasta el diseño visual del panel y la gestión segura de las reglas de tarjeta existentes. Se aplica a la versión **0.8.3**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
@@ -19,7 +19,7 @@ Esta guía explica Theme Studio por completo, desde la instalación hasta la edi
 5. Perfiles de diseño
 6. Colores, tarjetas, navegación y fondo
 7. Efectos del panel y de las tarjetas
-8. Modo experto y editor directo
+8. Modo experto y reglas de posición antiguas
 9. Aplicar, deshacer, restaurar y restablecer
 10. Importación, exportación y publicación JSON
 11. Ajustes por usuario, datos y privacidad
@@ -30,9 +30,9 @@ Esta guía explica Theme Studio por completo, desde la instalación hasta la edi
 
 Theme Studio es una integración personalizada para Home Assistant. La instalación requiere permisos de administrador. Después, una cuenta de usuario normal es suficiente para crear diseños.
 
-Theme Studio genera un tema real de Home Assistant, por lo que los colores y las variables compatibles pueden actuar en muchas páginas. Sin embargo, los efectos de tarjeta, el CSS experto y el editor directo necesitan la estructura estándar de tarjetas y diseños de **Lovelace**.
+Theme Studio genera un tema real de Home Assistant, por lo que los colores y las variables compatibles pueden actuar en muchas páginas. Sin embargo, los efectos de tarjeta y el CSS experto necesitan la estructura estándar de tarjetas de **Lovelace**.
 
-> **Limitación importante:** los paneles completamente personalizados o los paneles personalizados que generan su propia estructura HTML o sus propios componentes web no son compatibles con los efectos de tarjeta, el CSS experto ni el editor directo. Los colores básicos del tema pueden seguir funcionando, pero los efectos no están garantizados.
+> **Limitación importante:** los paneles completamente personalizados o los paneles personalizados que generan su propia estructura HTML o sus propios componentes web no son compatibles con los efectos de tarjeta ni el CSS experto. Los colores básicos del tema pueden seguir funcionando, pero los efectos no están garantizados.
 
 Ten en cuenta también:
 
@@ -179,60 +179,30 @@ Busca por nombre, ID o clase de dispositivo y selecciona varias entidades. **Des
 
 Una tarjeta sin estructura Lovelace estándar puede impedir que Theme Studio detecte la entidad. Estos efectos no están disponibles en paneles completamente personalizados.
 
-## 8. Modo experto y editor directo
+## 8. Modo experto y reglas de posición antiguas
 
-El modo experto se encuentra en **Efectos del panel**. Es opcional y privado para el usuario actual.
+El modo experto se encuentra en **Efectos del panel**. Es opcional, experimental y privado para el usuario actual.
 
-> **Experimental:** el CSS experto y el editor directo modifican la presentación de Lovelace y pueden comportarse de forma diferente después de una actualización de Home Assistant. Conserva una copia de seguridad y prueba los cambios con cuidado. El editor completo está disponible en ordenador y tableta. En teléfonos, el modo de tarjeta se limita al movimiento.
+> **Transición en la versión 0.8.3:** la edición directa y el movimiento de tarjetas se retiraron porque el posicionamiento por píxeles no era fiable en distintos dispositivos. Usa el editor de paneles de Home Assistant para el orden de las tarjetas, las secciones, el tamaño y el diseño. Theme Studio ya no muestra un icono en la barra del panel ni un modo de tarjeta en teléfonos.
 
-### 8.1 Activación
+Las reglas visuales existentes se conservan y pueden activarse, desactivarse, editarse, duplicarse o eliminarse. Ya no se pueden crear nuevos desplazamientos horizontales o verticales.
 
-1. Activa **Modo experto: CSS personalizado del panel**.
-2. Confirma el aviso.
-3. Abre un panel Lovelace normal.
-4. El icono de Theme Studio aparecerá junto a las acciones habituales.
+### 8.1 Desactivar los ajustes de posición antiguos
 
-El icono permanece oculto en Ajustes, Terminal, File Editor, listas de tareas y paneles personalizados.
+Theme Studio detecta las reglas creadas por versiones anteriores que contienen valores X/Y y muestra **Se detectaron reglas de posición antiguas**.
 
-### 8.2 Seleccionar tarjetas
+1. Revisa el diseño afectado antes de modificarlo.
+2. Selecciona **Desactivar todos los ajustes de posición**.
+3. Confirma la pregunta.
+4. Aplica el diseño.
 
-1. Pulsa el icono de Theme Studio.
-2. Pulsa la tarjeta deseada.
-3. Mantén `Ctrl` para seleccionar más tarjetas.
-4. La tarjeta seleccionada conserva su aspecto exterior normal; solo se resalta de forma sutil su zona interior.
+Solo se eliminan los desplazamientos horizontales y verticales. El espacio interior, la anchura, la altura mínima, las columnas, la opacidad, el tamaño del texto, las esquinas, el objetivo y la restricción de dispositivo permanecen sin cambios. Las reglas guardadas no se eliminan.
 
-![Editor directo con vista previa y selección múltiple](../images/theme-studio-card-editor-v080.png)
+### 8.2 Gestionar el diseño de las tarjetas
 
-### 8.3 Modificar valores
+Usa el editor nativo de Home Assistant para mover tarjetas, modificar secciones, tamaños o el diseño. De este modo, el panel sigue siendo adaptable y utiliza las reglas de diseño compatibles con Home Assistant en ordenador, tableta y teléfono.
 
-El editor muestra primero los valores medidos de la tarjeta. Así se conserva su tamaño original al cambiar un solo campo.
-
-Los controles incluyen:
-
-- espacio interior
-- anchura y altura mínima
-- número de columnas
-- posición horizontal y vertical
-- opacidad
-- tamaño de texto
-- esquinas redondeadas
-
-Los cambios se ven al instante. Arrastra libremente la gran cruz central o usa sus botones de dirección. El propio panel del editor puede moverse para llegar a tarjetas situadas detrás.
-
-En teléfonos no aparece ningún panel de edición. Inicia el modo de tarjeta desde el menú del panel, mueve una tarjeta directamente con un dedo y finaliza el modo desde el mismo menú. La posición final se guarda automáticamente como una regla específica del teléfono. El tamaño, el espaciado, las columnas, la opacidad, la tipografía, las esquinas, la selección múltiple y el restablecimiento siguen siendo funciones de ordenador y tableta.
-
-Theme Studio oculta su modo de tarjeta mientras está activo el editor de paneles nativo de Home Assistant, para evitar que ambos modos se superpongan.
-
-### 8.4 Guardar y restablecer
-
-- **Guardar regla** crea una regla separada con una clave estable para cada tarjeta.
-- **Elegir otra tarjeta** inicia una selección nueva.
-- **Restablecer tarjeta** elimina su personalización.
-- Una selección múltiple puede restablecerse como grupo.
-
-Después, las reglas se pueden activar, desactivar, editar, duplicar o eliminar. También pueden limitarse a ordenador, tableta o teléfono.
-
-### 8.5 Reglas avanzadas y CSS libre
+### 8.3 Reglas avanzadas y CSS libre
 
 El editor avanzado puede apuntar a todas las tarjetas, una entidad, una ID personalizada o una tarjeta seleccionada directamente. Añade una ID en el YAML cuando sea necesario:
 

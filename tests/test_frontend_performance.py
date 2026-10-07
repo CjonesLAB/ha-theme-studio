@@ -131,8 +131,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.8.2";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.8.2";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.8.3";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.8.3";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -205,10 +205,9 @@ def test_expert_css_reuses_the_bounded_material_scan() -> None:
     assert 'id="expert-rule-entity"' in panel_source
     assert 'id="expert-rule-device"' in panel_source
     assert 'id="expert-rule-list"' in panel_source
-    assert 'id="expert-dashboard-editor-button"' in panel_source
-    assert "_openDashboardEditor()" in panel_source
-    assert "_startDashboardEditor()" in effects_source
-    assert "_selectDashboardEditorCard(card, event.ctrlKey || event.metaKey)" in effects_source
+    assert 'id="expert-dashboard-editor-button"' not in panel_source
+    assert "_openDashboardEditor()" not in panel_source
+    assert "const DIRECT_CARD_EDITOR_ENABLED = false;" in effects_source
     assert "_dashboardCardKey(card)" in effects_source
     assert 'targetType: "card"' in effects_source
     assert 'candidate.targetType === "card"' in effects_source

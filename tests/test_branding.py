@@ -10,8 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.8.2"
-DOCUMENTED_RELEASE_VERSION = "0.8.2"
+RELEASE_VERSION = "0.8.3"
+DOCUMENTED_RELEASE_VERSION = "0.8.3"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
@@ -62,8 +62,8 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     readmes = (
         (ROOT / "README.md", "Experimental"),
         (ROOT / "docs/README.de.md", "Experimentell"),
-        (ROOT / "docs/README.fr.md", "Expérimental"),
-        (ROOT / "docs/README.es.md", "Experimental"),
+        (ROOT / "docs/README.fr.md", "Fonction expérimentale"),
+        (ROOT / "docs/README.es.md", "Función experimental"),
     )
     for readme, warning_label in readmes:
         content = readme.read_text(encoding="utf-8")
