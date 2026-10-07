@@ -1,10 +1,10 @@
-# Theme Studio 0.8.2 - User Guide
+# Theme Studio 0.8.3 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through precise editing of individual dashboard cards. It applies to version **0.8.2**.
+This guide explains Theme Studio from installation through visual dashboard design and safe management of existing card rules. It applies to version **0.8.3**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
@@ -19,7 +19,7 @@ This guide explains Theme Studio from installation through precise editing of in
 5. Custom design profiles
 6. Colors, cards, navigation, and background
 7. Dashboard and card effects
-8. Expert mode and direct card editor
+8. Expert mode and legacy position rules
 9. Apply, undo, restore, and reset
 10. JSON import, export, and publication
 11. Per-user settings, data, and privacy
@@ -30,9 +30,9 @@ This guide explains Theme Studio from installation through precise editing of in
 
 Theme Studio is a custom Home Assistant integration. Administrator rights are required for installation. A regular user account is sufficient for day-to-day design work afterward.
 
-Theme Studio generates a real Home Assistant theme, so colors and compatible theme variables can affect many pages. Card effects, Expert CSS, and the direct card editor require the normal **Lovelace card and layout structure**.
+Theme Studio generates a real Home Assistant theme, so colors and compatible theme variables can affect many pages. Card effects and Expert CSS require the normal **Lovelace card structure**.
 
-> **Important limitation:** Fully custom dashboards or custom panels that render their own HTML or web-component structure are not supported by card effects, Expert CSS, or the direct card editor. Base theme colors may still work, but effects cannot be guaranteed.
+> **Important limitation:** Fully custom dashboards or custom panels that render their own HTML or web-component structure are not supported by card effects or Expert CSS. Base theme colors may still work, but effects cannot be guaranteed.
 
 Also note:
 
@@ -181,60 +181,30 @@ Search by friendly name, entity ID, or device class, then select multiple entiti
 
 Theme Studio may not detect an entity inside cards that do not expose a standard Lovelace structure. These effects are unavailable in fully custom dashboards.
 
-## 8. Expert mode and direct card editor
+## 8. Expert mode and legacy position rules
 
-Expert mode is located under **Dashboard effects**. It is optional and private to the current user.
+Expert mode is located under **Dashboard effects**. It is optional, experimental, and private to the current user.
 
-> **Experimental:** Expert CSS and the direct card editor modify the Lovelace presentation and may behave differently after Home Assistant updates. Keep a backup and test changes carefully. Desktop and tablet provide the full editor. On smartphones, card mode is limited to moving cards.
+> **Transition in 0.8.3:** Direct card editing and movement have been retired because pixel-based positioning was not reliable across different devices. Use Home Assistant’s dashboard editor for card order, sections, size, and layout. Theme Studio no longer shows a dashboard toolbar icon or a mobile card mode.
 
-### 8.1 Enable Expert mode
+Existing visual rules remain available and can be enabled, disabled, edited, duplicated, or deleted. New horizontal or vertical position offsets can no longer be created.
 
-1. Enable **Expert mode: custom dashboard CSS**.
-2. Confirm the warning.
-3. Open a normal Lovelace dashboard.
-4. The Theme Studio icon appears beside the normal dashboard actions.
+### 8.1 Disable legacy position adjustments
 
-The icon appears only on actual Lovelace dashboards while Expert mode is enabled. It stays hidden in Settings, Terminal, File Editor, To-do lists, and custom panels.
+Theme Studio detects rules created by older versions that contain X/Y offsets and displays **Legacy position rules detected**.
 
-### 8.2 Select one or more cards
+1. Review the affected design before changing it.
+2. Select **Disable all position adjustments**.
+3. Confirm the prompt.
+4. Apply the design.
 
-1. Select the Theme Studio icon.
-2. Select the desired card.
-3. Hold `Ctrl` and select more cards for multiple selection.
-4. The selected card keeps its normal outer appearance while its inner area is highlighted subtly.
+Only the horizontal and vertical offsets are removed. Padding, width, minimum height, column span, opacity, font size, rounded corners, target, and device restriction remain unchanged. The saved rules are not deleted.
 
-![Direct card editor with live preview and multiple selection](../images/theme-studio-card-editor-v080.png)
+### 8.2 Manage card layout
 
-### 8.3 Edit values
+Open Home Assistant’s native dashboard editor to move cards, change sections, or adjust the layout. This keeps the dashboard responsive and uses Home Assistant’s supported layout rules on desktop, tablet, and phone.
 
-The editor initially shows measured card values. This preserves the original size when only one field is changed.
-
-Available controls include:
-
-- inner padding
-- width and minimum height
-- column span
-- horizontal and vertical position
-- opacity
-- font size
-- rounded corners
-
-Changes appear immediately. Drag the large center cross freely or use its direction buttons. The editor panel itself is movable so you can reach cards underneath it.
-
-On smartphones, no editor panel is shown. Open card mode from the dashboard menu, drag a card directly with one finger, and finish card mode from the same menu. The final position is saved automatically as a phone-specific rule. Size, spacing, column span, opacity, font size, corners, multiple selection, and reset remain desktop/tablet functions.
-
-Theme Studio hides its card-mode control while Home Assistant’s own dashboard editor is active, so both editing modes cannot overlap.
-
-### 8.4 Save and reset
-
-- **Save rule** creates a separate rule with a stable key for every selected card.
-- **Choose another card** clears the current selection and starts again.
-- **Reset card** removes the customization for the current card.
-- A multiple selection can be reset as a group.
-
-Rules can later be enabled, disabled, edited, duplicated, or deleted in Theme Studio. Rules can target all devices or only desktop, tablet, or phone.
-
-### 8.5 Advanced rules and raw CSS
+### 8.3 Advanced rules and raw CSS
 
 The advanced rule builder can target all cards, a specific entity, a custom card ID, or a directly selected card. Add a unique ID to card YAML when needed:
 

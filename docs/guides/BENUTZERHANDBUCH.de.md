@@ -1,10 +1,10 @@
-# Theme Studio 0.8.2 - Benutzerhandbuch
+# Theme Studio 0.8.3 - Benutzerhandbuch
 
 [English](USER_GUIDE.en.md) | **Deutsch** | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [PDF herunterladen](../downloads/theme-studio-benutzerhandbuch-de.pdf) | [Aktuelle Version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Fehler melden](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur gezielten Bearbeitung einzelner Dashboard-Karten. Es gilt für Version **0.8.2**.
+Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Kartenregeln. Es gilt für Version **0.8.3**.
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
@@ -19,7 +19,7 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 5. Eigene Designprofile
 6. Farben, Karten, Navigation und Hintergrund
 7. Dashboard- und Karteneffekte
-8. Expertenmodus und direkter Karteneditor
+8. Expertenmodus und alte Positionsregeln
 9. Anwenden, Rückgängig, Wiederherstellen und Zurücksetzen
 10. JSON-Import, Export und Veröffentlichung
 11. Benutzerbezogene Einstellungen, Daten und Datenschutz
@@ -30,7 +30,7 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration. Für die Installation werden Administratorrechte benötigt. Für die normale Gestaltung genügt anschließend ein reguläres Benutzerkonto.
 
-Theme Studio erzeugt ein echtes Home-Assistant-Theme. Farben und kompatible Theme-Variablen können daher auf vielen Seiten wirken. Karteneffekte, Experten-CSS und der direkte Karteneditor benötigen jedoch die übliche **Lovelace-Karten- und Layoutstruktur**.
+Theme Studio erzeugt ein echtes Home-Assistant-Theme. Farben und kompatible Theme-Variablen können daher auf vielen Seiten wirken. Karteneffekte und Experten-CSS benötigen jedoch die übliche **Lovelace-Kartenstruktur**.
 
 > **Wichtige Einschränkung:** Vollständig selbst entwickelte Dashboards oder Custom Panels, die ihre eigene HTML- oder Web-Component-Struktur erzeugen, werden von Karteneffekten, Experten-CSS und dem direkten Karteneditor nicht unterstützt. Grundfarben können dort weiterhin funktionieren, die Effekte sind aber nicht gewährleistet.
 
@@ -181,60 +181,30 @@ Entitäten lassen sich nach Name, Entitäts-ID oder Geräteklasse suchen. Mehrer
 
 Wenn eine Karte keine Standard-Lovelace-Struktur besitzt, kann Theme Studio die zugehörige Entität eventuell nicht erkennen. In vollständig eigenen Dashboards sind diese Effekte nicht nutzbar.
 
-## 8. Expertenmodus und direkter Karteneditor
+## 8. Expertenmodus und alte Positionsregeln
 
-Der Expertenmodus befindet sich unter **Dashboard-Effekte**. Er ist optional und nur für das aktuelle Benutzerkonto aktiv.
+Der Expertenmodus befindet sich unter **Dashboard-Effekte**. Er ist optional, experimentell und nur für das aktuelle Benutzerkonto aktiv.
 
-> **Experimentell:** Experten-CSS und der direkte Karteneditor greifen in die Lovelace-Darstellung ein und können sich nach Home-Assistant-Updates anders verhalten. Vorher ein Backup erstellen und Änderungen sorgfältig testen. Desktop und Tablet bieten den vollständigen Editor. Auf Smartphones ist der Kartenmodus auf das Verschieben beschränkt.
+> **Übergang in 0.8.3:** Der direkte Karten- und Verschiebemodus wurde eingestellt, weil pixelbasierte Positionen nicht zuverlässig auf verschiedene Geräte übertragbar waren. Kartenreihenfolge, Abschnitte, Größe und Layout werden im Dashboard-Editor von Home Assistant bearbeitet. Theme Studio zeigt dafür kein Symbol in der Dashboard-Leiste und keinen Smartphone-Kartenmodus mehr an.
 
-### 8.1 Aktivieren
+Vorhandene visuelle Regeln bleiben erhalten und können aktiviert, deaktiviert, bearbeitet, dupliziert oder gelöscht werden. Neue horizontale oder vertikale Positionsverschiebungen lassen sich nicht mehr erstellen.
 
-1. Den Schalter **Expertenmodus: eigenes Dashboard-CSS** aktivieren.
-2. Den Warnhinweis bestätigen.
-3. Ein normales Lovelace-Dashboard öffnen.
-4. In der oberen Dashboard-Leiste erscheint das Theme-Studio-Symbol neben den normalen Aktionen.
+### 8.1 Alte Positionsanpassungen deaktivieren
 
-Das Symbol erscheint nur auf echten Lovelace-Dashboards und nur bei aktiviertem Expertenmodus. In Einstellungen, Terminal, File Editor, To-do-Listen und Custom Panels bleibt es ausgeblendet.
+Theme Studio erkennt Regeln aus älteren Versionen, die X/Y-Werte enthalten, und zeigt **Alte Positionsregeln erkannt** an.
 
-### 8.2 Eine oder mehrere Karten auswählen
+1. Das betroffene Design vor der Änderung prüfen.
+2. **Alle Positionsanpassungen deaktivieren** auswählen.
+3. Die Sicherheitsabfrage bestätigen.
+4. Das Design anwenden.
 
-1. Das Theme-Studio-Symbol anklicken.
-2. Die gewünschte Karte im Dashboard auswählen.
-3. Für eine Mehrfachauswahl `Strg` gedrückt halten und weitere Karten anklicken.
-4. Die ausgewählte Karte behält ihre normale Außenansicht; nur der innere Bereich wird dezent hervorgehoben.
+Entfernt werden ausschließlich horizontale und vertikale Verschiebungen. Innenabstand, Breite, Mindesthöhe, Spaltenbreite, Deckkraft, Schriftgröße, Rundung, Ziel und Gerätebegrenzung bleiben unverändert. Die gespeicherten Regeln werden nicht gelöscht.
 
-![Direkter Karteneditor mit Live-Vorschau und Mehrfachauswahl](../images/theme-studio-card-editor-v080.png)
+### 8.2 Kartenlayout bearbeiten
 
-### 8.3 Werte bearbeiten
+Zum Verschieben von Karten sowie zum Ändern von Abschnitten, Größe und Layout wird der normale Dashboard-Editor von Home Assistant verwendet. Dadurch bleibt das Dashboard responsiv und nutzt die von Home Assistant unterstützten Layoutregeln auf Desktop, Tablet und Smartphone.
 
-Der Editor zeigt zunächst die gemessenen Ausgangswerte der Karte. Dadurch ändert sich die Kartengröße nicht plötzlich, sobald ein einzelnes Feld bearbeitet wird.
-
-Verfügbar sind:
-
-- Innenabstand
-- Breite und Mindesthöhe
-- Spaltenbreite
-- horizontale und vertikale Position
-- Deckkraft
-- Schriftgröße
-- runde Ecken
-
-Änderungen werden direkt im Dashboard angezeigt. Das große Kreuz in der Mitte kann in alle Richtungen gezogen oder über seine Richtungstasten bedient werden. Das Editorfenster selbst lässt sich verschieben, damit verdeckte Karten erreichbar bleiben.
-
-Auf Smartphones erscheint kein Editorfenster. Den Kartenmodus über das Dashboard-Menü starten, eine Karte mit einem Finger direkt verschieben und den Modus über dasselbe Menü beenden. Die endgültige Position wird automatisch als eigene Smartphone-Regel gespeichert. Größe, Abstände, Spaltenbreite, Deckkraft, Schriftgröße, Rundung, Mehrfachauswahl und Reset bleiben Funktionen für Desktop und Tablet.
-
-Während der normale Dashboard-Bearbeitungsmodus von Home Assistant aktiv ist, blendet Theme Studio seinen Kartenmodus aus. Beide Bearbeitungsarten können dadurch nicht gleichzeitig laufen.
-
-### 8.4 Speichern und zurücksetzen
-
-- **Regel speichern** legt für jede ausgewählte Karte eine eigene Regel mit stabilem Kartenschlüssel an.
-- **Andere Karte wählen** beendet die aktuelle Auswahl und startet eine neue.
-- **Karte zurücksetzen** entfernt die Anpassung der aktuellen Karte.
-- Bei einer Mehrfachauswahl kann die gesamte Gruppe zurückgesetzt werden.
-
-Regeln können anschließend in Theme Studio aktiviert, deaktiviert, bearbeitet, dupliziert oder gelöscht werden. Eine Gerätebegrenzung auf Desktop, Tablet oder Smartphone ist möglich.
-
-### 8.5 Erweiterte Regeln und freies CSS
+### 8.3 Erweiterte Regeln und freies CSS
 
 Der erweiterte Regel-Editor kann alle Karten, eine bestimmte Entität, eine eigene Karten-ID oder eine direkt ausgewählte Karte ansprechen. Eine eindeutige ID wird in der YAML-Konfiguration einer Karte ergänzt:
 

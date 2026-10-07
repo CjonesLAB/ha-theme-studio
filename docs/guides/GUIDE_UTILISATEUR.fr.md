@@ -1,10 +1,10 @@
-# Theme Studio 0.8.2 - Guide utilisateur
+# Theme Studio 0.8.3 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente l’ensemble de Theme Studio, de l’installation à la modification précise de cartes individuelles. Il s’applique à la version **0.8.2**.
+Ce guide présente l’ensemble de Theme Studio, de l’installation à la conception visuelle du tableau de bord et à la gestion sûre des règles de carte existantes. Il s’applique à la version **0.8.3**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
@@ -19,7 +19,7 @@ Ce guide présente l’ensemble de Theme Studio, de l’installation à la modif
 5. Profils de design
 6. Couleurs, cartes, navigation et arrière-plan
 7. Effets du tableau de bord et des cartes
-8. Mode expert et éditeur direct
+8. Mode expert et anciennes règles de position
 9. Appliquer, annuler, restaurer et réinitialiser
 10. Importation, exportation et publication JSON
 11. Réglages par utilisateur, données et confidentialité
@@ -30,9 +30,9 @@ Ce guide présente l’ensemble de Theme Studio, de l’installation à la modif
 
 Theme Studio est une intégration personnalisée Home Assistant. Les droits d’administrateur sont nécessaires pour l’installation. Un compte utilisateur normal suffit ensuite pour créer ses designs.
 
-Theme Studio génère un véritable thème Home Assistant. Les couleurs et variables compatibles peuvent donc agir sur de nombreuses pages. Les effets de carte, le CSS expert et l’éditeur direct nécessitent toutefois la structure standard des cartes et mises en page **Lovelace**.
+Theme Studio génère un véritable thème Home Assistant. Les couleurs et variables compatibles peuvent donc agir sur de nombreuses pages. Les effets de carte et le CSS expert nécessitent toutefois la structure standard des cartes **Lovelace**.
 
-> **Limitation importante :** les tableaux de bord entièrement personnalisés ou les panneaux personnalisés qui génèrent leur propre structure HTML ou leurs propres composants Web ne sont pas pris en charge par les effets de carte, le CSS expert ou l’éditeur direct. Les couleurs de base du thème peuvent encore fonctionner, mais les effets ne sont pas garantis.
+> **Limitation importante :** les tableaux de bord entièrement personnalisés ou les panneaux personnalisés qui génèrent leur propre structure HTML ou leurs propres composants Web ne sont pas pris en charge par les effets de carte ou le CSS expert. Les couleurs de base du thème peuvent encore fonctionner, mais les effets ne sont pas garantis.
 
 À retenir également :
 
@@ -179,60 +179,30 @@ Recherchez par nom, identifiant ou classe d’appareil, puis sélectionnez plusi
 
 Une carte sans structure Lovelace standard peut empêcher la détection de l’entité. Ces effets ne sont pas disponibles dans les tableaux de bord entièrement personnalisés.
 
-## 8. Mode expert et éditeur direct
+## 8. Mode expert et anciennes règles de position
 
-Le mode expert se trouve sous **Effets du tableau de bord**. Il est facultatif et privé pour l’utilisateur actuel.
+Le mode expert se trouve sous **Effets du tableau de bord**. Il est facultatif, expérimental et privé pour l’utilisateur actuel.
 
-> **Expérimental :** le CSS expert et l’éditeur direct modifient la présentation Lovelace et peuvent se comporter différemment après une mise à jour de Home Assistant. Conservez une sauvegarde et testez les changements avec prudence. L’éditeur complet est disponible sur ordinateur et tablette. Sur smartphone, le mode carte est limité au déplacement.
+> **Transition dans la version 0.8.3 :** l’édition directe et le déplacement des cartes ont été retirés, car le positionnement en pixels n’était pas fiable sur différents appareils. Utilisez l’éditeur de tableau de bord Home Assistant pour l’ordre des cartes, les sections, la taille et la disposition. Theme Studio n’affiche plus d’icône dans la barre du tableau de bord ni de mode carte sur smartphone.
 
-### 8.1 Activation
+Les règles visuelles existantes restent disponibles et peuvent être activées, désactivées, modifiées, dupliquées ou supprimées. Il n’est plus possible de créer de nouveaux décalages horizontaux ou verticaux.
 
-1. Activez **Mode expert : CSS personnalisé du tableau de bord**.
-2. Confirmez l’avertissement.
-3. Ouvrez un tableau de bord Lovelace normal.
-4. L’icône Theme Studio apparaît à côté des actions habituelles.
+### 8.1 Désactiver les anciens ajustements de position
 
-L’icône reste masquée dans les paramètres, Terminal, File Editor, listes de tâches et panneaux personnalisés.
+Theme Studio détecte les règles créées par d’anciennes versions qui contiennent des valeurs X/Y et affiche **Anciennes règles de position détectées**.
 
-### 8.2 Sélection des cartes
+1. Vérifiez le design concerné avant de le modifier.
+2. Sélectionnez **Désactiver tous les ajustements de position**.
+3. Confirmez la demande.
+4. Appliquez le design.
 
-1. Cliquez sur l’icône Theme Studio.
-2. Cliquez sur la carte souhaitée.
-3. Maintenez `Ctrl` pour sélectionner d’autres cartes.
-4. La carte sélectionnée conserve son aspect extérieur normal ; seule sa zone intérieure est légèrement mise en évidence.
+Seuls les décalages horizontaux et verticaux sont supprimés. L’espacement intérieur, la largeur, la hauteur minimale, les colonnes, l’opacité, la taille du texte, les coins, la cible et la restriction d’appareil restent inchangés. Les règles enregistrées ne sont pas supprimées.
 
-![Éditeur direct avec aperçu et sélection multiple](../images/theme-studio-card-editor-v080.png)
+### 8.2 Gérer la disposition des cartes
 
-### 8.3 Modification
+Utilisez l’éditeur natif de Home Assistant pour déplacer les cartes, modifier les sections, la taille ou la disposition. Le tableau de bord reste ainsi adaptatif et utilise les règles de mise en page prises en charge par Home Assistant sur ordinateur, tablette et téléphone.
 
-L’éditeur affiche d’abord les valeurs mesurées de la carte, ce qui préserve sa taille d’origine lorsqu’un seul champ est modifié.
-
-Les réglages comprennent :
-
-- espacement intérieur
-- largeur et hauteur minimale
-- nombre de colonnes
-- position horizontale et verticale
-- opacité
-- taille du texte
-- coins arrondis
-
-Les changements sont immédiats. Déplacez librement la grande croix centrale ou utilisez ses boutons directionnels. Le panneau de l’éditeur peut lui-même être déplacé pour atteindre les cartes placées derrière.
-
-Sur smartphone, aucun panneau d’édition n’est affiché. Démarrez le mode carte depuis le menu du tableau de bord, déplacez directement une carte avec un doigt, puis quittez le mode depuis le même menu. La position finale est enregistrée automatiquement dans une règle propre au téléphone. La taille, l’espacement, les colonnes, l’opacité, la typographie, les coins, la sélection multiple et la réinitialisation restent réservés à l’ordinateur et à la tablette.
-
-Theme Studio masque son mode carte lorsque l’éditeur de tableau de bord natif de Home Assistant est actif, afin d’éviter que les deux modes se chevauchent.
-
-### 8.4 Enregistrement et réinitialisation
-
-- **Enregistrer la règle** crée une règle séparée avec une clé stable pour chaque carte.
-- **Choisir une autre carte** démarre une nouvelle sélection.
-- **Réinitialiser la carte** supprime sa personnalisation.
-- Une sélection multiple peut être réinitialisée comme groupe.
-
-Les règles peuvent ensuite être activées, désactivées, modifiées, dupliquées ou supprimées. Elles peuvent viser tous les appareils ou seulement l’ordinateur, la tablette ou le téléphone.
-
-### 8.5 Règles avancées et CSS libre
+### 8.3 Règles avancées et CSS libre
 
 Le générateur avancé peut viser toutes les cartes, une entité, un identifiant personnalisé ou une carte sélectionnée directement. Ajoutez au besoin un identifiant dans le YAML :
 

@@ -1,5 +1,6 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.8.2";
+const THEME_STUDIO_EFFECTS_VERSION = "0.8.3";
+const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -278,7 +279,9 @@ class ThemeStudioEffects {
 
     document.body.appendChild(this.canvas);
 
-    this._createDashboardToolbarButton();
+    if (DIRECT_CARD_EDITOR_ENABLED) {
+      this._createDashboardToolbarButton();
+    }
 
     this.context = this.canvas.getContext(
       "2d",
@@ -321,11 +324,13 @@ class ThemeStudioEffects {
       "visibilitychange",
       this.visibilityEventHandler
     );
-    document.addEventListener(
-      "click",
-      this.dashboardMenuEventHandler,
-      true
-    );
+    if (DIRECT_CARD_EDITOR_ENABLED) {
+      document.addEventListener(
+        "click",
+        this.dashboardMenuEventHandler,
+        true
+      );
+    }
 
     this._startPolling();
   }
@@ -577,6 +582,14 @@ class ThemeStudioEffects {
   }
 
   _syncDashboardToolbarButton() {
+    if (!DIRECT_CARD_EDITOR_ENABLED) {
+      this.dashboardToolbarHost?.remove();
+      this.dashboardToolbarHost = null;
+      this.dashboardMobileMenuItem?.remove();
+      this.dashboardMobileMenuItem = null;
+      return;
+    }
+
     if (!this.dashboardToolbarHost) {
       return;
     }
@@ -597,7 +610,8 @@ class ThemeStudioEffects {
   }
 
   _dashboardMobileMenuEnabled() {
-    return window.matchMedia("(max-width: 600px)").matches
+    return DIRECT_CARD_EDITOR_ENABLED
+      && window.matchMedia("(max-width: 600px)").matches
       && this.dashboardToolbarThemeActive
       && this.dashboardToolbarExpertModeEnabled
       && this._isDashboardPath()
@@ -3385,12 +3399,11 @@ class ThemeStudioEffects {
 
   _dashboardEditorRequested() {
     try {
-      return window.sessionStorage.getItem(
-        DASHBOARD_EDITOR_STORAGE_KEY
-      ) === "1";
+      window.sessionStorage.removeItem(DASHBOARD_EDITOR_STORAGE_KEY);
     } catch (_error) {
-      return false;
+      // The retired editor must stay disabled even without session storage.
     }
+    return false;
   }
 
   _rememberDashboardPath() {
@@ -3411,6 +3424,11 @@ class ThemeStudioEffects {
   }
 
   _startDashboardEditor() {
+    if (!DIRECT_CARD_EDITOR_ENABLED) {
+      this._stopDashboardEditor(false);
+      return;
+    }
+
     if (this.dashboardEditorActive) {
       return;
     }

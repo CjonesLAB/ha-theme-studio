@@ -73,27 +73,16 @@ def test_visual_expert_rule_actions_have_accessible_names() -> None:
     assert 'aria-label="Regel löschen"' in PANEL_SOURCE
 
 
-def test_active_design_is_announced_and_dashboard_editor_is_in_cards_section() -> None:
-    """The loaded design is visible and direct editing belongs to card settings."""
+def test_active_design_is_announced_without_retired_dashboard_editor() -> None:
+    """The loaded design remains visible after retiring direct card editing."""
 
     assert 'id="active-design-badge" class="active-design-badge" role="status" aria-live="polite"' in PANEL_SOURCE
     assert "_syncActiveDesignIndicator()" in PANEL_SOURCE
     assert "currentThemeIsThemeStudio" not in PANEL_SOURCE
 
-    cards_section = PANEL_SOURCE.index("<summary>Karten</summary>")
-    editor_launch = PANEL_SOURCE.index(
-        "<strong>Einzelne Karte direkt bearbeiten</strong>",
-        cards_section,
-    )
-    navigation_section = PANEL_SOURCE.index(
-        "<summary>Navigation</summary>",
-        editor_launch,
-    )
-    expert_section = PANEL_SOURCE.index(
-        "Expertenmodus: eigenes Dashboard-CSS",
-        navigation_section,
-    )
-    assert cards_section < editor_launch < navigation_section < expert_section
+    assert "Einzelne Karte direkt bearbeiten" not in PANEL_SOURCE
+    assert 'id="expert-dashboard-editor-button"' not in PANEL_SOURCE
+    assert "_openDashboardEditor()" not in PANEL_SOURCE
 
 
 def test_advanced_rule_builder_is_collapsed_until_requested() -> None:
@@ -104,54 +93,11 @@ def test_advanced_rule_builder_is_collapsed_until_requested() -> None:
     assert 'id="expert-rule-builder" class="expert-rule-builder" hidden' in PANEL_SOURCE
     assert "_setExpertRuleBuilderOpen(true)" in PANEL_SOURCE
     assert "_setExpertRuleBuilderOpen(false)" in PANEL_SOURCE
-    assert "Kartenspezifische Regeln erstellst du am einfachsten" in PANEL_SOURCE
+    assert "Die Kartenposition wird ausschließlich im Home-Assistant-Dashboard bearbeitet." in PANEL_SOURCE
 
 
-def test_dashboard_header_exposes_direct_card_mode() -> None:
-    """The active Theme Studio dashboard offers a compact direct-editor shortcut."""
-
-    effects_source = (
-        Path(__file__).parents[1]
-        / "custom_components"
-        / "theme_studio"
-        / "frontend"
-        / "theme-studio-effects.js"
-    ).read_text(encoding="utf-8")
-
-    assert 'data-theme-studio-dashboard-toolbar' in effects_source
-    assert 'aria-label="Kartenmodus starten"' in effects_source
-    assert '<span class="icon" aria-hidden="true">✥</span>' in effects_source
-    assert "right: 211px;" in effects_source
-    assert "top: 3px;" in effects_source
-    assert "_mountDashboardToolbarButton()" not in effects_source
-    assert 'toolbar.insertBefore(host, firstAction);' not in effects_source
-    assert '<span class="label">Kartenmodus</span>' not in effects_source
-    assert "this._startDashboardEditor();" in effects_source
-    assert "this.dashboardToolbarHost?.remove();" in effects_source
-    assert "&& this._isDashboardPath()" in effects_source
-    assert "&& this.dashboardToolbarExpertModeEnabled" in effects_source
-    assert "this.dashboardToolbarExpertModeEnabled = requestedExpertCssEnabled;" in effects_source
-    assert 'panel.component_name === "lovelace"' in effects_source
-    assert "hass?.panels || {}" in effects_source
-    assert 'path.startsWith("/dashboard-")' in effects_source
-    assert "_isHomeAssistantDashboardEditMode()" in effects_source
-    assert 'element.lovelace?.editMode === true' in effects_source
-    assert 'new Set(["fertig", "done", "terminé", "listo"])' in effects_source
-    assert "_isDashboardEditModeToggle(event)" in effects_source
-    assert "now - this.dashboardEditModeCheckedAt < 5000" in effects_source
-    assert '@media (max-width: 600px)' in effects_source
-    assert "_scheduleDashboardMobileMenuSync()" in effects_source
-    assert 'data-theme-studio-mobile-menu-item' in effects_source
-    assert '["Dashboard bearbeiten", ["Kartenmodus", "Kartenmodus beenden"]]' in effects_source
-    assert '["Edit dashboard", ["Card mode", "Exit card mode"]]' in effects_source
-    assert '["Modifier le tableau de bord", ["Mode carte", "Quitter le mode carte"]]' in effects_source
-    assert '["Editar panel", ["Modo tarjeta", "Salir del modo tarjeta"]]' in effects_source
-    assert '"Kartenmodus"' in effects_source
-    assert 'icon.textContent = "✥";' in effects_source
-
-
-def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
-    """Pointer and keyboard controls can uncover cards and move the selection."""
+def test_direct_card_mode_is_retired_without_deleting_legacy_rules() -> None:
+    """Version 0.8.3 no longer exposes or restores the direct movement mode."""
 
     effects_source = (
         Path(__file__).parents[1]
@@ -161,111 +107,33 @@ def test_dashboard_editor_panel_and_selected_card_are_draggable() -> None:
         / "theme-studio-effects.js"
     ).read_text(encoding="utf-8")
 
-    assert 'class="card-move"' in effects_source
-    assert 'aria-label="Karte frei verschieben"' in effects_source
-    assert "_startDashboardEditorPanelDrag(event)" in effects_source
-    assert "_moveDashboardEditorPanel(event)" in effects_source
-    assert "_startDashboardEditorCardDrag(event)" in effects_source
-    assert "_moveDashboardEditorCard(event)" in effects_source
-    assert "_nudgeDashboardEditorCard(event)" in effects_source
-    assert "setPointerCapture?.(event.pointerId)" in effects_source
-    assert "event.shiftKey ? 10 : 1" in effects_source
-    assert 'class="card-position-control" role="group" aria-label="Kartenposition"' in effects_source
-    assert 'data-card-nudge="0,-1"' in effects_source
-    assert 'data-card-nudge="-1,0"' in effects_source
-    assert 'data-card-nudge="1,0"' in effects_source
-    assert 'data-card-nudge="0,1"' in effects_source
-    assert "_nudgeDashboardEditorCardBy(" in effects_source
-    assert '<input data-field="offsetX" type="hidden">' in effects_source
-    assert '<input data-field="offsetY" type="hidden">' in effects_source
-    assert '_dashboardEditorNumberField("offsetX"' not in effects_source
-    assert '_dashboardEditorNumberField("offsetY"' not in effects_source
-    assert 'rule.width === null ? "revert"' not in effects_source
-    assert 'width: min(${rule.width}px, 100%, calc(100vw - 24px)) !important;' in effects_source
-    assert 'max-width: min(100%, calc(100vw - 24px)) !important;' in effects_source
-    assert "_dashboardEditorCurrentDevice()" in effects_source
-    assert 'if (width <= 600) return "mobile";' in effects_source
-    assert 'if (width <= 1024) return "tablet";' in effects_source
-    assert 'rule.device === "all" && rule.columns !== null' in effects_source
-    assert 'grid-column: 1 / -1 !important;' in effects_source
-    assert 'justify-self: start !important;' in effects_source
-    assert 'transform: translate(0px, ${rule.offsetY || 0}px) !important;' in effects_source
-    assert 'data-theme-studio-dashboard-grid-guide' in effects_source
-    assert 'data-theme-studio-dashboard-origin-guide' in effects_source
-    assert 'data-theme-studio-dashboard-position-label' in effects_source
-    assert 'originGuide.textContent = "Ausgang";' in effects_source
-    assert 'const targetText = count > 1 ? `${count} Karten` : "Zielposition";' in effects_source
-    assert "_showDashboardEditorPlacementGuide(" in effects_source
-    assert "_updateDashboardEditorPlacementGuide();" in effects_source
-    assert "_hideDashboardEditorPlacementGuide(1100);" in effects_source
-    assert 'data-theme-studio-direct-move-hint' in effects_source
-    assert 'directMoveHint.textContent = "✥";' in effects_source
-    assert 'border: "0"' in effects_source
-    assert 'background: "rgba(38,178,179,.08)"' in effects_source
-    assert "Danach kannst du die markierte Karte direkt ziehen." in effects_source
-    assert 'highlight.style.pointerEvents = directlyMovable ? "auto" : "none";' in effects_source
-    assert "_prepareDashboardEditorDirectMoveDevice();" in effects_source
-    assert 'candidate.device === rule.device' in effects_source
-    assert 'candidate.device === currentDevice' in effects_source
-    assert 'window.innerWidth - 8 - drag.originRect.right' in effects_source
-    assert 'window.innerHeight - 8 - drag.originRect.bottom' in effects_source
-    assert "_handleDashboardEditorDirectPointer(event)" in effects_source
-    assert 'event.type === "pointerdown"' in effects_source
-    assert "this._startDashboardEditorCardDrag(event, card);" in effects_source
-    assert "directCardTouch: captureTarget === this.dashboardEditorSelectedCard" in effects_source
-    assert "this.dashboardEditorSuppressClickUntil = Date.now() + 500;" in effects_source
-    assert 'host.hidden = this._dashboardEditorCurrentDevice() === "mobile";' in effects_source
-    assert '<strong>Experimentell:</strong>' in effects_source
-    assert "Auf Smartphones ist ausschließlich das Verschieben verfügbar." in effects_source
-    assert "_scheduleDashboardEditorMobileSave();" in effects_source
-    assert "this._saveDashboardEditorRule();" in effects_source
-    assert "_closeDashboardMobileMenu(item)" in effects_source
-    assert "Math.min(2000, Math.max(" in effects_source
+    assert "const DIRECT_CARD_EDITOR_ENABLED = false;" in effects_source
+    assert "if (DIRECT_CARD_EDITOR_ENABLED) {\n      this._createDashboardToolbarButton();" in effects_source
+    assert "if (DIRECT_CARD_EDITOR_ENABLED) {\n      document.addEventListener(" in effects_source
+    assert "return DIRECT_CARD_EDITOR_ENABLED" in effects_source
+    assert "window.sessionStorage.removeItem(DASHBOARD_EDITOR_STORAGE_KEY);" in effects_source
+    assert "if (!DIRECT_CARD_EDITOR_ENABLED) {\n      this._stopDashboardEditor(false);" in effects_source
+
+    assert 'id="expert-dashboard-editor-button"' not in PANEL_SOURCE
+    assert "_openDashboardEditor()" not in PANEL_SOURCE
+    assert '_expertRuleNumberField("offset-x"' not in PANEL_SOURCE
+    assert '_expertRuleNumberField("offset-y"' not in PANEL_SOURCE
 
 
-def test_dashboard_editor_uses_stable_values_and_can_reset_one_card() -> None:
-    """The compact card editor changes only touched values and supports reset."""
+def test_legacy_position_rules_can_be_disabled_without_losing_style_values() -> None:
+    """The transition control clears only X/Y offsets and keeps all other fields."""
 
-    effects_source = (
-        Path(__file__).parents[1]
-        / "custom_components"
-        / "theme_studio"
-        / "frontend"
-        / "theme-studio-effects.js"
-    ).read_text(encoding="utf-8")
-
-    assert '_dashboardEditorNumberField("margin"' not in effects_source
-    assert 'class="reset"' in effects_source
-    assert "_resetDashboardEditorCard()" in effects_source
-    assert "_dashboardEditorMeasuredValues()" in effects_source
-    assert "this.dashboardEditorDirtyFields.has(field)" in effects_source
-    assert 'margin: null,' in effects_source
-    assert "--state-card-primary-font-size" in effects_source
-    assert "Karte wurde auf ihre ursprüngliche Darstellung zurückgesetzt." in effects_source
-
-
-def test_dashboard_editor_supports_ctrl_multi_selection() -> None:
-    """Ctrl-click batches changes while keeping one rule per selected card."""
-
-    effects_source = (
-        Path(__file__).parents[1]
-        / "custom_components"
-        / "theme_studio"
-        / "frontend"
-        / "theme-studio-effects.js"
-    ).read_text(encoding="utf-8")
-
-    assert "event.ctrlKey || event.metaKey" in effects_source
-    assert "_toggleDashboardEditorCard(card)" in effects_source
-    assert "this.dashboardEditorSelectedCards.flatMap" in effects_source
-    assert 'class="selection-hint"' in effects_source
-    assert "Mehrere Karten auswählen:" in effects_source
-    assert "Auf dem Mac" in effects_source
-    assert 'detailsOutput.textContent = "STRG + Klick fügt Karten hinzu oder entfernt sie"' in effects_source
-    assert 'targetType: "card"' in effects_source
-    assert 'savedRuleIds.set(entry.cardKey, savedRule.id)' in effects_source
-    assert 'button.textContent = this.dashboardEditorSelectedCards.length > 1' in effects_source
-    assert '"Auswahl zurücksetzen"' in effects_source
+    assert 'id="legacy-position-notice"' in PANEL_SOURCE
+    assert 'id="legacy-position-disable"' in PANEL_SOURCE
+    assert "_syncLegacyPositionNotice()" in PANEL_SOURCE
+    assert "_disableLegacyPositionRules()" in PANEL_SOURCE
+    assert "rule.offsetX = null;" in PANEL_SOURCE
+    assert "rule.offsetY = null;" in PANEL_SOURCE
+    assert "rule.width = null;" not in PANEL_SOURCE
+    assert "rule.padding = null;" not in PANEL_SOURCE
+    assert "offsetX: existingRule?.offsetX ?? null" in PANEL_SOURCE
+    assert "offsetY: existingRule?.offsetY ?? null" in PANEL_SOURCE
+    assert "name: `${rule.name} Kopie`.slice(0, 48),\n        offsetX: null,\n        offsetY: null," in PANEL_SOURCE
 
 
 def test_css_example_library_is_searchable_safe_and_keyboard_accessible() -> None:

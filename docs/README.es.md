@@ -4,13 +4,13 @@
 
 Theme Studio es una integración personalizada para Home Assistant que permite crear, previsualizar y aplicar directamente tus propios diseños de interfaz.
 
-![Editor directo de tarjetas de Theme Studio 0.8.0 con vista previa y selección múltiple](images/theme-studio-card-editor-v080.gif)
+![Controles de diseño de tarjetas de Theme Studio](images/fine-settings-cards-tech-frame-v063.png)
 
-> Versión actual: **0.8.2**
+> Versión actual: **0.8.3**
 >
 > Theme Studio todavía se encuentra en una fase temprana de desarrollo. Crea una copia de seguridad de Home Assistant antes de instalarlo o actualizarlo.
 >
-> **Experimental:** el CSS experto y el editor directo modifican la presentación de Lovelace y pueden comportarse de forma diferente después de una actualización de Home Assistant. En teléfonos, la edición directa se limita deliberadamente a mover tarjetas. El tamaño, el espaciado, la tipografía, la opacidad y las esquinas se editan en ordenador o tableta.
+> **Aviso de transición:** la edición directa y el movimiento de tarjetas se retiraron en la versión 0.8.3 porque el posicionamiento por píxeles no era fiable en todos los dispositivos. El diseño y el orden de las tarjetas vuelven a gestionarse con las herramientas del panel de Home Assistant. Las reglas de posición existentes se conservan hasta que el usuario las desactive expresamente en Theme Studio.
 
 Historial de versiones: [Notas de las versiones](https://github.com/CjonesLAB/ha-theme-studio/releases).
 
@@ -153,11 +153,11 @@ En **Fondo → Biblioteca de imágenes** pueden gestionarse hasta 24 archivos JP
 
 ### CSS experto
 
-El modo CSS experto es específico de cada usuario y solo se aplica a los paneles. El editor directo permite seleccionar una tarjeta real, cambiar al instante su espacio, tamaño, posición, columnas, opacidad, tamaño de texto o esquinas y guardar una regla limitada a esa tarjeta. Mantén `Ctrl` para seleccionar varias tarjetas. Cada tarjeta conserva una clave estable y puede restablecerse de forma individual o junto con todo el grupo. Las reglas también pueden limitarse a ordenador, tableta o teléfono. El área de CSS libre sigue disponible para ajustes avanzados y rechaza importaciones, URL remotas y construcciones ejecutables peligrosas.
+El modo CSS experto sigue siendo específico de cada usuario y solo se aplica a los paneles. La lista de reglas visuales continúa gestionando los ajustes de apariencia existentes. Las reglas pueden limitarse a ordenador, tableta o teléfono, editarse, duplicarse, desactivarse o eliminarse. Ya no se pueden crear nuevos desplazamientos de posición. El orden, las secciones y el diseño de las tarjetas se modifican en el editor de paneles de Home Assistant.
 
-> **Función experimental:** usa el CSS experto y el editor directo con cuidado y conserva una copia de seguridad. El editor completo está disponible en ordenador y tableta. En teléfonos, el modo compacto solo permite mover tarjetas y guarda la posición automáticamente; los demás valores deben editarse en ordenador o tableta.
+> **Función experimental:** el CSS experto sigue disponible para las reglas de apariencia existentes, pero ya no es el flujo de trabajo recomendado. Los valores X/Y existentes se conservan y pueden eliminarse con **Desactivar todos los ajustes de posición**, sin modificar los demás valores de las tarjetas.
 
-> **Compatibilidad:** los efectos de tarjeta, el CSS experto y el editor directo dependen de la estructura estándar de tarjetas y diseños de Lovelace. Los paneles completamente personalizados o los paneles personalizados que generan su propia estructura HTML o sus propios componentes web no son compatibles con estas funciones. Los colores del tema y las variables compatibles de Home Assistant pueden seguir aplicándose, pero los efectos de tarjeta no están garantizados.
+> **Compatibilidad:** los efectos de tarjeta y el CSS experto dependen de la estructura estándar de las tarjetas Lovelace. Los paneles completamente personalizados o los paneles personalizados que generan su propia estructura HTML o sus propios componentes web no son compatibles con estas funciones. Los colores del tema y las variables compatibles de Home Assistant pueden seguir aplicándose, pero los efectos de tarjeta no están garantizados.
 
 ## Actualización
 
