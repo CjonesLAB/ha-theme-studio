@@ -131,8 +131,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.4";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.4";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.5";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.5";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -411,7 +411,9 @@ def test_liquid_glass_excludes_overlay_dialogs() -> None:
     assert "return;" in overlay_card_block
     assert "if (this.liquidGlass)" not in overlay_card_block
     assert "this._styleOverlayScrim(element);" not in effects_source
-    assert "this._styleOverlaySurface(element);" not in effects_source
+    assert "this._styleOverlaySurface(element);" in effects_source
+    assert "this._styleTechFrameOverlaySurface(element);" not in effects_source
+    assert '"background-color",\n        this.overlayBackground' in effects_source
 
 
 def test_config_area_excludes_all_special_effects() -> None:

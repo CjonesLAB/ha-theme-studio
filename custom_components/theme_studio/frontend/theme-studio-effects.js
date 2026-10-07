@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.4";
+const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.5";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
@@ -375,7 +375,8 @@ class ThemeStudioEffects {
           this._readThemeSettings();
 
           const materialEnabled =
-            this.liquidGlass
+            this.dashboardToolbarThemeActive
+            || this.liquidGlass
             || this.cardShape === "tech-frame";
           const expertCssScanDue =
             this.expertCssEnabled
@@ -420,7 +421,11 @@ class ThemeStudioEffects {
   _scheduleMaterialSync() {
     if (
       this.overlaySyncFrame
-      || (!this.liquidGlass && this.cardShape !== "tech-frame")
+      || (
+        !this.dashboardToolbarThemeActive
+        && !this.liquidGlass
+        && this.cardShape !== "tech-frame"
+      )
     ) {
       return;
     }
@@ -1418,6 +1423,11 @@ class ThemeStudioEffects {
       this._clearLiquidGlassCards();
       this._clearTechFrameCards();
       this._clearExpertCss();
+
+      if (this.dashboardToolbarThemeActive) {
+        this._syncOpaqueOverlaySurfaces();
+      }
+
       return;
     }
 
@@ -1488,9 +1498,13 @@ class ThemeStudioEffects {
         }
       }
 
-      // Home Assistant owns dialogs and their scrims. Styling these surfaces
-      // breaks complex overlays such as the weather details on some devices.
-      // Keeping both sets empty below also restores styles from older runs.
+      // Keep Home Assistant's dialog layout and scrim native. Only the dialog
+      // surface receives the opaque profile color so transparent dashboard
+      // cards do not make weather and more-info overlays unreadable.
+      if (this._isOverlayElement(element)) {
+        currentOverlays.add(element);
+        this._styleOverlaySurface(element);
+      }
 
       if (element.localName !== "ha-card") {
         return;
@@ -1613,6 +1627,35 @@ class ThemeStudioEffects {
       || classes.includes("scrim")
       || element?.getAttribute?.("part") === "scrim"
     );
+  }
+
+  _syncOpaqueOverlaySurfaces() {
+    const currentOverlays = new Set();
+
+    this._visitElements(document, (element) => {
+      if (this._isOverlayElement(element)) {
+        currentOverlays.add(element);
+        this._styleOverlaySurface(element);
+      }
+
+      if (
+        element.localName === "ha-card"
+        && this._isInsideOverlay(element)
+      ) {
+        this._restoreLiquidGlassCard(element);
+        this._restoreLiquidGlassHeading(element);
+        this._restoreTechFrameCard(element);
+      }
+    });
+
+    for (const overlay of this.overlaySurfaces) {
+      if (!currentOverlays.has(overlay) || !overlay.isConnected) {
+        this._restoreOverlaySurface(overlay);
+      }
+    }
+
+    this.overlaySurfaces = currentOverlays;
+    this._clearOverlayScrims();
   }
 
   _isHeadingCard(card) {
@@ -1800,11 +1843,17 @@ class ThemeStudioEffects {
       );
     }
 
-    if (
-      this.cardShape === "tech-frame"
-      && this._isOverlayVisualSurface(element)
-    ) {
-      this._styleTechFrameOverlaySurface(element);
+    if (this._isOverlayVisualSurface(element)) {
+      element.style.setProperty(
+        "background",
+        this.overlayBackground,
+        "important"
+      );
+      element.style.setProperty(
+        "background-color",
+        this.overlayBackground,
+        "important"
+      );
     }
   }
 
