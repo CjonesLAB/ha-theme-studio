@@ -408,6 +408,10 @@ const TRANSLATIONS = {
     "Bitte mindestens einen Leistungssensor auswählen.": "Please select at least one power sensor.",
     "Bitte mindestens einen Klimasensor auswählen.": "Please select at least one climate sensor.",
     "Bitte mindestens einen Alarm- oder Statussensor auswählen.": "Please select at least one alert or status sensor.",
+    "Status Pulse benötigt mindestens eine Entität. Bitte auswählen.": "Status Pulse requires at least one entity. Please select one.",
+    "Energy Flow benötigt mindestens einen Leistungssensor. Bitte auswählen.": "Energy Flow requires at least one power sensor. Please select one.",
+    "Climate Aura benötigt mindestens einen Klimasensor. Bitte auswählen.": "Climate Aura requires at least one climate sensor. Please select one.",
+    "Alert Focus benötigt mindestens einen Alarm- oder Statussensor. Bitte auswählen.": "Alert Focus requires at least one alert or status sensor. Please select one.",
     "Das zuletzt gesicherte Design wurde aktiviert.": "The most recently saved design has been activated.",
     "Der zuvor gesicherte Home-Assistant-Standard wurde aktiviert.": "The previously saved Home Assistant default has been activated.",
     "Der Vorgang ist fehlgeschlagen.": "The operation failed."
@@ -820,6 +824,10 @@ const TRANSLATIONS = {
     "Bitte mindestens einen Leistungssensor auswählen.": "Veuillez sélectionner au moins un capteur de puissance.",
     "Bitte mindestens einen Klimasensor auswählen.": "Veuillez sélectionner au moins un capteur climatique.",
     "Bitte mindestens einen Alarm- oder Statussensor auswählen.": "Veuillez sélectionner au moins un capteur d’alarme ou d’état.",
+    "Status Pulse benötigt mindestens eine Entität. Bitte auswählen.": "Status Pulse nécessite au moins une entité. Veuillez en sélectionner une.",
+    "Energy Flow benötigt mindestens einen Leistungssensor. Bitte auswählen.": "Energy Flow nécessite au moins un capteur de puissance. Veuillez en sélectionner un.",
+    "Climate Aura benötigt mindestens einen Klimasensor. Bitte auswählen.": "Climate Aura nécessite au moins un capteur climatique. Veuillez en sélectionner un.",
+    "Alert Focus benötigt mindestens einen Alarm- oder Statussensor. Bitte auswählen.": "Alert Focus nécessite au moins un capteur d’alarme ou d’état. Veuillez en sélectionner un.",
     "Das zuletzt gesicherte Design wurde aktiviert.": "Le dernier design enregistré a été activé.",
     "Der zuvor gesicherte Home-Assistant-Standard wurde aktiviert.": "Le thème Home Assistant par défaut précédemment enregistré a été activé.",
     "Der Vorgang ist fehlgeschlagen.": "L’opération a échoué."
@@ -1232,6 +1240,10 @@ const TRANSLATIONS = {
     "Bitte mindestens einen Leistungssensor auswählen.": "Selecciona al menos un sensor de potencia.",
     "Bitte mindestens einen Klimasensor auswählen.": "Selecciona al menos un sensor climático.",
     "Bitte mindestens einen Alarm- oder Statussensor auswählen.": "Selecciona al menos un sensor de alarma o estado.",
+    "Status Pulse benötigt mindestens eine Entität. Bitte auswählen.": "Status Pulse necesita al menos una entidad. Selecciona una.",
+    "Energy Flow benötigt mindestens einen Leistungssensor. Bitte auswählen.": "Energy Flow necesita al menos un sensor de potencia. Selecciona uno.",
+    "Climate Aura benötigt mindestens einen Klimasensor. Bitte auswählen.": "Climate Aura necesita al menos un sensor climático. Selecciona uno.",
+    "Alert Focus benötigt mindestens einen Alarm- oder Statussensor. Bitte auswählen.": "Alert Focus necesita al menos un sensor de alarma o estado. Selecciona uno.",
     "Das zuletzt gesicherte Design wurde aktiviert.": "Se ha activado el último diseño guardado.",
     "Der zuvor gesicherte Home-Assistant-Standard wurde aktiviert.": "Se ha activado el diseño predeterminado de Home Assistant guardado anteriormente.",
     "Der Vorgang ist fehlgeschlagen.": "La operación ha fallado."

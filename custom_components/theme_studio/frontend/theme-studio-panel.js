@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.6";
-import "./theme-studio-effects.js?v=0.9.0-beta.6";
+} from "./theme-studio-locales.js?v=0.9.0-beta.7";
+import "./theme-studio-effects.js?v=0.9.0-beta.7";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -511,6 +511,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.profileEditBaseline = null;
     this.profileSaveReminderTimer = null;
     this.profileSaveSuccessTimer = null;
+    this.effectTargetHighlightTimer = null;
     this.editorSectionFocusTimer = null;
     this.stickyOffsetFrame = 0;
     this.communitySliderFrame = 0;
@@ -2326,6 +2327,31 @@ class ThemeStudioPanel extends HTMLElement {
           margin: 12px 0;
         }
 
+        .effect-field.effect-target-required {
+          border-radius: 10px;
+          outline: 3px solid var(--primary-color);
+          outline-offset: 2px;
+          background: color-mix(
+            in srgb,
+            var(--primary-color) 15%,
+            transparent
+          );
+          animation: effect-target-required-pulse 520ms ease-in-out 3;
+        }
+
+        @keyframes effect-target-required-pulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 color-mix(
+              in srgb,
+              var(--primary-color) 72%,
+              transparent
+            );
+          }
+          50% {
+            box-shadow: 0 0 0 8px transparent;
+          }
+        }
+
         .effect-field label {
           display: block;
           margin-bottom: 6px;
@@ -3191,6 +3217,10 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         @media (prefers-reduced-motion: reduce) {
+          .effect-field.effect-target-required {
+            animation: none;
+          }
+
           .community-grid {
             scroll-behavior: auto;
           }
@@ -5704,6 +5734,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._stopProfileSaveReminderPulse();
     this._stopProfileSaveSuccess();
     window.clearTimeout(this.editorSectionFocusTimer);
+    window.clearTimeout(this.effectTargetHighlightTimer);
     window.cancelAnimationFrame(this.stickyOffsetFrame);
     window.cancelAnimationFrame(this.communitySliderFrame);
     this.stickyOffsetFrame = 0;
@@ -7911,6 +7942,10 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
+    if (!this._validateEffectTargets()) {
+      return;
+    }
+
     const currentProfile = this._currentProfile();
     const message = {
       type: "theme_studio/save_profile",
@@ -8764,6 +8799,75 @@ class ThemeStudioPanel extends HTMLElement {
     updateCount();
   }
 
+  _focusEffectTargetPicker(searchId) {
+    this._openEditorSection("editor-section-effects");
+    window.requestAnimationFrame(() => {
+      const searchInput = this.shadowRoot.getElementById(searchId);
+      const field = searchInput?.closest(".effect-field");
+
+      if (!searchInput || !field) {
+        return;
+      }
+
+      window.clearTimeout(this.effectTargetHighlightTimer);
+      field.classList.remove("effect-target-required");
+      void field.offsetWidth;
+      field.classList.add("effect-target-required");
+      field.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "center",
+      });
+      searchInput.focus({ preventScroll: true });
+      this.effectTargetHighlightTimer = window.setTimeout(() => {
+        field.classList.remove("effect-target-required");
+      }, 2200);
+    });
+  }
+
+  _validateEffectTargets() {
+    const requirements = [
+      {
+        effect: "status-pulse",
+        settingName: "pulseEntities",
+        searchId: "pulse-entity-search",
+        message: "Status Pulse benötigt mindestens eine Entität. Bitte auswählen.",
+      },
+      {
+        effect: "energy-flow",
+        settingName: "energyEntities",
+        searchId: "energy-entity-search",
+        message: "Energy Flow benötigt mindestens einen Leistungssensor. Bitte auswählen.",
+      },
+      {
+        effect: "climate-aura",
+        settingName: "climateEntities",
+        searchId: "climate-entity-search",
+        message: "Climate Aura benötigt mindestens einen Klimasensor. Bitte auswählen.",
+      },
+      {
+        effect: "alert-focus",
+        settingName: "alertEntities",
+        searchId: "alert-entity-search",
+        message: "Alert Focus benötigt mindestens einen Alarm- oder Statussensor. Bitte auswählen.",
+      },
+    ];
+
+    const missing = requirements.find((requirement) => (
+      this.settings.effects.cardEffects.includes(requirement.effect)
+      && this.settings.effects[requirement.settingName].length === 0
+    ));
+
+    if (!missing) {
+      return true;
+    }
+
+    this._setStatus(missing.message, "error");
+    this._focusEffectTargetPicker(missing.searchId);
+    return false;
+  }
+
   _bindEnergyNumber(elementId, settingName) {
     this.shadowRoot
       .getElementById(elementId)
@@ -9286,47 +9390,7 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    if (
-      this.settings.effects.cardEffects.includes("status-pulse")
-      && this.settings.effects.pulseEntities.length === 0
-    ) {
-      this._setStatus(
-        "Bitte mindestens eine Entität für Status Pulse auswählen.",
-        "error"
-      );
-      return;
-    }
-
-    if (
-      this.settings.effects.cardEffects.includes("energy-flow")
-      && this.settings.effects.energyEntities.length === 0
-    ) {
-      this._setStatus(
-        "Bitte mindestens einen Leistungssensor auswählen.",
-        "error"
-      );
-      return;
-    }
-
-    if (
-      this.settings.effects.cardEffects.includes("climate-aura")
-      && this.settings.effects.climateEntities.length === 0
-    ) {
-      this._setStatus(
-        "Bitte mindestens einen Klimasensor auswählen.",
-        "error"
-      );
-      return;
-    }
-
-    if (
-      this.settings.effects.cardEffects.includes("alert-focus")
-      && this.settings.effects.alertEntities.length === 0
-    ) {
-      this._setStatus(
-        "Bitte mindestens einen Alarm- oder Statussensor auswählen.",
-        "error"
-      );
+    if (!this._validateEffectTargets()) {
       return;
     }
 

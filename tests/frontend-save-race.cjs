@@ -18,6 +18,7 @@ async function scenario(change, fail = false) {
     } },
     _currentProfile: () => null, _cloneSettings: structuredClone,
     _expertCssError: () => '',
+    _validateEffectTargets: () => true,
     _stopProfileSaveReminderPulse() {},
     _setProfileEditBaseline() { this.baselines++; },
     _resetHistory() { this.resets++; }, _syncUnsavedStatus() {},
