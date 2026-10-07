@@ -131,8 +131,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.8.3";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.8.3";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.1";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.1";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -379,7 +379,7 @@ def test_profile_actions_and_preview_use_coordinated_sticky_offsets() -> None:
     assert "profileStickyTop + profileActions.getBoundingClientRect().height" in panel_source
     assert "this._stickyOffsetObserver.observe(profileActions);" in panel_source
     assert "padding: 18px 24px 30px;" in panel_source
-    assert "padding: 13px 20px 24px;" in panel_source
+    assert "padding: 12px 12px 24px;" in panel_source
     assert ".topbar::after {" in panel_source
     assert "padding: 10px 20px;" in panel_source
     assert "padding: 0 0 18px;" in panel_source

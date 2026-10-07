@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.8.3";
-import "./theme-studio-effects.js?v=0.8.3";
+} from "./theme-studio-locales.js?v=0.9.0-beta.1";
+import "./theme-studio-effects.js?v=0.9.0-beta.1";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -511,6 +511,7 @@ class ThemeStudioPanel extends HTMLElement {
     this.profileEditBaseline = null;
     this.profileSaveReminderTimer = null;
     this.profileSaveSuccessTimer = null;
+    this.editorSectionFocusTimer = null;
     this.stickyOffsetFrame = 0;
     this.communitySliderFrame = 0;
     this.integrationVersion = "";
@@ -2876,6 +2877,71 @@ class ThemeStudioPanel extends HTMLElement {
           box-shadow: var(--ha-card-box-shadow);
         }
 
+        .preview-edit-hint {
+          margin: 10px 4px 8px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
+        .preview-section-actions {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 7px;
+          margin-top: 8px;
+        }
+
+        .preview-section-button {
+          min-width: 0;
+          min-height: 40px;
+          padding: 7px 6px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .preview-section-button.active {
+          border-color: var(--primary-color);
+          background: color-mix(
+            in srgb,
+            var(--primary-color) 18%,
+            var(--card-background-color)
+          );
+          color: var(--primary-color);
+        }
+
+        .preview-edit-target {
+          cursor: pointer;
+          transition:
+            outline-color 140ms ease,
+            filter 140ms ease;
+        }
+
+        .preview-edit-target:hover,
+        .preview-edit-target:focus-visible {
+          outline: 2px solid var(--primary-color);
+          outline-offset: -2px;
+          filter: brightness(1.08);
+        }
+
+        details.editor-section {
+          scroll-margin-top: calc(
+            var(--theme-studio-preview-sticky-top, 82px) + 12px
+          );
+        }
+
+        details.editor-section.editor-section-focus {
+          outline: 3px solid color-mix(
+            in srgb,
+            var(--primary-color) 72%,
+            transparent
+          );
+          outline-offset: -3px;
+        }
+
         .preview {
           position: relative;
           display: flex;
@@ -3771,6 +3837,13 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         @media (max-width: 620px) {
+          .page button,
+          .page input:not([type="checkbox"]):not([type="color"]),
+          .page select,
+          .page summary {
+            min-height: 44px;
+          }
+
           .expert-rule-grid,
           .expert-property-grid {
             grid-template-columns: 1fr;
@@ -3799,13 +3872,13 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .page {
-            padding: 13px 20px 24px;
+            padding: 12px 12px 24px;
           }
 
           .topbar {
             top: 56px;
             margin: 0;
-            padding: 6px 20px;
+            padding: 8px 12px;
           }
 
           .mode-switcher {
@@ -3814,9 +3887,11 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .topbar-actions {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto auto minmax(0, 1fr);
             width: 100%;
-            gap: 6px;
+            gap: 8px;
+            overflow: visible;
           }
 
           .history-actions {
@@ -3827,13 +3902,13 @@ class ThemeStudioPanel extends HTMLElement {
 
           .history-button,
           .mode-button {
-            min-height: 32px;
+            min-height: 44px;
           }
 
           .history-button {
-            flex-basis: 32px;
-            width: 32px;
-            height: 32px;
+            flex-basis: 44px;
+            width: 44px;
+            height: 44px;
           }
 
           .mode-button {
@@ -3843,9 +3918,19 @@ class ThemeStudioPanel extends HTMLElement {
 
           .top-apply-button,
           .top-pair-button {
-            min-height: 38px;
+            min-height: 44px;
             padding: 0 10px;
             font-size: 11px;
+          }
+
+          .top-pair-button {
+            grid-column: 1 / -1;
+          }
+
+          .design-mode-indicator {
+            width: 44px;
+            height: 44px;
+            flex-basis: 44px;
           }
 
           .preview-panel {
@@ -3854,8 +3939,31 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .preview {
-            height: 210px;
+            height: 250px;
             border-radius: 9px;
+          }
+
+          .preview-edit-hint {
+            margin: 9px 3px 7px;
+            font-size: 13px;
+          }
+
+          .preview-section-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .preview-section-button {
+            min-height: 48px;
+            font-size: 13px;
+          }
+
+          .preview-section-button:last-child {
+            grid-column: 1 / -1;
+          }
+
+          details.editor-section {
+            scroll-margin-top: 178px;
           }
 
           .preview-app-header {
@@ -4455,7 +4563,7 @@ class ThemeStudioPanel extends HTMLElement {
               </p>
             </div>
 
-            <details open>
+            <details id="editor-section-colors" class="editor-section" open>
               <summary>Farben</summary>
               <div class="details-content">
                 <div class="color-presets">
@@ -4478,7 +4586,7 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </details>
 
-            <details>
+            <details id="editor-section-cards" class="editor-section">
               <summary>Karten</summary>
               <div class="details-content">
                 <div class="effect-options">
@@ -4620,7 +4728,7 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </details>
 
-            <details>
+            <details id="editor-section-navigation" class="editor-section">
               <summary>Navigation</summary>
               <div class="details-content">
                 <div class="effect-subheading">
@@ -4669,7 +4777,7 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </details>
 
-            <details>
+            <details id="editor-section-background" class="editor-section">
               <summary>Hintergrund</summary>
               <div class="details-content">
                 <div class="background-options">
@@ -4772,7 +4880,7 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </details>
 
-            <details>
+            <details id="editor-section-effects" class="editor-section">
               <summary>Dashboard-Effekte</summary>
               <div class="details-content">
                 <div class="effect-subheading">
@@ -5241,14 +5349,20 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
           </div>
 
-          <aside class="preview-panel">
+          <aside id="preview-panel" class="preview-panel">
           <div
             id="preview"
             class="preview"
-            role="img"
+            role="region"
             aria-label="Dashboard-Vorschau im dunklen Modus"
           >
-            <div class="preview-app-header">
+            <div
+              class="preview-app-header preview-edit-target"
+              data-editor-section="editor-section-navigation"
+              role="button"
+              tabindex="0"
+              aria-label="Navigation bearbeiten"
+            >
               <div class="preview-app-header-left">
                 <span class="preview-menu-icon">☰</span>
                 <span class="preview-app-title">Übersicht</span>
@@ -5262,7 +5376,13 @@ class ThemeStudioPanel extends HTMLElement {
             </div>
 
             <div class="preview-app-body">
-              <aside class="preview-sidebar">
+              <aside
+                class="preview-sidebar preview-edit-target"
+                data-editor-section="editor-section-navigation"
+                role="button"
+                tabindex="0"
+                aria-label="Navigation bearbeiten"
+              >
                 <div class="preview-sidebar-brand">
                   Home Assistant
                 </div>
@@ -5364,6 +5484,16 @@ class ThemeStudioPanel extends HTMLElement {
               </div>
             </div>
           </div>
+          <p class="preview-edit-hint">
+            Tippe auf einen Bereich der Vorschau oder wähle eine Kategorie.
+          </p>
+          <nav class="preview-section-actions" aria-label="Vorschau-Bereiche">
+            <button class="preview-section-button" type="button" data-editor-section="editor-section-colors" aria-pressed="false">Farben</button>
+            <button class="preview-section-button" type="button" data-editor-section="editor-section-cards" aria-pressed="false">Karten</button>
+            <button class="preview-section-button" type="button" data-editor-section="editor-section-navigation" aria-pressed="false">Navigation</button>
+            <button class="preview-section-button" type="button" data-editor-section="editor-section-background" aria-pressed="false">Hintergrund</button>
+            <button class="preview-section-button" type="button" data-editor-section="editor-section-effects" aria-pressed="false">Effekte</button>
+          </nav>
           </aside>
         </section>
       </main>
@@ -5383,6 +5513,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._stickyOffsetObserver?.disconnect();
     this._stopProfileSaveReminderPulse();
     this._stopProfileSaveSuccess();
+    window.clearTimeout(this.editorSectionFocusTimer);
     window.cancelAnimationFrame(this.stickyOffsetFrame);
     window.cancelAnimationFrame(this.communitySliderFrame);
     this.stickyOffsetFrame = 0;
@@ -5752,7 +5883,13 @@ class ThemeStudioPanel extends HTMLElement {
 
   _previewCard(title, content) {
     return `
-      <div class="preview-card">
+      <div
+        class="preview-card preview-edit-target"
+        data-editor-section="editor-section-cards"
+        role="button"
+        tabindex="0"
+        aria-label="Kartendarstellung bearbeiten"
+      >
         <h3>
           <span class="preview-icon"></span>
           ${title}
@@ -5804,7 +5941,74 @@ class ThemeStudioPanel extends HTMLElement {
     });
   }
 
+  _openEditorSection(sectionId) {
+    const section = this.shadowRoot.getElementById(sectionId);
+
+    if (!section?.classList.contains("editor-section")) {
+      return;
+    }
+
+    if (window.matchMedia("(max-width: 620px)").matches) {
+      this.shadowRoot
+        .querySelectorAll("details.editor-section")
+        .forEach((candidate) => {
+          candidate.open = candidate === section;
+        });
+    } else {
+      section.open = true;
+    }
+
+    this.shadowRoot
+      .querySelectorAll(".preview-section-button")
+      .forEach((button) => {
+        const active = button.dataset.editorSection === sectionId;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+
+    window.clearTimeout(this.editorSectionFocusTimer);
+    section.classList.remove("editor-section-focus");
+    window.requestAnimationFrame(() => {
+      section.classList.add("editor-section-focus");
+      section.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+      section.querySelector("summary")?.focus({ preventScroll: true });
+      this.editorSectionFocusTimer = window.setTimeout(() => {
+        section.classList.remove("editor-section-focus");
+      }, 1200);
+    });
+  }
+
   _bindEvents() {
+    const previewPanel = this.shadowRoot.getElementById("preview-panel");
+
+    previewPanel.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-editor-section]");
+
+      if (target) {
+        this._openEditorSection(target.dataset.editorSection);
+      }
+    });
+
+    previewPanel.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      const target = event.target.closest("[data-editor-section]");
+
+      if (!target || target.tagName === "BUTTON") {
+        return;
+      }
+
+      event.preventDefault();
+      this._openEditorSection(target.dataset.editorSection);
+    });
+
     this.shadowRoot
       .getElementById("undo-button")
       .addEventListener("click", () => this._undoSettings());

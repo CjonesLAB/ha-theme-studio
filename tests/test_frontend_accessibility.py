@@ -22,6 +22,25 @@ def test_frontend_exposes_accessible_states_and_status_messages() -> None:
     assert ':focus-visible' in PANEL_SOURCE
 
 
+def test_mobile_first_preview_opens_native_design_sections() -> None:
+    """Touch and keyboard users can navigate from the preview to settings."""
+
+    assert 'id="preview-panel" class="preview-panel"' in PANEL_SOURCE
+    assert 'class="preview"\n            role="region"' in PANEL_SOURCE
+    assert 'class="preview-section-actions" aria-label="Vorschau-Bereiche"' in PANEL_SOURCE
+    assert PANEL_SOURCE.count('class="preview-section-button"') == 5
+    assert 'data-editor-section="editor-section-cards"' in PANEL_SOURCE
+    assert 'data-editor-section="editor-section-navigation"' in PANEL_SOURCE
+    assert 'role="button"' in PANEL_SOURCE
+    assert 'tabindex="0"' in PANEL_SOURCE
+    assert 'event.key !== "Enter" && event.key !== " "' in PANEL_SOURCE
+    assert '_openEditorSection(target.dataset.editorSection)' in PANEL_SOURCE
+    assert 'window.matchMedia("(max-width: 620px)").matches' in PANEL_SOURCE
+    assert 'candidate.open = candidate === section;' in PANEL_SOURCE
+    assert 'scrollIntoView({' in PANEL_SOURCE
+    assert 'min-height: 48px;' in PANEL_SOURCE
+
+
 def test_import_dialog_supports_keyboard_navigation() -> None:
     """The import confirmation dialog can be operated without a pointer."""
 
