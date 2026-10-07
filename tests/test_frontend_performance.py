@@ -131,8 +131,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.3";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.3";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.4";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.4";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -391,18 +391,27 @@ def test_profile_actions_and_preview_use_coordinated_sticky_offsets() -> None:
 
 
 def test_liquid_glass_excludes_overlay_dialogs() -> None:
-    """More-info dialogs remain opaque and are not styled as glass cards."""
+    """More-info dialogs retain Home Assistant's native presentation."""
 
     effects_source = _effects_source()
+    overlay_card_block = effects_source.split(
+        "if (this._isInsideOverlay(element)) {",
+        maxsplit=1,
+    )[1].split(
+        "if (this._isHeadingCard(element)) {",
+        maxsplit=1,
+    )[0]
 
     assert 'name === "ha-more-info-dialog"' in effects_source
     assert 'element?.getAttribute?.("aria-modal") === "true"' in effects_source
     assert "this._isInsideOverlay(element)" in effects_source
-    assert '"--mdc-dialog-surface-color"' in effects_source
-    assert "this._restoreLiquidGlassCard(element);" in effects_source
-    assert 'classes.includes("mdc-dialog__scrim")' in effects_source
-    assert '"rgba(0, 0, 0, 0.12)"' in effects_source
-    assert '"blur(2px) saturate(110%)"' in effects_source
+    assert "this._restoreLiquidGlassCard(element);" in overlay_card_block
+    assert "this._restoreLiquidGlassHeading(element);" in overlay_card_block
+    assert "this._restoreTechFrameCard(element);" in overlay_card_block
+    assert "return;" in overlay_card_block
+    assert "if (this.liquidGlass)" not in overlay_card_block
+    assert "this._styleOverlayScrim(element);" not in effects_source
+    assert "this._styleOverlaySurface(element);" not in effects_source
 
 
 def test_config_area_excludes_all_special_effects() -> None:

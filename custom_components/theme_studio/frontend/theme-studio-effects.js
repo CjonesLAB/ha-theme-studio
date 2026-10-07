@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.3";
+const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.4";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
@@ -1488,18 +1488,9 @@ class ThemeStudioEffects {
         }
       }
 
-      if (this.liquidGlass && this._isOverlayScrimElement(element)) {
-        currentScrims.add(element);
-        this._styleOverlayScrim(element);
-      }
-
-      if (
-        (this.liquidGlass || techFrameEnabled)
-        && this._isOverlayElement(element)
-      ) {
-        currentOverlays.add(element);
-        this._styleOverlaySurface(element);
-      }
+      // Home Assistant owns dialogs and their scrims. Styling these surfaces
+      // breaks complex overlays such as the weather details on some devices.
+      // Keeping both sets empty below also restores styles from older runs.
 
       if (element.localName !== "ha-card") {
         return;
@@ -1508,11 +1499,8 @@ class ThemeStudioEffects {
       if (this._isInsideOverlay(element)) {
         this._restoreLiquidGlassCard(element);
         this._restoreLiquidGlassHeading(element);
-
-        if (this.liquidGlass) {
-          this._restoreTechFrameCard(element);
-          return;
-        }
+        this._restoreTechFrameCard(element);
+        return;
       }
 
       if (this._isHeadingCard(element)) {
