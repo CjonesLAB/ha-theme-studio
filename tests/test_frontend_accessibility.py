@@ -56,6 +56,17 @@ def test_mobile_first_preview_opens_native_design_sections() -> None:
     assert 'min-height: 48px;' in PANEL_SOURCE
 
 
+def test_mobile_editor_hides_experimental_css_tools() -> None:
+    """The mobile UI excludes the complete experimental CSS editor."""
+
+    mobile_styles = PANEL_SOURCE.split("@media (max-width: 620px)", 1)[1]
+
+    assert ".expert-css-panel" in mobile_styles
+    assert "display: none !important;" in mobile_styles.split(
+        ".expert-css-panel", 1
+    )[1].split("}", 1)[0]
+
+
 def test_import_dialog_supports_keyboard_navigation() -> None:
     """The import confirmation dialog can be operated without a pointer."""
 

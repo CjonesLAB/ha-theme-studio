@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.7";
-import "./theme-studio-effects.js?v=0.9.0-beta.7";
+} from "./theme-studio-locales.js?v=0.9.0-beta.8";
+import "./theme-studio-effects.js?v=0.9.0-beta.8";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3947,6 +3947,10 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         @media (max-width: 620px) {
+          .expert-css-panel {
+            display: none !important;
+          }
+
           .page button,
           .page input:not([type="checkbox"]):not([type="color"]),
           .page select,
