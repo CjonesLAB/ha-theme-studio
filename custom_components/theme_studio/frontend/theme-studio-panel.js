@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.9";
-import "./theme-studio-effects.js?v=0.9.0-beta.9";
+} from "./theme-studio-locales.js?v=0.9.0-beta.10";
+import "./theme-studio-effects.js?v=0.9.0-beta.10";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2966,6 +2966,16 @@ class ThemeStudioPanel extends HTMLElement {
           );
         }
 
+        .preview-dashboard.preview-context-selected::after {
+          content: "";
+          position: absolute;
+          inset: 4px;
+          z-index: 4;
+          border: 2px solid var(--primary-color);
+          border-radius: 10px;
+          pointer-events: none;
+        }
+
         .preview-card-choices[hidden] {
           display: none !important;
         }
@@ -3151,6 +3161,10 @@ class ThemeStudioPanel extends HTMLElement {
           background-image: var(--preview-image);
           background-position: center;
           background-size: cover;
+        }
+
+        .preview-dashboard[data-preview-context="background"] {
+          cursor: pointer;
         }
 
         .preview-dashboard::before {
@@ -3961,6 +3975,22 @@ class ThemeStudioPanel extends HTMLElement {
             flex-basis: 100%;
           }
 
+          .page[data-mobile-builder-view="editor"]
+          .profile-sticky-actions {
+            display: none;
+          }
+
+          .page[data-mobile-builder-view="editor"]
+          details.editor-section:not([open]) {
+            display: none;
+          }
+
+          .page[data-mobile-builder-view="editor"]
+          details.editor-section[open] > summary {
+            pointer-events: none;
+            cursor: default;
+          }
+
           .page button,
           .page input:not([type="checkbox"]):not([type="color"]),
           .page select,
@@ -4103,6 +4133,9 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .mobile-preview-back {
+            position: sticky;
+            top: var(--theme-studio-profile-sticky-top, 118px);
+            z-index: 119;
             display: inline-flex;
             width: 100%;
             align-items: center;
@@ -4134,6 +4167,24 @@ class ThemeStudioPanel extends HTMLElement {
           .card-context-text,
           #editor-section-cards[data-card-context="icon"]
           .card-context-icon {
+            display: block;
+          }
+
+          #editor-section-navigation[data-navigation-context]
+          .navigation-context-group,
+          #editor-section-effects[data-effect-context]
+          .effect-context-group {
+            display: none;
+          }
+
+          #editor-section-navigation[data-navigation-context="header"]
+          .navigation-context-header,
+          #editor-section-navigation[data-navigation-context="sidebar"]
+          .navigation-context-sidebar,
+          #editor-section-effects[data-effect-context="background"]
+          .effect-context-background,
+          #editor-section-effects[data-effect-context="cards"]
+          .effect-context-cards {
             display: block;
           }
 
@@ -4312,7 +4363,7 @@ class ThemeStudioPanel extends HTMLElement {
         </a>
       </nav>
 
-      <main class="page">
+      <main class="page" data-mobile-builder-view="preview">
         <header class="topbar">
           <div class="topbar-intro">
             <h1>Theme Studio</h1>
@@ -4916,6 +4967,7 @@ class ThemeStudioPanel extends HTMLElement {
             <details id="editor-section-navigation" class="editor-section">
               <summary>Navigation</summary>
               <div class="details-content">
+                <div class="navigation-context-group navigation-context-header">
                 <div class="effect-subheading">
                   Kopfzeile
                 </div>
@@ -4929,7 +4981,9 @@ class ThemeStudioPanel extends HTMLElement {
                   "header-text-color",
                   "Text- und Symbolfarbe"
                 )}
+                </div>
 
+                <div class="navigation-context-group navigation-context-sidebar">
                 <div class="effect-subheading">
                   Seitenleiste
                 </div>
@@ -4953,6 +5007,7 @@ class ThemeStudioPanel extends HTMLElement {
                   "sidebar-selected-color",
                   "Aktive Navigation"
                 )}
+                </div>
 
                 <p class="effect-hint">
                   Die Einstellungen gelten getrennt für den
@@ -5068,6 +5123,7 @@ class ThemeStudioPanel extends HTMLElement {
             <details id="editor-section-effects" class="editor-section">
               <summary>Dashboard-Effekte</summary>
               <div class="details-content">
+                <div class="effect-context-group effect-context-background">
                 <div class="effect-subheading">
                   Hintergrundeffekt
                 </div>
@@ -5118,7 +5174,9 @@ class ThemeStudioPanel extends HTMLElement {
                     100
                   )}
                 </div>
+                </div>
 
+                <div class="effect-context-group effect-context-cards">
                 <div class="effect-subheading">
                   Karteneffekte (Mehrfachauswahl)
                 </div>
@@ -5383,6 +5441,7 @@ class ThemeStudioPanel extends HTMLElement {
                   Modus. Bei aktivierter Systemoption
                   „Bewegung reduzieren“ bleibt er automatisch aus.
                 </p>
+                </div>
 
                 <div class="expert-css-panel">
                   <label class="expert-css-toggle">
@@ -5544,6 +5603,7 @@ class ThemeStudioPanel extends HTMLElement {
             <div
               class="preview-app-header preview-edit-target"
               data-editor-section="editor-section-navigation"
+              data-navigation-context="header"
               role="button"
               tabindex="0"
               aria-label="Navigation bearbeiten"
@@ -5564,6 +5624,7 @@ class ThemeStudioPanel extends HTMLElement {
               <aside
                 class="preview-sidebar preview-edit-target"
                 data-editor-section="editor-section-navigation"
+                data-navigation-context="sidebar"
                 role="button"
                 tabindex="0"
                 aria-label="Navigation bearbeiten"
@@ -5598,7 +5659,11 @@ class ThemeStudioPanel extends HTMLElement {
                 </div>
               </aside>
 
-              <div class="preview-dashboard">
+              <div
+                class="preview-dashboard"
+                data-preview-context="background"
+                aria-label="Hintergrund und Bewegung bearbeiten"
+              >
                 <div
                   id="preview-effect"
                   class="preview-effect"
@@ -5715,7 +5780,43 @@ class ThemeStudioPanel extends HTMLElement {
                 type="button"
                 data-preview-card-choice
                 data-editor-section="editor-section-effects"
+                data-effect-context="cards"
               >Zustände</button>
+            </div>
+          </section>
+          <section
+            id="preview-background-choices"
+            class="preview-card-choices"
+            role="group"
+            aria-labelledby="preview-background-choice-title"
+            hidden
+          >
+            <div class="preview-card-choice-heading">
+              <strong id="preview-background-choice-title">Was möchtest du bearbeiten?</strong>
+              <button
+                id="preview-background-choice-close"
+                class="preview-card-choice-close"
+                type="button"
+                aria-label="Auswahl schließen"
+              >×</button>
+            </div>
+            <p class="preview-card-choice-hint">
+              Wähle die Hintergrundgestaltung oder den Bewegungseffekt.
+            </p>
+            <div class="preview-card-choice-grid">
+              <button
+                class="preview-card-choice-button"
+                type="button"
+                data-preview-background-choice
+                data-editor-section="editor-section-background"
+              >Hintergrund</button>
+              <button
+                class="preview-card-choice-button"
+                type="button"
+                data-preview-background-choice
+                data-editor-section="editor-section-effects"
+                data-effect-context="background"
+              >Bewegungseffekt</button>
             </div>
           </section>
           <p class="preview-edit-hint">
@@ -6176,7 +6277,14 @@ class ThemeStudioPanel extends HTMLElement {
     });
   }
 
-  _openEditorSection(sectionId, { cardContext = null } = {}) {
+  _openEditorSection(
+    sectionId,
+    {
+      cardContext = null,
+      navigationContext = null,
+      effectContext = null,
+    } = {}
+  ) {
     const section = this.shadowRoot.getElementById(sectionId);
 
     if (!section?.classList.contains("editor-section")) {
@@ -6193,6 +6301,22 @@ class ThemeStudioPanel extends HTMLElement {
       }
     }
 
+    if (sectionId === "editor-section-navigation") {
+      if (navigationContext) {
+        section.setAttribute("data-navigation-context", navigationContext);
+      } else {
+        section.removeAttribute("data-navigation-context");
+      }
+    }
+
+    if (sectionId === "editor-section-effects") {
+      if (effectContext) {
+        section.setAttribute("data-effect-context", effectContext);
+      } else {
+        section.removeAttribute("data-effect-context");
+      }
+    }
+
     if (isMobile) {
       this.shadowRoot
         .querySelectorAll("details.editor-section")
@@ -6202,6 +6326,9 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot
         .querySelector(".builder-grid")
         ?.setAttribute("data-mobile-view", "editor");
+      this.shadowRoot
+        .querySelector(".page")
+        ?.setAttribute("data-mobile-builder-view", "editor");
     } else {
       section.open = true;
     }
@@ -6219,7 +6346,11 @@ class ThemeStudioPanel extends HTMLElement {
     window.requestAnimationFrame(() => {
       section.classList.add("editor-section-focus");
 
-      if (!isMobile) {
+      if (isMobile) {
+        this.shadowRoot
+          .getElementById("mobile-preview-back")
+          ?.scrollIntoView({ behavior: "auto", block: "start" });
+      } else {
         section.scrollIntoView({
           behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
             ? "auto"
@@ -6245,7 +6376,15 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     builderGrid.setAttribute("data-mobile-view", "preview");
+    this.shadowRoot
+      .querySelector(".page")
+      ?.setAttribute("data-mobile-builder-view", "preview");
     this._hidePreviewCardChoices();
+    window.requestAnimationFrame(() => {
+      this.shadowRoot
+        .getElementById("preview-panel")
+        ?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
   }
 
   _showPreviewCardChoices(card) {
@@ -6254,16 +6393,29 @@ class ThemeStudioPanel extends HTMLElement {
       return;
     }
 
-    this.shadowRoot
-      .querySelectorAll(".preview-card.preview-context-selected")
-      .forEach((candidate) => {
-        candidate.classList.remove("preview-context-selected");
-      });
+    this._hidePreviewCardChoices();
     card.classList.add("preview-context-selected");
     const choices = this.shadowRoot.getElementById("preview-card-choices");
     choices.hidden = false;
     choices
       .querySelector("[data-preview-card-choice]")
+      ?.focus({ preventScroll: true });
+  }
+
+  _showPreviewBackgroundChoices(background) {
+    if (!window.matchMedia("(max-width: 620px)").matches) {
+      this._openEditorSection("editor-section-background");
+      return;
+    }
+
+    this._hidePreviewCardChoices();
+    background.classList.add("preview-context-selected");
+    const choices = this.shadowRoot.getElementById(
+      "preview-background-choices"
+    );
+    choices.hidden = false;
+    choices
+      .querySelector("[data-preview-background-choice]")
       ?.focus({ preventScroll: true });
   }
 
@@ -6274,8 +6426,16 @@ class ThemeStudioPanel extends HTMLElement {
       choices.hidden = true;
     }
 
+    const backgroundChoices = this.shadowRoot.getElementById(
+      "preview-background-choices"
+    );
+
+    if (backgroundChoices) {
+      backgroundChoices.hidden = true;
+    }
+
     this.shadowRoot
-      .querySelectorAll(".preview-card.preview-context-selected")
+      .querySelectorAll(".preview-context-selected")
       .forEach((candidate) => {
         candidate.classList.remove("preview-context-selected");
       });
@@ -6292,13 +6452,20 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("preview-card-choice-close")
       .addEventListener("click", () => this._hidePreviewCardChoices());
 
+    this.shadowRoot
+      .getElementById("preview-background-choice-close")
+      .addEventListener("click", () => this._hidePreviewCardChoices());
+
     previewPanel.addEventListener("click", (event) => {
-      const choice = event.target.closest("[data-preview-card-choice]");
+      const choice = event.target.closest(
+        "[data-preview-card-choice], [data-preview-background-choice]"
+      );
 
       if (choice) {
         this._hidePreviewCardChoices();
         this._openEditorSection(choice.dataset.editorSection, {
           cardContext: choice.dataset.cardContext || null,
+          effectContext: choice.dataset.effectContext || null,
         });
         return;
       }
@@ -6310,10 +6477,22 @@ class ThemeStudioPanel extends HTMLElement {
         return;
       }
 
+      const previewBackground = event.target.closest(
+        '[data-preview-context="background"]'
+      );
+
+      if (previewBackground) {
+        this._showPreviewBackgroundChoices(previewBackground);
+        return;
+      }
+
       const target = event.target.closest("[data-editor-section]");
 
       if (target) {
-        this._openEditorSection(target.dataset.editorSection);
+        this._openEditorSection(target.dataset.editorSection, {
+          navigationContext: target.dataset.navigationContext || null,
+          effectContext: target.dataset.effectContext || null,
+        });
       }
     });
 
@@ -6337,7 +6516,10 @@ class ThemeStudioPanel extends HTMLElement {
       }
 
       event.preventDefault();
-      this._openEditorSection(target.dataset.editorSection);
+      this._openEditorSection(target.dataset.editorSection, {
+        navigationContext: target.dataset.navigationContext || null,
+        effectContext: target.dataset.effectContext || null,
+      });
     });
 
     this.shadowRoot
@@ -8814,7 +8996,9 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   _focusEffectTargetPicker(searchId) {
-    this._openEditorSection("editor-section-effects");
+    this._openEditorSection("editor-section-effects", {
+      effectContext: "cards",
+    });
     window.requestAnimationFrame(() => {
       const searchInput = this.shadowRoot.getElementById(searchId);
       const field = searchInput?.closest(".effect-field");

@@ -34,7 +34,7 @@ def test_mobile_first_preview_opens_native_design_sections() -> None:
     assert 'role="button"' in PANEL_SOURCE
     assert 'tabindex="0"' in PANEL_SOURCE
     assert 'event.key !== "Enter" && event.key !== " "' in PANEL_SOURCE
-    assert '_openEditorSection(target.dataset.editorSection)' in PANEL_SOURCE
+    assert '_openEditorSection(target.dataset.editorSection, {' in PANEL_SOURCE
     assert 'window.matchMedia("(max-width: 620px)").matches' in PANEL_SOURCE
     assert 'candidate.open = candidate === section;' in PANEL_SOURCE
     assert 'data-mobile-view="preview"' in PANEL_SOURCE
@@ -50,6 +50,13 @@ def test_mobile_first_preview_opens_native_design_sections() -> None:
     assert 'data-card-context="surface"' in PANEL_SOURCE
     assert 'data-card-context="text"' in PANEL_SOURCE
     assert 'data-card-context="icon"' in PANEL_SOURCE
+    assert 'id="preview-background-choices"' in PANEL_SOURCE
+    assert PANEL_SOURCE.count("data-preview-background-choice\n") == 2
+    assert 'data-navigation-context="header"' in PANEL_SOURCE
+    assert 'data-navigation-context="sidebar"' in PANEL_SOURCE
+    assert 'data-effect-context="background"' in PANEL_SOURCE
+    assert 'data-effect-context="cards"' in PANEL_SOURCE
+    assert '_showPreviewBackgroundChoices(previewBackground)' in PANEL_SOURCE
     assert 'if (!isMobile) {' in PANEL_SOURCE
     assert 'block: "nearest"' in PANEL_SOURCE
     assert 'position: relative;\n            top: auto;' in PANEL_SOURCE
@@ -78,6 +85,21 @@ def test_mobile_editor_hides_advanced_profile_transfer_actions() -> None:
     assert ".profile-import-label" in hidden_actions
     assert "#profile-edit-actions #profile-delete-button" in mobile_styles
     assert "flex-basis: 100%;" in mobile_styles
+
+
+def test_mobile_editor_shows_one_task_and_keeps_preview_return_visible() -> None:
+    """Mobile editing hides unrelated modules and keeps a sticky return action."""
+
+    mobile_styles = PANEL_SOURCE.split("@media (max-width: 620px)", 1)[1]
+
+    assert '.page[data-mobile-builder-view="editor"]' in mobile_styles
+    assert "details.editor-section:not([open])" in mobile_styles
+    assert "details.editor-section[open] > summary" in mobile_styles
+    assert "top: var(--theme-studio-profile-sticky-top, 118px);" in mobile_styles
+    assert 'setAttribute("data-mobile-builder-view", "editor")' in PANEL_SOURCE
+    assert 'setAttribute("data-mobile-builder-view", "preview")' in PANEL_SOURCE
+    assert 'data-navigation-context="header"' in PANEL_SOURCE
+    assert 'data-effect-context="cards"' in PANEL_SOURCE
 
 
 def test_import_dialog_supports_keyboard_navigation() -> None:
