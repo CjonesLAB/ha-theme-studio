@@ -99,12 +99,12 @@ def test_liquid_glass_has_a_safe_progressive_enhancement() -> None:
     assert "this._syncLiquidGlassCards();" in effects_source
     assert "const GLASS_SCAN_INTERVAL = 3000;" in effects_source
     assert "now - this.glassLastScan < GLASS_SCAN_INTERVAL" in effects_source
-    assert 'data-glass-style="liquid-glass"' in panel_source
+    assert 'data-card-preset="glass"' in panel_source
     assert '"--preview-backdrop-filter"' in panel_source
 
 
-def test_liquid_glass_locks_conflicting_material_controls() -> None:
-    """Opaque card controls cannot silently override the glass material."""
+def test_liquid_glass_hides_conflicting_material_controls() -> None:
+    """Glass only presents the controls that remain relevant."""
 
     panel_source = _panel_source()
 
@@ -113,16 +113,32 @@ def test_liquid_glass_locks_conflicting_material_controls() -> None:
     assert '"glass-transparency"' in panel_source
     assert '"card-border-width"' in panel_source
     assert '"card-shadow"' in panel_source
-    assert 'this.profile.borderRadius = 26;' in panel_source
-    locked_controls = panel_source.split(
-        "const glassLockedControls = [", 1
-    )[1].split("];", 1)[0]
-    assert '"border-radius"' not in locked_controls
+    assert "borderRadius: 26" in panel_source
     assert "Math.max(8, Number(this.profile.glassBlur)" not in panel_source
-    assert "control.disabled = locked;" in panel_source
-    assert 'classList.toggle("glass-setting-locked", locked)' in panel_source
-    assert 'getElementById("glass-lock-hint").hidden' in panel_source
+    assert 'id="card-material-controls"' in panel_source
+    assert 'getElementById("card-material-controls").hidden' in panel_source
     assert 'settingName === "glassTransparency"' in panel_source
+
+
+def test_card_presets_are_no_code_and_contextual() -> None:
+    """Four native presets expose only controls relevant to their style."""
+
+    panel_source = _panel_source()
+
+    for preset in ("standard", "soft", "glass", "technical"):
+        assert f'data-card-preset="{preset}"' in panel_source
+
+    assert "_cardPresetValues(preset)" in panel_source
+    assert "_applyCardPreset(selectedPreset)" in panel_source
+    assert 'cardShape: "standard"' in panel_source
+    assert 'cardShape: "tech-frame"' in panel_source
+    assert "cardOpacity: lightMode ? 94 : 88" in panel_source
+    assert "borderRadius: 26" in panel_source
+    assert 'getElementById("glass-controls").hidden' in panel_source
+    assert 'getElementById("tech-frame-controls").hidden' in panel_source
+    assert 'getElementById("card-material-controls").hidden' in panel_source
+    assert 'getElementById("effect-controls")' in panel_source
+    assert 'getElementById("card-effect-controls")' in panel_source
 
 
 def test_effect_module_replaces_a_stale_cached_instance() -> None:
@@ -131,8 +147,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.11";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.11";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.12";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.12";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -255,7 +271,7 @@ def test_tech_frame_is_selectable_restorable_and_excludes_headings() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'data-glass-style="tech-frame"' in panel_source
+    assert 'data-card-preset="technical"' in panel_source
     assert 'id="tech-frame-controls"' in panel_source
     assert '"--preview-tech-cut"' in panel_source
     assert '"--theme-studio-card-shape"' in effects_source

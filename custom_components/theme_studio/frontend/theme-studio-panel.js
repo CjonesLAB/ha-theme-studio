@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.11";
-import "./theme-studio-effects.js?v=0.9.0-beta.11";
+} from "./theme-studio-locales.js?v=0.9.0-beta.12";
+import "./theme-studio-effects.js?v=0.9.0-beta.12";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2452,28 +2452,6 @@ class ThemeStudioPanel extends HTMLElement {
           margin-bottom: 0;
         }
 
-        .glass-setting-locked {
-          opacity: 0.42;
-          transition: opacity 160ms ease;
-        }
-
-        .glass-setting-locked input {
-          cursor: not-allowed;
-        }
-
-        .glass-lock-hint {
-          margin: 12px 0;
-          padding: 9px 11px;
-          border-left: 3px solid var(--primary-color);
-          border-radius: 7px;
-          background: color-mix(
-            in srgb,
-            var(--primary-color) 9%,
-            transparent
-          );
-          font-size: 10px;
-        }
-
         .range-head {
           display: flex;
           justify-content: space-between;
@@ -2591,6 +2569,13 @@ class ThemeStudioPanel extends HTMLElement {
             linear-gradient(135deg, #252a31, #111418);
         }
 
+        .effect-soft {
+          background:
+            linear-gradient(145deg, #3b4650, #222a31);
+          border-radius: 18px;
+          box-shadow: 0 9px 20px rgba(0, 0, 0, 0.22);
+        }
+
         .effect-liquid-glass {
           background:
             linear-gradient(
@@ -2647,6 +2632,13 @@ class ThemeStudioPanel extends HTMLElement {
           color: var(--secondary-text-color);
           font-size: 9px;
           line-height: 1.4;
+        }
+
+        .control-subheading {
+          margin: 0 0 9px;
+          color: var(--primary-text-color);
+          font-size: 11px;
+          font-weight: 700;
         }
 
         .effect-subheading {
@@ -4820,43 +4812,58 @@ class ThemeStudioPanel extends HTMLElement {
               <summary>Karten</summary>
               <div class="details-content">
                 <div class="card-context-group card-context-surface">
+                <h4 class="control-subheading">Stilvorlagen</h4>
                 <div class="effect-options">
                   <button
-                    class="effect-option glass-style-option effect-none"
-                    data-glass-style="standard"
+                    class="effect-option card-preset-option effect-none"
+                    data-card-preset="standard"
                     type="button"
                     aria-pressed="true"
                   >
                     <span class="effect-option-title">Standard</span>
                     <span class="effect-option-description">
-                      Klassische Karten ohne Glasfilter.
+                      Ausgewogene Karten für den Alltag.
                     </span>
                   </button>
 
                   <button
-                    class="effect-option glass-style-option effect-liquid-glass"
-                    data-glass-style="liquid-glass"
+                    class="effect-option card-preset-option effect-soft"
+                    data-card-preset="soft"
                     type="button"
                     aria-pressed="false"
                   >
-                    <span class="effect-option-title">Liquid Glass</span>
+                    <span class="effect-option-title">Weich</span>
+                    <span class="effect-option-description">
+                      Ruhige, abgerundete Karten mit weichen Schatten.
+                    </span>
+                  </button>
+
+                  <button
+                    class="effect-option card-preset-option effect-liquid-glass"
+                    data-card-preset="glass"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="effect-option-title">Glas</span>
                     <span class="effect-option-description">
                       Transparenz, Unschärfe und Lichtreflexe.
                     </span>
                   </button>
 
                   <button
-                    class="effect-option glass-style-option effect-tech-frame"
-                    data-glass-style="tech-frame"
+                    class="effect-option card-preset-option effect-tech-frame"
+                    data-card-preset="technical"
                     type="button"
                     aria-pressed="false"
                   >
-                    <span class="effect-option-title">Tech Frame</span>
+                    <span class="effect-option-title">Technisch</span>
                     <span class="effect-option-description">
-                      Asymmetrische Kanten und dezente Leuchtlinien.
+                      Klare Kanten und dezente Leuchtlinien.
                     </span>
                   </button>
                 </div>
+
+                <p id="card-preset-hint" class="effect-hint"></p>
 
                 <div id="glass-controls" hidden>
                   ${this._rangeField(
@@ -4904,11 +4911,7 @@ class ThemeStudioPanel extends HTMLElement {
                   )}
                 </div>
 
-                <p id="glass-lock-hint" class="effect-hint glass-lock-hint" hidden>
-                  Liquid Glass steuert Kartenfarbe, Deckkraft, Rahmen
-                  und Schatten automatisch.
-                </p>
-
+                <div id="card-material-controls">
                 ${this._colorField(
                   "card-color",
                   "Kartenfarbe"
@@ -4946,6 +4949,7 @@ class ThemeStudioPanel extends HTMLElement {
                   0,
                   36
                 )}
+                </div>
                 </div>
 
                 <div class="card-context-group card-context-text">
@@ -6850,37 +6854,17 @@ class ThemeStudioPanel extends HTMLElement {
     this._bindRange("darkening", "darkening", "%");
 
     this.shadowRoot
-      .querySelectorAll(".glass-style-option")
+      .querySelectorAll(".card-preset-option")
       .forEach((button) => {
         button.addEventListener("click", () => {
-          const selectedStyle = button.dataset.glassStyle;
+          const selectedPreset = button.dataset.cardPreset;
 
-          if (selectedStyle === this._cardStyle()) {
+          if (selectedPreset === this._activeCardPreset()) {
             return;
           }
 
           this._recordHistory();
-          this.profile.liquidGlass = selectedStyle === "liquid-glass";
-          this.profile.cardShape = selectedStyle === "tech-frame"
-            ? "tech-frame"
-            : "standard";
-
-          if (
-            selectedStyle === "tech-frame"
-            && Number(this.profile.cardBorderWidth) === 0
-          ) {
-            this.profile.cardBorderWidth = 2;
-          }
-
-          if (this.profile.liquidGlass) {
-            this.profile.glassTransparency =
-              this.activeMode === "light" ? 56 : 66;
-            this.profile.glassBlur = 22;
-            this.profile.glassSaturation = 145;
-            this.profile.glassHighlight = 32;
-            this.profile.borderRadius = 26;
-            this._applyLiquidGlassMaterial();
-          }
+          this._applyCardPreset(selectedPreset);
 
           this._syncControls();
           this._updatePreview();
@@ -9867,6 +9851,87 @@ class ThemeStudioPanel extends HTMLElement {
       : "standard";
   }
 
+  _cardPresetValues(preset) {
+    const lightMode = this.activeMode === "light";
+
+    if (preset === "soft") {
+      return {
+        liquidGlass: false,
+        cardShape: "standard",
+        cardColor: lightMode ? "#f7f9fb" : "#1b282c",
+        cardBorderColor: lightMode ? "#dfe6ec" : "#2b4146",
+        cardOpacity: lightMode ? 94 : 88,
+        cardBorderWidth: 0,
+        cardShadow: lightMode ? 22 : 30,
+        borderRadius: 26,
+      };
+    }
+
+    if (preset === "glass") {
+      return {
+        liquidGlass: true,
+        cardShape: "standard",
+        glassTransparency: lightMode ? 56 : 66,
+        glassBlur: 22,
+        glassSaturation: 145,
+        glassHighlight: 32,
+        borderRadius: 26,
+      };
+    }
+
+    if (preset === "technical") {
+      return {
+        liquidGlass: false,
+        cardShape: "tech-frame",
+        cardColor: lightMode ? "#ffffff" : "#182326",
+        cardBorderColor: lightMode ? "#2f6fa3" : "#26b2b3",
+        cardBorderWidth: 2,
+        cardShadow: 28,
+        techFrameCut: 18,
+        techFrameGlow: 35,
+      };
+    }
+
+    return {
+      liquidGlass: false,
+      cardShape: "standard",
+      cardColor: lightMode ? "#ffffff" : "#182326",
+      cardBorderColor: lightMode ? "#d5dde5" : "#26b2b3",
+      cardOpacity: lightMode ? 96 : 92,
+      cardBorderWidth: lightMode ? 1 : 0,
+      cardShadow: lightMode ? 16 : 28,
+      borderRadius: 18,
+    };
+  }
+
+  _applyCardPreset(preset) {
+    Object.assign(this.profile, this._cardPresetValues(preset));
+    this._applyLiquidGlassMaterial();
+  }
+
+  _activeCardPreset() {
+    if (this.profile?.liquidGlass) {
+      return "glass";
+    }
+
+    if (this.profile?.cardShape === "tech-frame") {
+      return "technical";
+    }
+
+    for (const preset of ["standard", "soft"]) {
+      const values = this._cardPresetValues(preset);
+      const matches = Object.entries(values).every(
+        ([key, value]) => this.profile?.[key] === value
+      );
+
+      if (matches) {
+        return preset;
+      }
+    }
+
+    return "custom";
+  }
+
   _syncGalleryModeControl() {
     const value = this.shadowRoot.getElementById("gallery-mode-value");
 
@@ -9986,10 +10051,10 @@ class ThemeStudioPanel extends HTMLElement {
     );
 
     this.shadowRoot
-      .querySelectorAll(".glass-style-option")
+      .querySelectorAll(".card-preset-option")
       .forEach((button) => {
-        const active = button.dataset.glassStyle ===
-          this._cardStyle();
+        const active = button.dataset.cardPreset ===
+          this._activeCardPreset();
 
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
@@ -10001,29 +10066,22 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot.getElementById("tech-frame-controls").hidden =
       this._cardStyle() !== "tech-frame";
 
+    this.shadowRoot.getElementById("card-material-controls").hidden =
+      Boolean(this.profile.liquidGlass);
+
     this.shadowRoot.getElementById("border-radius")
       .closest(".range-group").hidden =
         this._cardStyle() === "tech-frame";
 
-    const glassLockedControls = [
-      "card-color",
-      "card-border-color",
-      "card-opacity",
-      "card-border-width",
-      "card-shadow",
-    ];
-
-    glassLockedControls.forEach((id) => {
-      const control = this.shadowRoot.getElementById(id);
-      const locked = Boolean(this.profile.liquidGlass);
-
-      control.disabled = locked;
-      control.closest(".field, .range-group")
-        ?.classList.toggle("glass-setting-locked", locked);
-    });
-
-    this.shadowRoot.getElementById("glass-lock-hint").hidden =
-      !this.profile.liquidGlass;
+    const presetHints = {
+      standard: "Nur passende Grundeinstellungen für Standard werden angezeigt.",
+      soft: "Nur passende Grundeinstellungen für Weich werden angezeigt.",
+      glass: "Für Glas werden nur Transparenz, Unschärfe, Sättigung und Reflexion benötigt.",
+      technical: "Für Technisch werden nur passende Rahmen- und Materialeinstellungen angezeigt.",
+      custom: "Die Werte wurden individuell angepasst.",
+    };
+    this.shadowRoot.getElementById("card-preset-hint").textContent =
+      this._translate(presetHints[this._activeCardPreset()]);
 
     const selectedBackground = this.backgrounds.find(
       (background) => this._backgroundPath(background.url)
