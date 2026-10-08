@@ -67,6 +67,19 @@ def test_mobile_editor_hides_experimental_css_tools() -> None:
     )[1].split("}", 1)[0]
 
 
+def test_mobile_editor_hides_advanced_profile_transfer_actions() -> None:
+    """Mobile keeps only the essential profile management actions visible."""
+
+    mobile_styles = PANEL_SOURCE.split("@media (max-width: 620px)", 1)[1]
+    hidden_actions = mobile_styles.split("display: none !important;", 2)[1]
+
+    assert "#profile-duplicate-button" in hidden_actions
+    assert "#profile-export-button" in hidden_actions
+    assert ".profile-import-label" in hidden_actions
+    assert "#profile-edit-actions #profile-delete-button" in mobile_styles
+    assert "flex-basis: 100%;" in mobile_styles
+
+
 def test_import_dialog_supports_keyboard_navigation() -> None:
     """The import confirmation dialog can be operated without a pointer."""
 

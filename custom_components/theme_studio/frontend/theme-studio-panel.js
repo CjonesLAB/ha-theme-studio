@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.8";
-import "./theme-studio-effects.js?v=0.9.0-beta.8";
+} from "./theme-studio-locales.js?v=0.9.0-beta.9";
+import "./theme-studio-effects.js?v=0.9.0-beta.9";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3949,6 +3949,16 @@ class ThemeStudioPanel extends HTMLElement {
         @media (max-width: 620px) {
           .expert-css-panel {
             display: none !important;
+          }
+
+          #profile-duplicate-button,
+          #profile-export-button,
+          .profile-import-label {
+            display: none !important;
+          }
+
+          #profile-edit-actions #profile-delete-button {
+            flex-basis: 100%;
           }
 
           .page button,
