@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.10";
-import "./theme-studio-effects.js?v=0.9.0-beta.10";
+} from "./theme-studio-locales.js?v=0.9.0-beta.11";
+import "./theme-studio-effects.js?v=0.9.0-beta.11";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -8130,16 +8130,28 @@ class ThemeStudioPanel extends HTMLElement {
     }
   }
 
-  async _saveProfile() {
+  _focusProfileName() {
+    if (window.matchMedia("(max-width: 620px)").matches) {
+      this._showMobilePreview();
+    }
+
+    window.requestAnimationFrame(() => {
+      const input = this.shadowRoot.getElementById("profile-name");
+      input?.scrollIntoView({ behavior: "auto", block: "center" });
+      input?.focus({ preventScroll: true });
+    });
+  }
+
+  async _saveProfile({ announce = true } = {}) {
     const name = this._profileName();
 
     if (!name) {
       this._setStatus("Bitte einen Profilnamen eingeben.", "error");
-      return;
+      return false;
     }
 
     if (!this._validateEffectTargets()) {
-      return;
+      return false;
     }
 
     const currentProfile = this._currentProfile();
@@ -8160,15 +8172,19 @@ class ThemeStudioPanel extends HTMLElement {
       this.profiles = result.profiles;
       this.activeProfileId = result.profile.id;
       this._renderProfileOptions();
-      this._showProfileSaveSuccess();
-      this._setStatus(
-        currentProfile
-          ? `${result.profile.name} wurde aktualisiert.`
-          : `${result.profile.name} wurde gespeichert.`,
-        "success"
-      );
+      if (announce) {
+        this._showProfileSaveSuccess();
+        this._setStatus(
+          currentProfile
+            ? `${result.profile.name} wurde aktualisiert.`
+            : `${result.profile.name} wurde gespeichert.`,
+          "success"
+        );
+      }
+      return true;
     } catch (error) {
       this._setStatus(this._errorMessage(error), "error");
+      return false;
     } finally {
       this._syncProfileControls();
     }
@@ -9594,6 +9610,34 @@ class ThemeStudioPanel extends HTMLElement {
 
     const button =
       this.shadowRoot.getElementById("apply-button");
+
+    const currentProfile = this._currentProfile();
+    const profileName = this._profileName();
+    const profileNeedsSave = !currentProfile
+      || currentProfile.name !== profileName
+      || !this._settingsEqual(currentProfile.settings, this.settings);
+
+    if (profileNeedsSave && !profileName) {
+      this._setStatus(
+        "Bitte zuerst einen Profilnamen eingeben. Danach wird das Profil beim Anwenden automatisch gespeichert.",
+        "error"
+      );
+      this._focusProfileName();
+      return;
+    }
+
+    if (profileNeedsSave) {
+      button.disabled = true;
+      button.textContent = "Profil wird gespeichert …";
+
+      const profileSaved = await this._saveProfile({ announce: false });
+
+      if (!profileSaved) {
+        button.disabled = false;
+        button.textContent = "Design anwenden";
+        return false;
+      }
+    }
 
     button.disabled = true;
     button.textContent = "Wird aktiviert …";

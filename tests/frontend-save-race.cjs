@@ -16,7 +16,12 @@ async function scenario(change, fail = false) {
       submitted = structuredClone(message.settings);
       return new Promise((yes, no) => { resolve = yes; reject = no; });
     } },
-    _currentProfile: () => null, _cloneSettings: structuredClone,
+    _currentProfile() {
+      return { id: 'original', name: 'Test', settings: structuredClone(this.settings) };
+    },
+    _profileName: () => 'Test',
+    _settingsEqual: (first, second) => JSON.stringify(first) === JSON.stringify(second),
+    _cloneSettings: structuredClone,
     _expertCssError: () => '',
     _validateEffectTargets: () => true,
     _stopProfileSaveReminderPulse() {},
