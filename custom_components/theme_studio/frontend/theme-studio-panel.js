@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.14";
-import "./theme-studio-effects.js?v=0.9.0-beta.14";
+} from "./theme-studio-locales.js?v=0.9.0-beta.15";
+import "./theme-studio-effects.js?v=0.9.0-beta.15";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2943,6 +2943,11 @@ class ThemeStudioPanel extends HTMLElement {
           filter: brightness(1.08);
         }
 
+        .preview.tech-frame .preview-edit-target:hover,
+        .preview.tech-frame .preview-edit-target:focus-visible {
+          outline: none;
+        }
+
         .preview-card.preview-context-selected {
           background-color: color-mix(
             in srgb,
@@ -3685,6 +3690,22 @@ class ThemeStudioPanel extends HTMLElement {
           z-index: 2;
         }
 
+        .preview-tech-frame-outline polygon {
+          transition:
+            stroke 140ms ease,
+            filter 140ms ease;
+        }
+
+        .preview.tech-frame .preview-card:hover
+        .preview-tech-frame-outline polygon,
+        .preview.tech-frame .preview-card:focus-visible
+        .preview-tech-frame-outline polygon,
+        .preview.tech-frame .preview-card.preview-context-selected
+        .preview-tech-frame-outline polygon {
+          stroke: var(--primary-color) !important;
+          filter: drop-shadow(0 0 5px var(--primary-color));
+        }
+
         .preview.tech-frame .preview-card::after {
           position: absolute;
           top: 0;
@@ -3696,6 +3717,13 @@ class ThemeStudioPanel extends HTMLElement {
           box-shadow: 0 0 10px var(--preview-border-color);
           pointer-events: none;
           z-index: 3;
+        }
+
+        .preview.tech-frame .preview-card:hover::after,
+        .preview.tech-frame .preview-card:focus-visible::after,
+        .preview.tech-frame .preview-card.preview-context-selected::after {
+          background: var(--primary-color);
+          box-shadow: 0 0 10px var(--primary-color);
         }
 
         .preview-card.status-pulse-demo {
