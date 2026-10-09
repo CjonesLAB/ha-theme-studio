@@ -121,18 +121,19 @@ def test_liquid_glass_hides_conflicting_material_controls() -> None:
 
 
 def test_card_presets_are_no_code_and_contextual() -> None:
-    """Four native presets expose only controls relevant to their style."""
+    """Three native presets expose only controls relevant to their style."""
 
     panel_source = _panel_source()
 
-    for preset in ("standard", "soft", "glass", "technical"):
+    for preset in ("standard", "glass", "technical"):
         assert f'data-card-preset="{preset}"' in panel_source
+
+    assert 'data-card-preset="soft"' not in panel_source
 
     assert "_cardPresetValues(preset)" in panel_source
     assert "_applyCardPreset(selectedPreset)" in panel_source
     assert 'cardShape: "standard"' in panel_source
     assert 'cardShape: "tech-frame"' in panel_source
-    assert "cardOpacity: lightMode ? 94 : 88" in panel_source
     assert "borderRadius: 26" in panel_source
     assert 'getElementById("glass-controls").hidden' in panel_source
     assert 'getElementById("tech-frame-controls").hidden' in panel_source
@@ -147,8 +148,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.12";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.12";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.13";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.13";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source

@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.12";
-import "./theme-studio-effects.js?v=0.9.0-beta.12";
+} from "./theme-studio-locales.js?v=0.9.0-beta.13";
+import "./theme-studio-effects.js?v=0.9.0-beta.13";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2569,13 +2569,6 @@ class ThemeStudioPanel extends HTMLElement {
             linear-gradient(135deg, #252a31, #111418);
         }
 
-        .effect-soft {
-          background:
-            linear-gradient(145deg, #3b4650, #222a31);
-          border-radius: 18px;
-          box-shadow: 0 9px 20px rgba(0, 0, 0, 0.22);
-        }
-
         .effect-liquid-glass {
           background:
             linear-gradient(
@@ -4823,18 +4816,6 @@ class ThemeStudioPanel extends HTMLElement {
                     <span class="effect-option-title">Standard</span>
                     <span class="effect-option-description">
                       Ausgewogene Karten für den Alltag.
-                    </span>
-                  </button>
-
-                  <button
-                    class="effect-option card-preset-option effect-soft"
-                    data-card-preset="soft"
-                    type="button"
-                    aria-pressed="false"
-                  >
-                    <span class="effect-option-title">Weich</span>
-                    <span class="effect-option-description">
-                      Ruhige, abgerundete Karten mit weichen Schatten.
                     </span>
                   </button>
 
@@ -9854,19 +9835,6 @@ class ThemeStudioPanel extends HTMLElement {
   _cardPresetValues(preset) {
     const lightMode = this.activeMode === "light";
 
-    if (preset === "soft") {
-      return {
-        liquidGlass: false,
-        cardShape: "standard",
-        cardColor: lightMode ? "#f7f9fb" : "#1b282c",
-        cardBorderColor: lightMode ? "#dfe6ec" : "#2b4146",
-        cardOpacity: lightMode ? 94 : 88,
-        cardBorderWidth: 0,
-        cardShadow: lightMode ? 22 : 30,
-        borderRadius: 26,
-      };
-    }
-
     if (preset === "glass") {
       return {
         liquidGlass: true,
@@ -9918,7 +9886,7 @@ class ThemeStudioPanel extends HTMLElement {
       return "technical";
     }
 
-    for (const preset of ["standard", "soft"]) {
+    for (const preset of ["standard"]) {
       const values = this._cardPresetValues(preset);
       const matches = Object.entries(values).every(
         ([key, value]) => this.profile?.[key] === value
@@ -10075,7 +10043,6 @@ class ThemeStudioPanel extends HTMLElement {
 
     const presetHints = {
       standard: "Nur passende Grundeinstellungen für Standard werden angezeigt.",
-      soft: "Nur passende Grundeinstellungen für Weich werden angezeigt.",
       glass: "Für Glas werden nur Transparenz, Unschärfe, Sättigung und Reflexion benötigt.",
       technical: "Für Technisch werden nur passende Rahmen- und Materialeinstellungen angezeigt.",
       custom: "Die Werte wurden individuell angepasst.",
