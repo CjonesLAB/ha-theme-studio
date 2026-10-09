@@ -148,8 +148,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.13";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.13";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.14";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.14";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -273,7 +273,12 @@ def test_tech_frame_is_selectable_restorable_and_excludes_headings() -> None:
     panel_source = _panel_source()
 
     assert 'data-card-preset="technical"' in panel_source
+    assert '<span class="effect-option-title">Tech Frame</span>' in panel_source
     assert 'id="tech-frame-controls"' in panel_source
+    assert ".preview.tech-frame .preview-card::before" in panel_source
+    assert "clip-path: none;" in panel_source
+    assert "pointer-events: none;" in panel_source
+    assert 'data-preview-context="card"' in panel_source
     assert '"--preview-tech-cut"' in panel_source
     assert '"--theme-studio-card-shape"' in effects_source
     assert "this._styleTechFrameCard(element);" in effects_source

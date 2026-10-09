@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.13";
-import "./theme-studio-effects.js?v=0.9.0-beta.13";
+} from "./theme-studio-locales.js?v=0.9.0-beta.14";
+import "./theme-studio-effects.js?v=0.9.0-beta.14";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3623,8 +3623,30 @@ class ThemeStudioPanel extends HTMLElement {
 
         .preview.tech-frame .preview-card {
           position: relative;
+          isolation: isolate;
+          background-color: transparent;
+          background-image: none;
           border-width: 0;
           border-radius: 0;
+          clip-path: none;
+          filter:
+            drop-shadow(
+              0 var(--preview-tech-shadow-y)
+              var(--preview-tech-shadow-blur)
+              rgba(0, 0, 0, var(--preview-tech-shadow-alpha))
+            )
+            drop-shadow(
+              0 0 var(--preview-tech-glow)
+              color-mix(in srgb, var(--preview-border-color) 58%, transparent)
+            );
+        }
+
+        .preview.tech-frame .preview-card::before {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          content: "";
+          background-color: var(--preview-card);
           clip-path: polygon(
             0 var(--preview-tech-cut),
             var(--preview-tech-cut) 0,
@@ -3637,16 +3659,20 @@ class ThemeStudioPanel extends HTMLElement {
             12px calc(100% - 10px),
             0 calc(100% - 10px)
           );
-          filter:
-            drop-shadow(
-              0 var(--preview-tech-shadow-y)
-              var(--preview-tech-shadow-blur)
-              rgba(0, 0, 0, var(--preview-tech-shadow-alpha))
-            )
-            drop-shadow(
-              0 0 var(--preview-tech-glow)
-              color-mix(in srgb, var(--preview-border-color) 58%, transparent)
-            );
+          pointer-events: none;
+        }
+
+        .preview.tech-frame .preview-card.preview-context-selected::before {
+          background-color: color-mix(
+            in srgb,
+            var(--primary-color) 14%,
+            var(--preview-card)
+          );
+        }
+
+        .preview.tech-frame .preview-card > :not(.preview-tech-frame-outline) {
+          position: relative;
+          z-index: 1;
         }
 
         .preview-tech-frame-outline {
@@ -4837,7 +4863,7 @@ class ThemeStudioPanel extends HTMLElement {
                     type="button"
                     aria-pressed="false"
                   >
-                    <span class="effect-option-title">Technisch</span>
+                    <span class="effect-option-title">Tech Frame</span>
                     <span class="effect-option-description">
                       Klare Kanten und dezente Leuchtlinien.
                     </span>
@@ -10044,7 +10070,7 @@ class ThemeStudioPanel extends HTMLElement {
     const presetHints = {
       standard: "Nur passende Grundeinstellungen für Standard werden angezeigt.",
       glass: "Für Glas werden nur Transparenz, Unschärfe, Sättigung und Reflexion benötigt.",
-      technical: "Für Technisch werden nur passende Rahmen- und Materialeinstellungen angezeigt.",
+      technical: "Für Tech Frame werden nur passende Rahmen- und Materialeinstellungen angezeigt.",
       custom: "Die Werte wurden individuell angepasst.",
     };
     this.shadowRoot.getElementById("card-preset-hint").textContent =
