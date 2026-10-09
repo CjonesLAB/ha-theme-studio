@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.15";
-import "./theme-studio-effects.js?v=0.9.0-beta.15";
+} from "./theme-studio-locales.js?v=0.9.0-beta.16";
+import "./theme-studio-effects.js?v=0.9.0-beta.16";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3249,6 +3249,10 @@ class ThemeStudioPanel extends HTMLElement {
             animation: none !important;
           }
 
+          .preview-tech-frame-outline polygon {
+            animation: none !important;
+          }
+
           #profile-save-button.profile-save-reminder:not(:disabled) {
             animation: none;
             outline: 2px solid var(--warning-color, #f9a825);
@@ -3756,6 +3760,102 @@ class ThemeStudioPanel extends HTMLElement {
             2.4s
             ease-in-out
             infinite;
+        }
+
+        .preview.tech-frame .preview-card.status-pulse-demo,
+        .preview.tech-frame .preview-card.energy-flow-demo,
+        .preview.tech-frame .preview-card.climate-aura-demo,
+        .preview.tech-frame .preview-card.alert-focus-demo {
+          animation: none;
+          outline: none;
+        }
+
+        .preview.tech-frame .preview-card.status-pulse-demo
+        .preview-tech-frame-outline polygon {
+          animation: status-pulse-tech-preview 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        }
+
+        .preview.tech-frame .preview-card.energy-flow-demo
+        .preview-tech-frame-outline polygon {
+          animation: energy-flow-tech-preview 5s ease-in-out infinite;
+        }
+
+        .preview.tech-frame .preview-card.climate-aura-demo
+        .preview-tech-frame-outline polygon {
+          animation: climate-aura-tech-preview 6s ease-in-out infinite;
+        }
+
+        .preview.tech-frame .preview-card.alert-focus-demo
+        .preview-tech-frame-outline polygon {
+          animation: alert-focus-tech-preview 2.4s ease-in-out infinite;
+        }
+
+        @keyframes status-pulse-tech-preview {
+          0%, 58%, 100% {
+            stroke: rgba(69, 212, 131, 0);
+            filter: none;
+          }
+
+          70% {
+            stroke: rgba(69, 212, 131, 0.95);
+            filter: drop-shadow(0 0 8px rgba(69, 212, 131, 0.75));
+          }
+        }
+
+        @keyframes energy-flow-tech-preview {
+          0%, 100% {
+            stroke: #45d483;
+            filter: drop-shadow(0 0 6px rgba(69, 212, 131, 0.7));
+          }
+
+          38% {
+            stroke: #f2d64b;
+            filter: drop-shadow(0 0 7px rgba(242, 214, 75, 0.75));
+          }
+
+          68% {
+            stroke: #ff9f32;
+            filter: drop-shadow(0 0 8px rgba(255, 159, 50, 0.8));
+          }
+
+          86% {
+            stroke: #ff3b4f;
+            filter: drop-shadow(0 0 9px rgba(255, 59, 79, 0.85));
+          }
+        }
+
+        @keyframes climate-aura-tech-preview {
+          0%, 100% {
+            stroke: #4f9dff;
+            filter: drop-shadow(0 0 7px rgba(79, 157, 255, 0.75));
+          }
+
+          35% {
+            stroke: #45d483;
+            filter: drop-shadow(0 0 7px rgba(69, 212, 131, 0.75));
+          }
+
+          68% {
+            stroke: #ff9f32;
+            filter: drop-shadow(0 0 8px rgba(255, 159, 50, 0.8));
+          }
+
+          86% {
+            stroke: #ff3b4f;
+            filter: drop-shadow(0 0 9px rgba(255, 59, 79, 0.85));
+          }
+        }
+
+        @keyframes alert-focus-tech-preview {
+          0%, 100% {
+            stroke: #ff9f32;
+            filter: drop-shadow(0 0 7px rgba(255, 159, 50, 0.75));
+          }
+
+          50% {
+            stroke: #ff3b4f;
+            filter: drop-shadow(0 0 10px rgba(255, 59, 79, 0.9));
+          }
         }
 
         @keyframes status-pulse-preview {
@@ -6427,13 +6527,14 @@ class ThemeStudioPanel extends HTMLElement {
   }
 
   _showPreviewCardChoices(card) {
+    this._hidePreviewCardChoices();
+    card.classList.add("preview-context-selected");
+
     if (!window.matchMedia("(max-width: 620px)").matches) {
       this._openEditorSection("editor-section-cards");
       return;
     }
 
-    this._hidePreviewCardChoices();
-    card.classList.add("preview-context-selected");
     const choices = this.shadowRoot.getElementById("preview-card-choices");
     choices.hidden = false;
     choices

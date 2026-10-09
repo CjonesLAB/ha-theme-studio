@@ -148,8 +148,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.15";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.15";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.16";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.16";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -281,6 +281,22 @@ def test_tech_frame_is_selectable_restorable_and_excludes_headings() -> None:
     assert ".preview.tech-frame .preview-edit-target:focus-visible" in panel_source
     assert ".preview-tech-frame-outline polygon" in panel_source
     assert "stroke: var(--primary-color) !important;" in panel_source
+    assert ".preview.tech-frame .preview-card.energy-flow-demo" in panel_source
+    assert "energy-flow-tech-preview" in panel_source
+    assert "climate-aura-tech-preview" in panel_source
+    assert "alert-focus-tech-preview" in panel_source
+    assert 'card.classList.add("preview-context-selected");' in panel_source
+    tech_effect_override = panel_source.split(
+        ".preview.tech-frame .preview-card.status-pulse-demo,", 1
+    )[1].split("}", 1)[0]
+    assert "animation: none;" in tech_effect_override
+    assert "outline: none;" in tech_effect_override
+    preview_choice_method = panel_source.split(
+        "_showPreviewCardChoices(card) {", 1
+    )[1].split("_showPreviewBackgroundChoices", 1)[0]
+    assert preview_choice_method.index(
+        'card.classList.add("preview-context-selected");'
+    ) < preview_choice_method.index('window.matchMedia("(max-width: 620px)")')
     assert 'data-preview-context="card"' in panel_source
     assert '"--preview-tech-cut"' in panel_source
     assert '"--theme-studio-card-shape"' in effects_source
