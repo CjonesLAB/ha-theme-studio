@@ -148,8 +148,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.17";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.17";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.18";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.18";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -302,6 +302,15 @@ def test_tech_frame_is_selectable_restorable_and_excludes_headings() -> None:
     assert "ha-card[data-theme-studio-tech-frame]::after" not in effects_source
     assert "right: 18px;" not in effects_source
     assert "width: 38%;" not in effects_source
+    tech_preview_surface = panel_source.split(
+        ".preview.tech-frame .preview-card {", 1
+    )[1].split("}", 1)[0]
+    assert "background: transparent !important;" in tech_preview_surface
+    assert "box-shadow: none !important;" in tech_preview_surface
+    assert "backdrop-filter: none !important;" in tech_preview_surface
+    assert "filter: none;" in tech_preview_surface
+    assert 'card.style.setProperty("box-shadow", "none", "important")' in effects_source
+    assert 'card.style.setProperty("backdrop-filter", "none", "important")' in effects_source
     assert '"--preview-tech-cut"' in panel_source
     assert '"--theme-studio-card-shape"' in effects_source
     assert "this._styleTechFrameCard(element);" in effects_source

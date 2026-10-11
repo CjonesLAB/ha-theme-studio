@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.17";
-import "./theme-studio-effects.js?v=0.9.0-beta.17";
+} from "./theme-studio-locales.js?v=0.9.0-beta.18";
+import "./theme-studio-effects.js?v=0.9.0-beta.18";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3633,21 +3633,14 @@ class ThemeStudioPanel extends HTMLElement {
         .preview.tech-frame .preview-card {
           position: relative;
           isolation: isolate;
-          background-color: transparent;
-          background-image: none;
-          border-width: 0;
-          border-radius: 0;
+          background: transparent !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
           clip-path: none;
-          filter:
-            drop-shadow(
-              0 var(--preview-tech-shadow-y)
-              var(--preview-tech-shadow-blur)
-              rgba(0, 0, 0, var(--preview-tech-shadow-alpha))
-            )
-            drop-shadow(
-              0 0 var(--preview-tech-glow)
-              color-mix(in srgb, var(--preview-border-color) 58%, transparent)
-            );
+          filter: none;
         }
 
         .preview.tech-frame .preview-card::before {
@@ -3668,6 +3661,16 @@ class ThemeStudioPanel extends HTMLElement {
             12px calc(100% - 10px),
             0 calc(100% - 10px)
           );
+          filter:
+            drop-shadow(
+              0 var(--preview-tech-shadow-y)
+              var(--preview-tech-shadow-blur)
+              rgba(0, 0, 0, var(--preview-tech-shadow-alpha))
+            )
+            drop-shadow(
+              0 0 var(--preview-tech-glow)
+              color-mix(in srgb, var(--preview-border-color) 58%, transparent)
+            );
           pointer-events: none;
         }
 

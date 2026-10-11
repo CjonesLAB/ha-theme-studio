@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.17";
+const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.18";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
@@ -2107,6 +2107,9 @@ class ThemeStudioEffects {
       "border-width",
       "border-color",
       "filter",
+      "box-shadow",
+      "backdrop-filter",
+      "-webkit-backdrop-filter",
       "overflow",
       "isolation",
       "--theme-studio-tech-frame-shape",
@@ -2159,6 +2162,9 @@ class ThemeStudioEffects {
     card.style.setProperty("border-color", "var(--primary-color)", "important");
     card.style.setProperty("overflow", "hidden", "important");
     card.style.setProperty("isolation", "isolate", "important");
+    card.style.setProperty("box-shadow", "none", "important");
+    card.style.setProperty("backdrop-filter", "none", "important");
+    card.style.setProperty("-webkit-backdrop-filter", "none", "important");
     this._syncTechFrameOutline(card, cut);
     const frame = [];
     const shadow = this.techFrameShadow;
