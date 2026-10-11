@@ -87,15 +87,27 @@ def test_mobile_editor_hides_advanced_profile_transfer_actions() -> None:
     assert "flex-basis: 100%;" in mobile_styles
 
 
-def test_mobile_editor_shows_one_task_and_keeps_preview_return_visible() -> None:
-    """Mobile editing hides unrelated modules and keeps a sticky return action."""
+def test_mobile_editor_shows_one_task_and_keeps_live_preview_visible() -> None:
+    """Mobile editing keeps a compact sticky preview above one task."""
 
     mobile_styles = PANEL_SOURCE.split("@media (max-width: 620px)", 1)[1]
 
     assert '.page[data-mobile-builder-view="editor"]' in mobile_styles
     assert "details.editor-section:not([open])" in mobile_styles
     assert "details.editor-section[open] > summary" in mobile_styles
-    assert "top: var(--theme-studio-profile-sticky-top, 118px);" in mobile_styles
+    editor_preview = mobile_styles.split(
+        '.builder-grid[data-mobile-view="editor"] .preview-panel', 1
+    )[1].split("}", 1)[0]
+    assert "position: sticky;" in editor_preview
+    assert "top: var(--theme-studio-preview-sticky-top, 118px);" in editor_preview
+    assert "display: block;" in editor_preview
+    assert "height: clamp(160px, 24vh, 190px);" in mobile_styles
+    assert "pointer-events: none;" in mobile_styles
+    assert 'getElementById("preview-panel")' in PANEL_SOURCE
+    assert '?.setAttribute("inert", "");' in PANEL_SOURCE
+    assert '?.removeAttribute("inert");' in PANEL_SOURCE
+    assert 'getElementById("apply-button")' in PANEL_SOURCE
+    assert "this._saveAndApplySettings();" in PANEL_SOURCE
     assert 'setAttribute("data-mobile-builder-view", "editor")' in PANEL_SOURCE
     assert 'setAttribute("data-mobile-builder-view", "preview")' in PANEL_SOURCE
     assert 'data-navigation-context="header"' in PANEL_SOURCE

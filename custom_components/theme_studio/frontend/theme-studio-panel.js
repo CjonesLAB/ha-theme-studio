@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.20";
-import "./theme-studio-effects.js?v=0.9.0-beta.20";
+} from "./theme-studio-locales.js?v=0.9.0-beta.21";
+import "./theme-studio-effects.js?v=0.9.0-beta.21";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -4284,7 +4284,27 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .builder-grid[data-mobile-view="editor"] .preview-panel {
-            display: none;
+            position: sticky;
+            top: var(--theme-studio-preview-sticky-top, 118px);
+            z-index: 118;
+            display: block;
+            order: -1;
+            scroll-margin-top:
+              var(--theme-studio-preview-sticky-top, 118px);
+          }
+
+          .builder-grid[data-mobile-view="editor"] .preview {
+            height: clamp(160px, 24vh, 190px);
+            pointer-events: none;
+          }
+
+          .builder-grid[data-mobile-view="editor"]
+          .preview-card-choices,
+          .builder-grid[data-mobile-view="editor"]
+          .preview-edit-hint,
+          .builder-grid[data-mobile-view="editor"]
+          .preview-section-actions {
+            display: none !important;
           }
 
           .builder-grid[data-mobile-view="editor"] .builder-controls {
@@ -4292,9 +4312,9 @@ class ThemeStudioPanel extends HTMLElement {
           }
 
           .mobile-preview-back {
-            position: sticky;
-            top: var(--theme-studio-profile-sticky-top, 118px);
-            z-index: 119;
+            position: relative;
+            top: auto;
+            z-index: auto;
             display: inline-flex;
             width: 100%;
             align-items: center;
@@ -6565,6 +6585,9 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot
         .querySelector(".page")
         ?.setAttribute("data-mobile-builder-view", "editor");
+      this.shadowRoot
+        .getElementById("preview")
+        ?.setAttribute("inert", "");
     } else {
       section.open = true;
     }
@@ -6584,7 +6607,7 @@ class ThemeStudioPanel extends HTMLElement {
 
       if (isMobile) {
         this.shadowRoot
-          .getElementById("mobile-preview-back")
+          .getElementById("preview-panel")
           ?.scrollIntoView({ behavior: "auto", block: "start" });
       } else {
         section.scrollIntoView({
@@ -6615,6 +6638,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .querySelector(".page")
       ?.setAttribute("data-mobile-builder-view", "preview");
+    this.shadowRoot
+      .getElementById("preview")
+      ?.removeAttribute("inert");
     this._hidePreviewCardChoices();
     window.requestAnimationFrame(() => {
       this.shadowRoot
