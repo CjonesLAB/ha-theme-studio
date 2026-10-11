@@ -4,9 +4,9 @@
 
 Theme Studio is a custom Home Assistant integration for creating, previewing, and directly applying your own interface designs.
 
-![Theme Studio 0.8.3 overview](docs/images/theme-studio-overview-v083.png)
+![Theme Studio 0.9.0 overview](docs/images/theme-studio-overview-v083.png)
 
-> Current version: **0.8.3**
+> Current version: **0.9.0**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 >
