@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.16";
+const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.17";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
@@ -2295,20 +2295,6 @@ class ThemeStudioEffects {
     style.textContent = `
       ha-card[data-theme-studio-tech-frame] {
         position: relative !important;
-      }
-
-      ha-card[data-theme-studio-tech-frame]::after {
-        position: absolute;
-        top: 0;
-        right: 18px;
-        width: 38%;
-        height: 2px;
-        content: "";
-        background: var(--theme-studio-tech-frame-border-color);
-        box-shadow:
-          0 0 10px var(--theme-studio-tech-frame-border-color);
-        pointer-events: none;
-        z-index: 3;
       }
 
       [data-theme-studio-tech-frame-overlay]::before {

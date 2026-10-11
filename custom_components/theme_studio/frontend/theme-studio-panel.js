@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.16";
-import "./theme-studio-effects.js?v=0.9.0-beta.16";
+} from "./theme-studio-locales.js?v=0.9.0-beta.17";
+import "./theme-studio-effects.js?v=0.9.0-beta.17";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3708,26 +3708,6 @@ class ThemeStudioPanel extends HTMLElement {
         .preview-tech-frame-outline polygon {
           stroke: var(--primary-color) !important;
           filter: drop-shadow(0 0 5px var(--primary-color));
-        }
-
-        .preview.tech-frame .preview-card::after {
-          position: absolute;
-          top: 0;
-          right: 18px;
-          width: 38%;
-          height: 2px;
-          content: "";
-          background: var(--preview-border-color);
-          box-shadow: 0 0 10px var(--preview-border-color);
-          pointer-events: none;
-          z-index: 3;
-        }
-
-        .preview.tech-frame .preview-card:hover::after,
-        .preview.tech-frame .preview-card:focus-visible::after,
-        .preview.tech-frame .preview-card.preview-context-selected::after {
-          background: var(--primary-color);
-          box-shadow: 0 0 10px var(--primary-color);
         }
 
         .preview-card.status-pulse-demo {
