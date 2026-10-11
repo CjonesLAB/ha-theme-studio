@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.21";
-import "./theme-studio-effects.js?v=0.9.0-beta.21";
+} from "./theme-studio-locales.js?v=0.9.0-beta.22";
+import "./theme-studio-effects.js?v=0.9.0-beta.22";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -9932,6 +9932,12 @@ class ThemeStudioPanel extends HTMLElement {
         "Design gespeichert und aktiviert.",
         "success"
       );
+
+      if (
+        window.matchMedia?.("(max-width: 620px)")?.matches
+      ) {
+        this._showMobilePreview();
+      }
 
       button.textContent = "Aktiviert ✓";
       succeeded = true;

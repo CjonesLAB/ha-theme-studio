@@ -27,7 +27,7 @@ def test_profile_save_and_apply_share_effect_target_validation() -> None:
     )[0]
     save_and_apply = PANEL_SOURCE.split(
         "async _saveAndApplySettings()", 1
-    )[1].split("_syncRecoveryButton()", 1)[0]
+    )[1].split("\n  _syncRecoveryButton() {", 1)[0]
 
     assert "if (!this._validateEffectTargets())" in save_profile
     assert "if (!this._validateEffectTargets())" in save_and_apply
@@ -41,7 +41,7 @@ def test_apply_saves_the_selected_profile_before_activation() -> None:
 
     save_and_apply = PANEL_SOURCE.split(
         "async _saveAndApplySettings()", 1
-    )[1].split("_syncRecoveryButton()", 1)[0]
+    )[1].split("\n  _syncRecoveryButton() {", 1)[0]
 
     profile_save = 'await this._saveProfile({ announce: false })'
     active_save = 'type: "theme_studio/save_settings"'
@@ -52,3 +52,17 @@ def test_apply_saves_the_selected_profile_before_activation() -> None:
     assert save_and_apply.index(profile_save) < save_and_apply.index(active_save)
     assert "if (!profileSaved)" in save_and_apply
     assert "this._focusProfileName();" in save_and_apply
+
+
+def test_successful_mobile_apply_returns_to_preview_categories() -> None:
+    """After saving on mobile, the category overview becomes visible again."""
+
+    save_and_apply = PANEL_SOURCE.split(
+        "async _saveAndApplySettings()", 1
+    )[1].split("\n  _syncRecoveryButton() {", 1)[0]
+    success_path = save_and_apply.split("try {", 1)[1].split(
+        "} catch (error)", 1
+    )[0]
+
+    assert 'window.matchMedia?.("(max-width: 620px)")?.matches' in success_path
+    assert "this._showMobilePreview();" in success_path
