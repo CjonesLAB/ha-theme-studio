@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.19";
-import "./theme-studio-effects.js?v=0.9.0-beta.19";
+} from "./theme-studio-locales.js?v=0.9.0-beta.20";
+import "./theme-studio-effects.js?v=0.9.0-beta.20";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2976,8 +2976,8 @@ class ThemeStudioPanel extends HTMLElement {
           filter: brightness(1.08);
         }
 
-        .preview.tech-frame .preview-edit-target:hover,
-        .preview.tech-frame .preview-edit-target:focus-visible {
+        .preview.tech-frame .preview-card.preview-edit-target:hover,
+        .preview.tech-frame .preview-card.preview-edit-target:focus-visible {
           outline: none;
         }
 
@@ -3743,6 +3743,10 @@ class ThemeStudioPanel extends HTMLElement {
         .preview.tech-frame .preview-card.preview-context-selected
         .preview-tech-frame-outline polygon {
           stroke: var(--primary-color) !important;
+          stroke-width: max(
+            3px,
+            calc(var(--preview-border-width) + 1px)
+          ) !important;
           filter: drop-shadow(0 0 5px var(--primary-color));
         }
 
