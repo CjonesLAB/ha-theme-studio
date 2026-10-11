@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.18";
-import "./theme-studio-effects.js?v=0.9.0-beta.18";
+} from "./theme-studio-locales.js?v=0.9.0-beta.19";
+import "./theme-studio-effects.js?v=0.9.0-beta.19";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -525,6 +525,17 @@ class ThemeStudioPanel extends HTMLElement {
     this.localizer = null;
     this.isAdmin = false;
     this.editingExpertRuleId = "";
+    this.reducedMotionQuery = typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)")
+      : null;
+    this.runtimeCapabilities = this._detectRuntimeCapabilities();
+    this.runtimeCapabilityChangeHandler = () => {
+      this.runtimeCapabilities = this._detectRuntimeCapabilities();
+      if (this._rendered) {
+        this._syncControls();
+        this._updatePreview();
+      }
+    };
 
     this.settings = {
       light: {
@@ -633,6 +644,7 @@ class ThemeStudioPanel extends HTMLElement {
     if (!this._initialDesignDefaults) this._initialDesignDefaults = this._cloneSettings(this.settings);
     this._hass = hass;
     this.isAdmin = hass?.user?.is_admin === true;
+    this.runtimeCapabilities = this._detectRuntimeCapabilities();
     this._syncAppearanceFromHass();
 
     if (!this._rendered) {
@@ -2543,6 +2555,27 @@ class ThemeStudioPanel extends HTMLElement {
 
         .effect-option.active {
           border-color: var(--primary-color);
+        }
+
+        .effect-option:disabled {
+          opacity: 0.42;
+          cursor: not-allowed;
+          filter: grayscale(0.65);
+        }
+
+        .compatibility-warning {
+          margin: 10px 0 14px;
+          padding: 9px 11px;
+          border-left: 3px solid var(--warning-color, #ff9800);
+          border-radius: 7px;
+          color: var(--primary-text-color);
+          background: color-mix(
+            in srgb,
+            var(--warning-color, #ff9800) 11%,
+            transparent
+          );
+          font-size: 10px;
+          line-height: 1.45;
         }
 
         .effect-option-title {
@@ -4982,6 +5015,12 @@ class ThemeStudioPanel extends HTMLElement {
                 </div>
 
                 <p id="card-preset-hint" class="effect-hint"></p>
+                <p
+                  id="card-compatibility-warning"
+                  class="compatibility-warning"
+                  role="status"
+                  hidden
+                ></p>
 
                 <div id="glass-controls" hidden>
                   ${this._rangeField(
@@ -5296,6 +5335,15 @@ class ThemeStudioPanel extends HTMLElement {
                     100
                   )}
                 </div>
+                <p
+                  id="motion-compatibility-warning"
+                  class="compatibility-warning"
+                  role="status"
+                  hidden
+                >
+                  Die Systemoption „Bewegung reduzieren“ ist aktiv.
+                  Bewegungseffekte bleiben ausgeschaltet.
+                </p>
                 </div>
 
                 <div class="effect-context-group effect-context-cards">
@@ -5976,9 +6024,17 @@ class ThemeStudioPanel extends HTMLElement {
     window.cancelAnimationFrame(this.communitySliderFrame);
     this.stickyOffsetFrame = 0;
     this.communitySliderFrame = 0;
+    this.reducedMotionQuery?.removeEventListener?.(
+      "change",
+      this.runtimeCapabilityChangeHandler
+    );
   }
 
   connectedCallback() {
+    this.reducedMotionQuery?.addEventListener?.(
+      "change",
+      this.runtimeCapabilityChangeHandler
+    );
     if (this._rendered) {
       this.localizer?.observe(this.shadowRoot);
       this._setupStickyOffsets();
@@ -5987,6 +6043,60 @@ class ThemeStudioPanel extends HTMLElement {
 
   _translate(value) {
     return this.localizer?.translate(value) || value;
+  }
+
+  _detectRuntimeCapabilities() {
+    const supports = (property, value) =>
+      typeof globalThis.CSS?.supports === "function"
+      && globalThis.CSS.supports(property, value);
+
+    return {
+      backdropFilter:
+        supports("backdrop-filter", "blur(1px)")
+        || supports("-webkit-backdrop-filter", "blur(1px)"),
+      techFrame:
+        supports(
+          "clip-path",
+          "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
+        )
+        && typeof document.createElementNS === "function",
+      reducedMotion: Boolean(this.reducedMotionQuery?.matches),
+      homeAssistantVersion:
+        typeof this._hass?.config?.version === "string"
+          ? this._hass.config.version
+          : "",
+    };
+  }
+
+  _cardPresetCompatibility(preset) {
+    if (preset === "glass" && !this.runtimeCapabilities.backdropFilter) {
+      return {
+        supported: false,
+        reason: "Glas wird von diesem Browser nicht vollständig unterstützt.",
+      };
+    }
+
+    if (preset === "technical" && !this.runtimeCapabilities.techFrame) {
+      return {
+        supported: false,
+        reason: "Tech Frame wird von diesem Browser nicht vollständig unterstützt.",
+      };
+    }
+
+    return { supported: true, reason: "" };
+  }
+
+  _previewCardStyle() {
+    const style = this._cardStyle();
+    const preset = style === "liquid-glass"
+      ? "glass"
+      : style === "tech-frame"
+        ? "technical"
+        : "standard";
+
+    return this._cardPresetCompatibility(preset).supported
+      ? style
+      : "standard";
   }
 
   _confirm(message) {
@@ -6977,6 +7087,13 @@ class ThemeStudioPanel extends HTMLElement {
       .forEach((button) => {
         button.addEventListener("click", () => {
           const selectedPreset = button.dataset.cardPreset;
+          const compatibility = this._cardPresetCompatibility(
+            selectedPreset
+          );
+
+          if (!compatibility.supported) {
+            return;
+          }
 
           if (selectedPreset === this._activeCardPreset()) {
             return;
@@ -10159,18 +10276,43 @@ class ThemeStudioPanel extends HTMLElement {
     this.shadowRoot
       .querySelectorAll(".card-preset-option")
       .forEach((button) => {
+        const compatibility = this._cardPresetCompatibility(
+          button.dataset.cardPreset
+        );
         const active = button.dataset.cardPreset ===
           this._activeCardPreset();
 
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
+        button.disabled = !compatibility.supported;
+        button.setAttribute(
+          "aria-disabled",
+          String(!compatibility.supported)
+        );
+        button.title = compatibility.supported
+          ? ""
+          : this._translate(compatibility.reason);
       });
 
+    const activePreset = this._activeCardPreset();
+    const activeCompatibility = this._cardPresetCompatibility(activePreset);
+    const compatibilityWarning = this.shadowRoot.getElementById(
+      "card-compatibility-warning"
+    );
+    compatibilityWarning.hidden = activeCompatibility.supported;
+    compatibilityWarning.textContent = activeCompatibility.supported
+      ? ""
+      : this._translate(
+        `${activeCompatibility.reason} Die Vorschau verwendet sicherheitshalber Standard. Wähle Standard, um das Profil dauerhaft anzupassen.`
+      );
+
     this.shadowRoot.getElementById("glass-controls").hidden =
-      !this.profile.liquidGlass;
+      !this.profile.liquidGlass
+      || !this.runtimeCapabilities.backdropFilter;
 
     this.shadowRoot.getElementById("tech-frame-controls").hidden =
-      this._cardStyle() !== "tech-frame";
+      this._cardStyle() !== "tech-frame"
+      || !this.runtimeCapabilities.techFrame;
 
     this.shadowRoot.getElementById("card-material-controls").hidden =
       Boolean(this.profile.liquidGlass);
@@ -10259,6 +10401,15 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("effect-controls")
       .hidden =
         this.settings.effects.effect === "none";
+
+    const motionControl = this.shadowRoot.getElementById("effect-motion");
+    const reducedMotion = this.runtimeCapabilities.reducedMotion;
+    motionControl.disabled = reducedMotion;
+    motionControl.closest(".range-group").hidden = reducedMotion;
+    this.shadowRoot.getElementById(
+      "motion-compatibility-warning"
+    ).hidden = !reducedMotion
+      || this.settings.effects.effect === "none";
 
     this.shadowRoot
       .querySelectorAll(".card-effect-option")
@@ -11014,10 +11165,10 @@ class ThemeStudioPanel extends HTMLElement {
     return "none";
   }
 
-  _cardShadow() {
-    const strength = this.profile.cardShadow;
+  _cardShadow(profile = this.profile) {
+    const strength = profile.cardShadow;
 
-    if (strength === 0 && !this.profile.liquidGlass) {
+    if (strength === 0 && !profile.liquidGlass) {
       return "none";
     }
 
@@ -11032,13 +11183,13 @@ class ThemeStudioPanel extends HTMLElement {
       `rgba(0, 0, 0, ${opacity})`
     );
 
-    if (!this.profile.liquidGlass) {
+    if (!profile.liquidGlass) {
       return shadow;
     }
 
     const highlight = Math.min(
       0.7,
-      this.profile.glassHighlight / 100
+      profile.glassHighlight / 100
     );
 
     return (
@@ -11056,9 +11207,17 @@ class ThemeStudioPanel extends HTMLElement {
       this.shadowRoot.getElementById("preview-effect");
 
     previewEffect.className = "preview-effect";
+    const previewCardStyle = this._previewCardStyle();
+    const previewProfile = previewCardStyle === "standard"
+      && this._cardStyle() !== "standard"
+      ? {
+        ...this.profile,
+        ...this._cardPresetValues("standard"),
+      }
+      : this.profile;
     preview.classList.toggle(
       "tech-frame",
-      this._cardStyle() === "tech-frame"
+      previewCardStyle === "tech-frame"
     );
 
     if (
@@ -11089,7 +11248,7 @@ class ThemeStudioPanel extends HTMLElement {
       card.classList.remove("climate-aura-demo");
       card.classList.remove("alert-focus-demo");
 
-      if (this._cardStyle() === "tech-frame") {
+      if (previewCardStyle === "tech-frame") {
         this._syncPreviewTechFrameOutline(card);
       } else {
         card.querySelector(".preview-tech-frame-outline")?.remove();
@@ -11156,27 +11315,27 @@ class ThemeStudioPanel extends HTMLElement {
 
     preview.style.setProperty(
       "--preview-tech-cut",
-      `${this.profile.techFrameCut}px`
+      `${previewProfile.techFrameCut}px`
     );
 
     preview.style.setProperty(
       "--preview-tech-glow",
-      `${Math.round(this.profile.techFrameGlow / 7)}px`
+      `${Math.round(previewProfile.techFrameGlow / 7)}px`
     );
 
     preview.style.setProperty(
       "--preview-tech-shadow-y",
-      `${Math.round(this.profile.cardShadow / 8)}px`
+      `${Math.round(previewProfile.cardShadow / 8)}px`
     );
 
     preview.style.setProperty(
       "--preview-tech-shadow-blur",
-      `${Math.round(this.profile.cardShadow / 2)}px`
+      `${Math.round(previewProfile.cardShadow / 2)}px`
     );
 
     preview.style.setProperty(
       "--preview-tech-shadow-alpha",
-      this.profile.cardShadow === 0 ? 0 : 0.42
+      previewProfile.cardShadow === 0 ? 0 : 0.42
     );
 
     preview.style.setProperty(
@@ -11222,53 +11381,53 @@ class ThemeStudioPanel extends HTMLElement {
     preview.style.setProperty(
       "--preview-card",
       this._rgba(
-        this.profile.cardColor,
-        this.profile.cardOpacity / 100
+        previewProfile.cardColor,
+        previewProfile.cardOpacity / 100
       )
     );
 
     preview.style.setProperty(
       "--preview-card-text",
-      this.profile.cardTextColor
+      previewProfile.cardTextColor
     );
 
     preview.style.setProperty(
       "--preview-icon",
-      this.profile.cardIconColor
+      previewProfile.cardIconColor
     );
 
     preview.style.setProperty(
       "--preview-border-color",
-      this.profile.cardBorderColor
+      previewProfile.cardBorderColor
     );
 
     preview.style.setProperty(
       "--preview-border-width",
-      `${this.profile.cardBorderWidth}px`
+      `${previewProfile.cardBorderWidth}px`
     );
 
     preview.style.setProperty(
       "--preview-radius",
-      `${this.profile.borderRadius}px`
+      `${previewProfile.borderRadius}px`
     );
 
     preview.style.setProperty(
       "--preview-shadow",
-      this._cardShadow()
+      this._cardShadow(previewProfile)
     );
 
-    const glassHighlight = this.profile.glassHighlight / 100;
+    const glassHighlight = previewProfile.glassHighlight / 100;
 
     preview.style.setProperty(
       "--preview-backdrop-filter",
-      this.profile.liquidGlass
-        ? `blur(${this.profile.glassBlur}px) saturate(${this.profile.glassSaturation}%)`
+      previewProfile.liquidGlass
+        ? `blur(${previewProfile.glassBlur}px) saturate(${previewProfile.glassSaturation}%)`
         : "none"
     );
 
     preview.style.setProperty(
       "--preview-glass-highlight",
-      this.profile.liquidGlass
+      previewProfile.liquidGlass
         ? `linear-gradient(145deg, rgba(255,255,255,${glassHighlight}) 0%, rgba(255,255,255,${glassHighlight * 0.28}) 36%, rgba(255,255,255,0) 62%, rgba(0,0,0,0.08) 100%)`
         : "none"
     );

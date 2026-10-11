@@ -142,14 +142,38 @@ def test_card_presets_are_no_code_and_contextual() -> None:
     assert 'getElementById("card-effect-controls")' in panel_source
 
 
+def test_runtime_capabilities_gate_unsupported_visual_features() -> None:
+    """Unsupported browser features fall back safely without mutating profiles."""
+
+    panel_source = _panel_source()
+    effects_source = _effects_source()
+
+    assert "_detectRuntimeCapabilities()" in panel_source
+    assert 'supports("backdrop-filter", "blur(1px)")' in panel_source
+    assert '"clip-path",' in panel_source
+    assert "homeAssistantVersion:" in panel_source
+    assert "_cardPresetCompatibility(preset)" in panel_source
+    assert "button.disabled = !compatibility.supported;" in panel_source
+    assert 'id="card-compatibility-warning"' in panel_source
+    assert "_previewCardStyle()" in panel_source
+    assert '...this._cardPresetValues("standard")' in panel_source
+    assert 'id="motion-compatibility-warning"' in panel_source
+    assert 'typeof window.matchMedia === "function"' in panel_source
+    assert "motionControl.disabled = reducedMotion;" in panel_source
+    assert "this.liquidGlassSupported" in effects_source
+    assert "this.techFrameSupported" in effects_source
+    assert "requestedLiquidGlass && this.liquidGlassSupported" in effects_source
+    assert 'requestedCardShape === "tech-frame" && !this.techFrameSupported' in effects_source
+
+
 def test_effect_module_replaces_a_stale_cached_instance() -> None:
     """Opening Theme Studio refreshes an outdated global effects module."""
 
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.18";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.18";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.19";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.19";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source

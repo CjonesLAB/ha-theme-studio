@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.18";
+const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.19";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 
 const DEFAULT_EFFECT = "none";
@@ -72,6 +72,18 @@ const LAST_DASHBOARD_PATH_STORAGE_KEY = "theme-studio-last-dashboard-path";
 class ThemeStudioEffects {
   constructor() {
     this.version = THEME_STUDIO_EFFECTS_VERSION;
+    const supports = (property, value) =>
+      typeof globalThis.CSS?.supports === "function"
+      && globalThis.CSS.supports(property, value);
+    this.liquidGlassSupported =
+      supports("backdrop-filter", "blur(1px)")
+      || supports("-webkit-backdrop-filter", "blur(1px)");
+    this.techFrameSupported =
+      supports(
+        "clip-path",
+        "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
+      )
+      && typeof document.createElementNS === "function";
     this.effect = DEFAULT_EFFECT;
     this.motion = DEFAULT_MOTION;
     this.glow = DEFAULT_GLOW;
@@ -1164,11 +1176,13 @@ class ThemeStudioEffects {
 
     const nextLiquidGlass = effectsExcludedForConfig
       ? false
-      : requestedLiquidGlass;
+      : requestedLiquidGlass && this.liquidGlassSupported;
 
     const nextCardShape = nextLiquidGlass
       ? "standard"
-      : requestedCardShape;
+      : requestedCardShape === "tech-frame" && !this.techFrameSupported
+        ? "standard"
+        : requestedCardShape;
 
     const nextExpertCssEnabled =
       !effectsExcludedForConfig
