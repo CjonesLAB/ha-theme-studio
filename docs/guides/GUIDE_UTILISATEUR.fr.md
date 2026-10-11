@@ -8,7 +8,7 @@ Ce guide présente Theme Studio, de l’installation à la conception visuelle m
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
-![Theme Studio avec profils, réglages et aperçu](../images/theme-studio-overview-v083.png)
+![Theme Studio avec profils, réglages et aperçu](../images/theme-studio-overview-v090.png)
 
 ## Sommaire
 
@@ -155,7 +155,7 @@ L’en-tête et la barre latérale disposent de couleurs propres pour l’arriè
 
 ### 6.4 Arrière-plan
 
-![Choix de l’arrière-plan et bibliothèque d’images](../images/fine-settings-background-library-v044.png)
+![Choix de l’arrière-plan et bibliothèque d’images](../images/fine-settings-background-library-v090.png)
 
 Choisissez une couleur, un dégradé ou une image. La bibliothèque accepte jusqu’à 24 fichiers JPG, PNG ou WebP.
 
@@ -166,7 +166,7 @@ Choisissez une couleur, un dégradé ou une image. La bibliothèque accepte jusq
 
 ## 7. Effets du tableau de bord et des cartes
 
-![Effets avec recherche d’entités et sélection multiple](../images/dashboard-effects-entity-selection-v044.png)
+![Effets avec recherche d’entités et sélection multiple](../images/dashboard-effects-entity-selection-v090.png)
 
 ### Effet d’arrière-plan
 

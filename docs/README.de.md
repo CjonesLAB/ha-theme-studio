@@ -4,7 +4,7 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-![Übersicht von Theme Studio 0.9.0](images/theme-studio-overview-v083.png)
+![Übersicht von Theme Studio 0.9.0](images/theme-studio-overview-v090.png)
 
 > Aktuelle Version: **0.9.0**
 >
@@ -90,7 +90,7 @@ Theme-Studio-Einstellungen, Profile, das aktive Design und der Wiederherstellung
 
 | Hintergrund und Bildbibliothek | Dashboard-Effekte und Entitätsauswahl |
 | --- | --- |
-| ![Hintergrundauswahl, Upload und Bildbibliothek](images/fine-settings-background-library-v044.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Mehrfachauswahl](images/dashboard-effects-entity-selection-v044.png) |
+| ![Hintergrundauswahl, Upload und Bildbibliothek](images/fine-settings-background-library-v090.png) | ![Dashboard- und Karteneffekte mit durchsuchbarer Mehrfachauswahl](images/dashboard-effects-entity-selection-v090.png) |
 
 ## Eigenes Design veröffentlichen
 

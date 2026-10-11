@@ -8,7 +8,7 @@ Esta guía explica Theme Studio, desde la instalación hasta el diseño visual m
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
-![Theme Studio con perfiles, ajustes y vista previa](../images/theme-studio-overview-v083.png)
+![Theme Studio con perfiles, ajustes y vista previa](../images/theme-studio-overview-v090.png)
 
 ## Contenido
 
@@ -155,7 +155,7 @@ La cabecera y la barra lateral admiten colores propios para fondo, texto, iconos
 
 ### 6.4 Fondo
 
-![Selección del fondo y biblioteca de imágenes](../images/fine-settings-background-library-v044.png)
+![Selección del fondo y biblioteca de imágenes](../images/fine-settings-background-library-v090.png)
 
 Elige un color, degradado o imagen. La biblioteca admite hasta 24 archivos JPG, PNG o WebP.
 
@@ -166,7 +166,7 @@ Elige un color, degradado o imagen. La biblioteca admite hasta 24 archivos JPG, 
 
 ## 7. Efectos del panel y de las tarjetas
 
-![Efectos con búsqueda de entidades y selección múltiple](../images/dashboard-effects-entity-selection-v044.png)
+![Efectos con búsqueda de entidades y selección múltiple](../images/dashboard-effects-entity-selection-v090.png)
 
 ### Efecto de fondo
 

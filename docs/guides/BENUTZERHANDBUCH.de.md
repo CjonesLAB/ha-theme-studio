@@ -8,7 +8,7 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
-![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/theme-studio-overview-v083.png)
+![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/theme-studio-overview-v090.png)
 
 ## Inhalt
 
@@ -157,7 +157,7 @@ Kopfzeile und Seitenleiste lassen sich mit eigenen Hintergrund-, Text-, Symbol- 
 
 ### 6.4 Hintergrund
 
-![Hintergrundauswahl und Bildbibliothek](../images/fine-settings-background-library-v044.png)
+![Hintergrundauswahl und Bildbibliothek](../images/fine-settings-background-library-v090.png)
 
 Zur Verfügung stehen einfarbige Flächen, Farbverläufe und eigene Bilder. In der Bildbibliothek können bis zu 24 JPG-, PNG- oder WebP-Dateien verwaltet werden.
 
@@ -168,7 +168,7 @@ Zur Verfügung stehen einfarbige Flächen, Farbverläufe und eigene Bilder. In d
 
 ## 7. Dashboard- und Karteneffekte
 
-![Dashboard-Effekte mit Entitätssuche und Mehrfachauswahl](../images/dashboard-effects-entity-selection-v044.png)
+![Dashboard-Effekte mit Entitätssuche und Mehrfachauswahl](../images/dashboard-effects-entity-selection-v090.png)
 
 ### Hintergrundeffekt
 

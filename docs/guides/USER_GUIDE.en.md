@@ -8,7 +8,7 @@ This guide explains Theme Studio from installation through mobile-first visual d
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
-![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/theme-studio-overview-v083.png)
+![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/theme-studio-overview-v090.png)
 
 ## Contents
 
@@ -157,7 +157,7 @@ Header and sidebar can use custom background, text, icon, and accent colors. The
 
 ### 6.4 Background
 
-![Background selection and image library](../images/fine-settings-background-library-v044.png)
+![Background selection and image library](../images/fine-settings-background-library-v090.png)
 
 Choose a solid color, gradient, or custom image. The image library supports up to 24 JPG, PNG, or WebP files.
 
@@ -168,7 +168,7 @@ Choose a solid color, gradient, or custom image. The image library supports up t
 
 ## 7. Dashboard and card effects
 
-![Dashboard effects with entity search and multiple selection](../images/dashboard-effects-entity-selection-v044.png)
+![Dashboard effects with entity search and multiple selection](../images/dashboard-effects-entity-selection-v090.png)
 
 ### Background effect
 
