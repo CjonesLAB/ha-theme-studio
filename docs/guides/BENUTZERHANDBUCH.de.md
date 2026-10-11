@@ -1,14 +1,14 @@
-# Theme Studio 0.8.3 - Benutzerhandbuch
+# Theme Studio 0.9 - Benutzerhandbuch
 
 [English](USER_GUIDE.en.md) | **Deutsch** | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [PDF herunterladen](../downloads/theme-studio-benutzerhandbuch-de.pdf) | [Aktuelle Version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Fehler melden](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Kartenregeln. Es gilt für Version **0.8.3**.
+Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.9**.
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
-![Theme Studio 0.8.0 mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/theme-studio-overview-v080.png)
+![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/theme-studio-overview-v083.png)
 
 ## Inhalt
 
@@ -19,7 +19,7 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 5. Eigene Designprofile
 6. Farben, Karten, Navigation und Hintergrund
 7. Dashboard- und Karteneffekte
-8. Expertenmodus und alte Positionsregeln
+8. Legacy-CSS und alte Positionsregeln
 9. Anwenden, Rückgängig, Wiederherstellen und Zurücksetzen
 10. JSON-Import, Export und Veröffentlichung
 11. Benutzerbezogene Einstellungen, Daten und Datenschutz
@@ -32,7 +32,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration. Für die In
 
 Theme Studio erzeugt ein echtes Home-Assistant-Theme. Farben und kompatible Theme-Variablen können daher auf vielen Seiten wirken. Karteneffekte und Experten-CSS benötigen jedoch die übliche **Lovelace-Kartenstruktur**.
 
-> **Wichtige Einschränkung:** Vollständig selbst entwickelte Dashboards oder Custom Panels, die ihre eigene HTML- oder Web-Component-Struktur erzeugen, werden von Karteneffekten, Experten-CSS und dem direkten Karteneditor nicht unterstützt. Grundfarben können dort weiterhin funktionieren, die Effekte sind aber nicht gewährleistet.
+> **Wichtige Einschränkung:** Vollständig selbst entwickelte Dashboards oder Custom Panels, die ihre eigene HTML- oder Web-Component-Struktur erzeugen, werden von Karteneffekten und Legacy-CSS nicht unterstützt. Grundfarben können dort weiterhin funktionieren, die Effekte sind aber nicht gewährleistet.
 
 Zusätzlich gilt:
 
@@ -89,6 +89,10 @@ Die Seite gliedert sich in drei Hauptbereiche:
 
 Die Vorschau reagiert sofort auf Änderungen. Das echte Home-Assistant-Theme ändert sich erst nach **Design anwenden**. Ein sichtbarer Hinweis erinnert an noch nicht angewendete oder noch nicht im Profil gespeicherte Änderungen.
 
+![Mobile Vorschau mit direkter Auswahl der Einstellungsbereiche](../images/mobile-preview-navigation-v090.png)
+
+Auf dem Smartphone ist die Vorschau der Ausgangspunkt: Tippe auf **Farben**, **Karten**, **Navigation**, **Hintergrund** oder **Effekte**. Während die Einstellungen darunter gescrollt werden, bleibt eine kompakte Vorschau oben sichtbar. **Zur Vorschau** führt zurück zur Bereichsauswahl. Nach **Design anwenden** wird das gewählte Profil gespeichert und aktiviert; anschließend erscheint wieder die Bereichsauswahl. Auf dem Desktop stehen Vorschau und Einstellungen nebeneinander.
+
 ## 4. Community-Galerie
 
 Die Galerie lädt geprüfte Designs von [ha-theme-studio.com](https://ha-theme-studio.com/). Die Vorschau zeigt ein kompaktes Dashboard und folgt dem hellen oder dunklen Modus des ausgewählten Designs.
@@ -113,7 +117,7 @@ Ein Profil ist immer genau **ein helles oder ein dunkles Design**. Es gibt inner
 2. Als Modus **Hell** oder **Dunkel** wählen.
 3. **Neues Design erstellen** drücken.
 4. Das Design in den Feineinstellungen bearbeiten.
-5. **Profil speichern** und danach **Design anwenden**.
+5. **Design anwenden**. Das ausgewählte Profil wird dabei automatisch gespeichert und anschließend aktiviert.
 
 ### Vorhandene Profile verwalten
 
@@ -122,6 +126,8 @@ Ein Profil ist immer genau **ein helles oder ein dunkles Design**. Es gibt inner
 - **Umbenennen:** nur den Profilnamen ändern.
 - **Duplizieren:** eine unabhängige Kopie als Ausgangspunkt erzeugen.
 - **Löschen:** Profil entfernen; das derzeit aktive Theme bleibt bis zur nächsten Anwendung bestehen.
+
+Auf kleinen Bildschirmen werden nur die für die laufende Gestaltung wichtigen Aktionen gezeigt. **Duplizieren**, **JSON exportieren** und **JSON importieren** stehen in der Desktop-Ansicht zur Verfügung.
 
 Es können bis zu 64 eigenständige Designs gespeichert werden. Das zuletzt angewendete Profil wird beim nächsten Öffnen automatisch ausgewählt.
 
@@ -133,12 +139,12 @@ Unter **Farben** stehen eine Hauptfarbe, vordefinierte Farbakzente sowie Hinterg
 
 ### 6.2 Karten
 
-![Karteneinstellungen mit Standard, Liquid Glass und Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
+![Karteneinstellungen mit Standard, Glas und Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
 
 Es gibt drei Kartenstile:
 
 - **Standard:** klassische Home-Assistant-Karten ohne Glasfilter.
-- **Liquid Glass:** transparente Karten mit Unschärfe, Sättigung und Lichtreflexen. Theme Studio steuert dabei widersprüchliche Materialwerte automatisch.
+- **Glas:** transparente Karten mit Unschärfe, Sättigung und Lichtreflexen. Theme Studio steuert dabei widersprüchliche Materialwerte automatisch und fällt bei nicht unterstützten Browserfunktionen auf eine ruhigere Darstellung zurück.
 - **Tech Frame:** asymmetrisch geschnittene Ecken mit geschlossener Kontur, einstellbarem Leuchten, Rahmen und Schatten.
 
 Je nach Stil können Eckenradius beziehungsweise Eckenschnitt, Kartenfarbe, Text- und Symbolfarbe, Rahmenfarbe, Deckkraft, Rahmenstärke, Schatten, Unschärfe und Leuchtstärke eingestellt werden.
@@ -181,13 +187,13 @@ Entitäten lassen sich nach Name, Entitäts-ID oder Geräteklasse suchen. Mehrer
 
 Wenn eine Karte keine Standard-Lovelace-Struktur besitzt, kann Theme Studio die zugehörige Entität eventuell nicht erkennen. In vollständig eigenen Dashboards sind diese Effekte nicht nutzbar.
 
-## 8. Expertenmodus und alte Positionsregeln
+## 8. Legacy-CSS und alte Positionsregeln
 
-Der Expertenmodus befindet sich unter **Dashboard-Effekte**. Er ist optional, experimentell und nur für das aktuelle Benutzerkonto aktiv.
+Version 0.9 kehrt für neue Designs vollständig zum No-Code-Prinzip zurück. Der CSS-Bereich wird nur angezeigt, wenn das geladene Profil bereits freies CSS oder visuelle Regeln aus einer älteren Theme-Studio-Version enthält. Ohne Altlasten bleibt der Bereich verborgen.
 
-> **Übergang in 0.8.3:** Der direkte Karten- und Verschiebemodus wurde eingestellt, weil pixelbasierte Positionen nicht zuverlässig auf verschiedene Geräte übertragbar waren. Kartenreihenfolge, Abschnitte, Größe und Layout werden im Dashboard-Editor von Home Assistant bearbeitet. Theme Studio zeigt dafür kein Symbol in der Dashboard-Leiste und keinen Smartphone-Kartenmodus mehr an.
+> **Kompatibilitätsprinzip:** Vorhandene CSS-Daten werden beim Laden oder Speichern nicht automatisch verändert oder gelöscht. Neue CSS-Regeln, Duplikate und Kartenpositionen werden in Version 0.9 jedoch nicht mehr angelegt.
 
-Vorhandene visuelle Regeln bleiben erhalten und können aktiviert, deaktiviert, bearbeitet, dupliziert oder gelöscht werden. Neue horizontale oder vertikale Positionsverschiebungen lassen sich nicht mehr erstellen.
+Vorhandene visuelle Regeln können aktiviert, deaktiviert, bearbeitet oder gelöscht werden. Vorhandenes freies CSS kann gewartet, deaktiviert oder geleert werden. Alles gilt weiterhin nur für das aktuelle Benutzerkonto.
 
 ### 8.1 Alte Positionsanpassungen deaktivieren
 
@@ -204,21 +210,15 @@ Entfernt werden ausschließlich horizontale und vertikale Verschiebungen. Innena
 
 Zum Verschieben von Karten sowie zum Ändern von Abschnitten, Größe und Layout wird der normale Dashboard-Editor von Home Assistant verwendet. Dadurch bleibt das Dashboard responsiv und nutzt die von Home Assistant unterstützten Layoutregeln auf Desktop, Tablet und Smartphone.
 
-### 8.3 Erweiterte Regeln und freies CSS
+### 8.3 Vorhandene Regeln und freies CSS warten
 
-Der erweiterte Regel-Editor kann alle Karten, eine bestimmte Entität, eine eigene Karten-ID oder eine direkt ausgewählte Karte ansprechen. Eine eindeutige ID wird in der YAML-Konfiguration einer Karte ergänzt:
-
-```yaml
-theme_studio_id: energie
-```
-
-Das optionale freie CSS ist nur für erfahrene Benutzer gedacht. `@import`, Remote- und Data-URLs sowie ausführbare veraltete CSS-Konstrukte werden abgewiesen. Fehlerhafte Regeln können Karten verschieben, verdecken oder unbedienbar machen. Der Reset einer Regel ist daher immer der erste Rückweg.
+Der Regel-Editor öffnet sich nur über **Bearbeiten** an einer bereits vorhandenen Regel. Die bisherigen Ziel- und Gerätebegrenzungen bleiben erhalten. `@import`, Remote- und Data-URLs sowie ausführbare veraltete CSS-Konstrukte werden weiterhin abgewiesen. Wenn ein altes Profil Probleme verursacht, zuerst die betroffene Regel deaktivieren oder das Legacy-CSS für dieses Profil ausschalten. Portable JSON-Exporte enthalten diese Altlasten bewusst nicht.
 
 ## 9. Anwenden, Rückgängig, Wiederherstellen und Zurücksetzen
 
 - **Rückgängig / Wiederholen** betrifft aktuelle Bearbeitungsschritte im geöffneten Editor.
-- **Profil aktualisieren** speichert Änderungen im ausgewählten Profil.
-- **Design anwenden** erzeugt das Theme, speichert die Einstellungen und aktiviert es für den aktuellen Benutzer.
+- **Profil aktualisieren** speichert Änderungen im ausgewählten Profil, ohne das Theme zu aktivieren.
+- **Design anwenden** speichert das ausgewählte Profil automatisch, erzeugt das Theme und aktiviert es für den aktuellen Benutzer. Auf dem Smartphone kehrt Theme Studio danach zur Vorschau und Bereichsauswahl zurück.
 - Vor jeder Anwendung wird der bisher aktive Zustand als Wiederherstellungspunkt gesichert.
 - **Letztes Design wiederherstellen** tauscht den aktiven Stand mit dem Wiederherstellungspunkt. Dadurch kann zwischen beiden Zuständen gewechselt werden.
 - **Home-Assistant-Standard wiederherstellen** deaktiviert Theme Studio für den aktuellen Benutzer und setzt die Darstellung auf Home Assistant **Auto** zurück. Profile und Hintergrundbilder bleiben erhalten.
@@ -290,10 +290,9 @@ Gespeicherte Profile und Benutzereinstellungen werden bei normalen Updates nicht
 | Änderungen erscheinen nur in der Vorschau | **Design anwenden** drücken. |
 | Alte Oberfläche nach einem Update | Browser mit `Strg + F5` neu laden; Companion App vollständig beenden. |
 | Effekte fehlen | Prüfen, ob ein Lovelace-Dashboard, passende Entitäten und keine Option **Bewegung reduzieren** verwendet werden. |
-| Effekte fehlen in eigenem Dashboard | Vollständig eigene Dashboards und Custom Panels werden für Karteneffekte und Expertenmodus nicht unterstützt. |
-| Karteneditor-Symbol fehlt | Expertenmodus aktivieren und ein echtes Lovelace-Dashboard öffnen. |
-| Eine CSS-Regel trifft mehrere Karten | Die Karte direkt im Dashboard auswählen oder eine eindeutige `theme_studio_id` verwenden. |
-| Karte springt oder ist unbedienbar | Betroffene Regel im Editor zurücksetzen oder in der Regelliste deaktivieren. |
+| Effekte fehlen in eigenem Dashboard | Vollständig eigene Dashboards und Custom Panels werden für Karteneffekte nicht unterstützt. |
+| Legacy-CSS-Bereich fehlt | Er erscheint in Version 0.9 nur bei Profilen, die bereits alte CSS-Daten enthalten. |
+| Karte springt oder ist unbedienbar | Betroffene Altregel deaktivieren oder nur deren alte Positionswerte entfernen. |
 | Hintergrundbild lässt sich nicht löschen | Das Bild wird noch von einem aktiven Design oder Profil verwendet. |
 | Import enthält keine Effekte/CSS | Das ist beabsichtigt; JSON-Profile enthalten nur portable Designwerte. |
 
@@ -303,9 +302,9 @@ Bewährte Reihenfolge für neue Designs:
 2. Neues Profil mit festem Hell-/Dunkelmodus anlegen.
 3. Grundfarben und Navigation festlegen.
 4. Kartenstil und Hintergrund einstellen.
-5. Profil speichern und Design anwenden.
+5. Design anwenden; das ausgewählte Profil wird dabei automatisch gespeichert.
 6. Effekte gezielt wenigen Entitäten zuweisen.
-7. Expertenmodus erst zuletzt verwenden und Karten einzeln oder in kleinen Gruppen bearbeiten.
-8. Nach jeder größeren Änderung Profil aktualisieren.
+7. Kartenreihenfolge und Layout ausschließlich im Home-Assistant-Dashboard-Editor bearbeiten.
+8. Legacy-CSS nur zur Pflege bereits vorhandener Regeln öffnen.
 
 Für Supportanfragen sind Home-Assistant-Version, Theme-Studio-Version, Plattform, betroffene Dashboard-Art und relevante Protokollmeldungen hilfreich. Fehler können im [GitHub-Issue-Tracker](https://github.com/CjonesLAB/ha-theme-studio/issues) gemeldet werden.

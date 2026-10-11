@@ -1,14 +1,14 @@
-# Theme Studio 0.8.3 - Guide utilisateur
+# Theme Studio 0.9 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente l’ensemble de Theme Studio, de l’installation à la conception visuelle du tableau de bord et à la gestion sûre des règles de carte existantes. Il s’applique à la version **0.8.3**.
+Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.9**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
-![Theme Studio 0.8.0 avec profils, réglages et aperçu](../images/theme-studio-overview-v080.png)
+![Theme Studio avec profils, réglages et aperçu](../images/theme-studio-overview-v083.png)
 
 ## Sommaire
 
@@ -19,7 +19,7 @@ Ce guide présente l’ensemble de Theme Studio, de l’installation à la conce
 5. Profils de design
 6. Couleurs, cartes, navigation et arrière-plan
 7. Effets du tableau de bord et des cartes
-8. Mode expert et anciennes règles de position
+8. CSS hérité et anciennes règles de position
 9. Appliquer, annuler, restaurer et réinitialiser
 10. Importation, exportation et publication JSON
 11. Réglages par utilisateur, données et confidentialité
@@ -89,6 +89,10 @@ La page contient trois zones principales :
 
 L’aperçu réagit immédiatement. Le véritable thème Home Assistant ne change qu’après **Appliquer le thème**. Un message indique les modifications non appliquées ou non enregistrées dans le profil.
 
+![Aperçu mobile avec accès direct aux sections de réglage](../images/mobile-preview-navigation-v090.png)
+
+Sur téléphone, l’aperçu est le point de départ : touchez **Couleurs**, **Cartes**, **Navigation**, **Arrière-plan** ou **Effets**. Un aperçu compact reste visible en haut pendant le défilement des réglages. **Retour à l’aperçu** revient au choix des sections. **Appliquer le thème** enregistre et active le profil sélectionné, puis revient à l’aperçu et au choix des sections. Sur ordinateur, l’aperçu et les réglages restent côte à côte.
+
 ## 4. Galerie communautaire
 
 La galerie charge des designs vérifiés depuis [ha-theme-studio.com](https://ha-theme-studio.com/). Chaque aperçu montre un tableau de bord compact et respecte le mode clair ou sombre du design.
@@ -111,7 +115,7 @@ Un profil représente exactement **un design clair ou un design sombre**. Aucune
 2. Choisissez **Clair** ou **Sombre**.
 3. Sélectionnez **Créer un thème**.
 4. Personnalisez-le dans les réglages.
-5. Enregistrez le profil, puis appliquez le thème.
+5. Sélectionnez **Appliquer le thème**. Le profil choisi est enregistré automatiquement avant son activation.
 
 ### Gérer les profils
 
@@ -120,6 +124,8 @@ Un profil représente exactement **un design clair ou un design sombre**. Aucune
 - **Renommer :** changer uniquement son nom.
 - **Dupliquer :** créer une copie indépendante.
 - **Supprimer :** retirer le profil ; le thème actif reste en place jusqu’à la prochaine application.
+
+Sur petit écran, seules les actions nécessaires à l’édition courante sont affichées. **Dupliquer**, **Exporter JSON** et **Importer JSON** restent disponibles dans la vue ordinateur.
 
 Jusqu’à 64 designs indépendants peuvent être enregistrés. Le dernier profil appliqué est sélectionné automatiquement à la prochaine ouverture.
 
@@ -131,12 +137,12 @@ La section **Couleurs** propose une couleur principale, des accents prédéfinis
 
 ### 6.2 Cartes
 
-![Réglages Standard, Liquid Glass et Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
+![Réglages Standard, Verre et Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
 
 Trois styles sont disponibles :
 
 - **Standard :** cartes Home Assistant classiques sans filtre de verre.
-- **Liquid Glass :** transparence, flou, saturation et reflets ; les valeurs incompatibles sont gérées automatiquement.
+- **Verre :** transparence, flou, saturation et reflets ; les valeurs incompatibles sont gérées automatiquement, avec une présentation plus simple si une fonction du navigateur n’est pas disponible.
 - **Tech Frame :** coins asymétriques, contour fermé, lueur, bordure et ombre réglables.
 
 Selon le style, vous pouvez régler le rayon ou la découpe, la couleur de carte, le texte, les icônes, la bordure, l’opacité, l’épaisseur, l’ombre, le flou et la lueur.
@@ -179,13 +185,13 @@ Recherchez par nom, identifiant ou classe d’appareil, puis sélectionnez plusi
 
 Une carte sans structure Lovelace standard peut empêcher la détection de l’entité. Ces effets ne sont pas disponibles dans les tableaux de bord entièrement personnalisés.
 
-## 8. Mode expert et anciennes règles de position
+## 8. CSS hérité et anciennes règles de position
 
-Le mode expert se trouve sous **Effets du tableau de bord**. Il est facultatif, expérimental et privé pour l’utilisateur actuel.
+La version 0.9 revient entièrement au flux sans code pour les nouveaux designs. La section CSS apparaît uniquement si le profil chargé contient déjà du CSS libre ou des règles visuelles d’une ancienne version de Theme Studio. Elle reste masquée pour les profils sans données héritées.
 
-> **Transition dans la version 0.8.3 :** l’édition directe et le déplacement des cartes ont été retirés, car le positionnement en pixels n’était pas fiable sur différents appareils. Utilisez l’éditeur de tableau de bord Home Assistant pour l’ordre des cartes, les sections, la taille et la disposition. Theme Studio n’affiche plus d’icône dans la barre du tableau de bord ni de mode carte sur smartphone.
+> **Principe de compatibilité :** les données CSS existantes ne sont jamais modifiées ni supprimées automatiquement lors du chargement ou de l’enregistrement. La version 0.9 ne crée plus de règle CSS, de copie de règle ni de position de carte.
 
-Les règles visuelles existantes restent disponibles et peuvent être activées, désactivées, modifiées, dupliquées ou supprimées. Il n’est plus possible de créer de nouveaux décalages horizontaux ou verticaux.
+Les règles existantes peuvent être activées, désactivées, modifiées ou supprimées. Le CSS libre existant peut être maintenu, désactivé ou effacé. Ces données restent privées pour l’utilisateur actuel.
 
 ### 8.1 Désactiver les anciens ajustements de position
 
@@ -202,21 +208,15 @@ Seuls les décalages horizontaux et verticaux sont supprimés. L’espacement in
 
 Utilisez l’éditeur natif de Home Assistant pour déplacer les cartes, modifier les sections, la taille ou la disposition. Le tableau de bord reste ainsi adaptatif et utilise les règles de mise en page prises en charge par Home Assistant sur ordinateur, tablette et téléphone.
 
-### 8.3 Règles avancées et CSS libre
+### 8.3 Entretenir les règles et le CSS libre existants
 
-Le générateur avancé peut viser toutes les cartes, une entité, un identifiant personnalisé ou une carte sélectionnée directement. Ajoutez au besoin un identifiant dans le YAML :
-
-```yaml
-theme_studio_id: energie
-```
-
-La zone CSS libre est réservée aux utilisateurs expérimentés. `@import`, les URL distantes/data et les constructions exécutables anciennes sont refusés. Une règle incorrecte peut déplacer, masquer ou bloquer une carte ; réinitialisez ou désactivez d’abord la règle concernée.
+L’éditeur de règle s’ouvre uniquement avec **Modifier** sur une règle existante. Les cibles et restrictions d’appareil existantes sont conservées. `@import`, les URL distantes/data et les constructions exécutables anciennes restent refusés. Si un ancien profil pose problème, désactivez d’abord la règle concernée ou le CSS hérité de ce profil. Les exports JSON portables excluent volontairement ces anciennes données.
 
 ## 9. Appliquer, annuler, restaurer et réinitialiser
 
 - **Annuler / Rétablir** agit sur les modifications actuelles.
-- **Mettre à jour le profil** enregistre les changements dans le profil.
-- **Appliquer le thème** génère, stocke et active le thème pour l’utilisateur.
+- **Mettre à jour le profil** enregistre les changements sans activer le thème.
+- **Appliquer le thème** enregistre automatiquement le profil sélectionné, génère le thème et l’active. Sur téléphone, Theme Studio revient ensuite à l’aperçu et au choix des sections.
 - Avant chaque application, l’état actif devient un point de restauration.
 - **Restaurer le dernier design** échange l’état actif avec ce point.
 - **Restaurer le thème Home Assistant par défaut** désactive Theme Studio pour l’utilisateur et revient au mode **Auto**. Profils et images sont conservés.
@@ -287,10 +287,9 @@ Les mises à jour normales ne remplacent pas les profils ni les réglages person
 | Les changements restent dans l’aperçu | Choisissez **Appliquer le thème**. |
 | L’ancienne interface reste après la mise à jour | Rechargez avec `Ctrl + F5` ou redémarrez l’application. |
 | Les effets manquent | Utilisez Lovelace, choisissez des entités compatibles et vérifiez **Réduire les animations**. |
-| Les effets manquent dans un tableau personnalisé | Les tableaux entièrement personnalisés et panneaux personnalisés ne sont pas pris en charge. |
-| L’icône d’édition manque | Activez le mode expert et ouvrez un véritable tableau Lovelace. |
-| Une règle touche plusieurs cartes | Sélectionnez la carte directement ou ajoutez une `theme_studio_id` unique. |
-| Une carte saute ou devient inutilisable | Réinitialisez ou désactivez la règle concernée. |
+| Les effets manquent dans un tableau personnalisé | Les tableaux entièrement personnalisés et panneaux personnalisés ne prennent pas en charge les effets de carte. |
+| La section CSS hérité manque | La version 0.9 l’affiche uniquement pour les profils contenant déjà d’anciennes données CSS. |
+| Une carte saute ou devient inutilisable | Désactivez l’ancienne règle concernée ou supprimez uniquement ses valeurs de position. |
 | Une image ne peut pas être supprimée | Elle est encore utilisée par le design actif ou un profil. |
 | L’import ne contient pas les effets/CSS | C’est normal : les profils JSON ne contiennent que les valeurs portables. |
 
@@ -300,9 +299,9 @@ Méthode recommandée :
 2. Créez un profil clair ou sombre.
 3. Réglez les couleurs et la navigation.
 4. Choisissez le style de carte et l’arrière-plan.
-5. Enregistrez puis appliquez le design.
+5. Appliquez le design ; le profil sélectionné est enregistré automatiquement.
 6. Affectez les effets à peu d’entités adaptées.
-7. Utilisez le mode expert en dernier, carte par carte ou par petits groupes.
-8. Mettez le profil à jour après chaque modification importante.
+7. Gérez l’ordre et la disposition des cartes uniquement dans l’éditeur Home Assistant.
+8. Ouvrez le CSS hérité uniquement pour entretenir des règles existantes.
 
 Pour obtenir de l’aide, indiquez les versions de Home Assistant et Theme Studio, la plateforme, le type de tableau de bord et les journaux utiles dans le [suivi des problèmes GitHub](https://github.com/CjonesLAB/ha-theme-studio/issues).

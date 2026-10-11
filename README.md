@@ -42,7 +42,7 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - Space Command background effect with stars and light accents, without a visible grid overlay
 - optional Liquid Glass card style with a dedicated 0–100% transparency control, backdrop blur, saturation, and reflections; conflicting card material controls are set automatically and locked while glass is active
 - optional Tech Frame card style with asymmetric corner cuts, a closed configurable outline, glow intensity, border color, border width, and shadow; headings remain unchanged while normal cards and opaque detail dialogs use the selected frame
-- opt-in Expert CSS mode for per-user card styling, targeted entity/card rules, compact dashboard gaps, positioning, sizing, and responsive layouts
+- read-only discovery of legacy per-user CSS with safe maintenance and position cleanup for existing profiles
 - dashboard effects are automatically disabled in Home Assistant settings under `/config` and in overlay dialogs
 - automatic recovery point before applying a design
 - restore the last active design with one click, even after a restart
@@ -165,13 +165,13 @@ Card effects are only applied to the selected entities. This keeps large dashboa
 
 ### Expert CSS
 
-Under **Dashboard effects**, Expert CSS can be enabled after acknowledging the warning. The rules are private to the current Home Assistant user and are applied only to dashboards, not to settings pages or overlay dialogs. Disabling Expert CSS removes its styles and target markers completely.
+In version 0.9, the legacy CSS section is shown only when the selected profile already contains custom CSS or visual rules from an older release. Existing data remains private to the current Home Assistant user and is never changed automatically.
 
-> **Experimental feature:** Expert CSS remains available for existing appearance rules but is no longer the preferred workflow. Version 0.8.3 removes the direct card and movement controls. Existing X/Y offsets are preserved and can be removed with **Disable all position adjustments** without changing the remaining card values.
+> **Experimental legacy feature:** Existing appearance rules can be enabled, disabled, edited, or deleted. Version 0.9 no longer offers new rules, duplicates, CSS examples, or card positions. Existing X/Y offsets can be removed with **Disable all position adjustments** without changing the remaining card values.
 
 > **Compatibility:** Card effects and Expert CSS rely on the standard Lovelace card structure. Fully custom dashboards or custom panels that render their own HTML or web-component structure are not supported by these features. Theme colors and compatible Home Assistant theme variables may still apply, but card effects cannot be guaranteed there.
 
-The visual rule list continues to manage existing appearance adjustments. Rules can be limited to desktop, tablet, or phone, edited, duplicated, temporarily disabled, or deleted. New position offsets can no longer be created. Use Home Assistant’s own dashboard editor for card order, sections, and layout. The optional raw CSS area remains available as an experimental legacy feature.
+The visual rule list continues to maintain existing appearance adjustments. Use Home Assistant’s own dashboard editor for card order, sections, and layout. Profiles without legacy CSS do not show this section.
 
 Theme Studio exposes stable targeting attributes inside the dashboard:
 

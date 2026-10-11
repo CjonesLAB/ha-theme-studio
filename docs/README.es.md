@@ -153,9 +153,9 @@ En **Fondo → Biblioteca de imágenes** pueden gestionarse hasta 24 archivos JP
 
 ### CSS experto
 
-El modo CSS experto sigue siendo específico de cada usuario y solo se aplica a los paneles. La lista de reglas visuales continúa gestionando los ajustes de apariencia existentes. Las reglas pueden limitarse a ordenador, tableta o teléfono, editarse, duplicarse, desactivarse o eliminarse. Ya no se pueden crear nuevos desplazamientos de posición. El orden, las secciones y el diseño de las tarjetas se modifican en el editor de paneles de Home Assistant.
+En la versión 0.9, la sección de CSS heredado solo aparece si el perfil seleccionado ya contiene CSS o reglas visuales de una versión anterior. Los datos siguen siendo propios del usuario y nunca se modifican automáticamente. Las reglas existentes se pueden activar, desactivar, editar o eliminar.
 
-> **Función experimental:** el CSS experto sigue disponible para las reglas de apariencia existentes, pero ya no es el flujo de trabajo recomendado. Los valores X/Y existentes se conservan y pueden eliminarse con **Desactivar todos los ajustes de posición**, sin modificar los demás valores de las tarjetas.
+> **Función experimental heredada:** la versión 0.9 ya no ofrece reglas nuevas, copias, ejemplos CSS ni posiciones de tarjetas. Los valores X/Y existentes pueden eliminarse con **Desactivar todos los ajustes de posición**, sin modificar los demás valores de las tarjetas.
 
 > **Compatibilidad:** los efectos de tarjeta y el CSS experto dependen de la estructura estándar de las tarjetas Lovelace. Los paneles completamente personalizados o los paneles personalizados que generan su propia estructura HTML o sus propios componentes web no son compatibles con estas funciones. Los colores del tema y las variables compatibles de Home Assistant pueden seguir aplicándose, pero los efectos de tarjeta no están garantizados.
 

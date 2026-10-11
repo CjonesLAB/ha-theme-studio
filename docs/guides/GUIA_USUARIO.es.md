@@ -1,14 +1,14 @@
-# Theme Studio 0.8.3 - Guía de usuario
+# Theme Studio 0.9 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio por completo, desde la instalación hasta el diseño visual del panel y la gestión segura de las reglas de tarjeta existentes. Se aplica a la versión **0.8.3**.
+Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.9**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
-![Theme Studio 0.8.0 con perfiles, ajustes y vista previa](../images/theme-studio-overview-v080.png)
+![Theme Studio con perfiles, ajustes y vista previa](../images/theme-studio-overview-v083.png)
 
 ## Contenido
 
@@ -19,7 +19,7 @@ Esta guía explica Theme Studio por completo, desde la instalación hasta el dis
 5. Perfiles de diseño
 6. Colores, tarjetas, navegación y fondo
 7. Efectos del panel y de las tarjetas
-8. Modo experto y reglas de posición antiguas
+8. CSS heredado y reglas de posición antiguas
 9. Aplicar, deshacer, restaurar y restablecer
 10. Importación, exportación y publicación JSON
 11. Ajustes por usuario, datos y privacidad
@@ -89,6 +89,10 @@ La página contiene tres áreas principales:
 
 La vista previa reacciona inmediatamente. El tema real de Home Assistant solo cambia al pulsar **Aplicar diseño**. Un aviso muestra los cambios todavía no aplicados o no guardados en el perfil.
 
+![Vista previa móvil con acceso directo a las secciones de ajustes](../images/mobile-preview-navigation-v090.png)
+
+En el teléfono, la vista previa es el punto de partida: pulsa **Colores**, **Tarjetas**, **Navegación**, **Fondo** o **Efectos**. Una vista previa compacta permanece visible arriba mientras desplazas los ajustes. **Volver a la vista previa** regresa al selector de secciones. **Aplicar diseño** guarda y activa el perfil seleccionado y después vuelve a la vista previa y al selector. En el escritorio, la vista previa y los ajustes permanecen uno al lado del otro.
+
 ## 4. Galería de la comunidad
 
 La galería carga diseños revisados desde [ha-theme-studio.com](https://ha-theme-studio.com/). Cada vista previa muestra un panel compacto y respeta el modo claro u oscuro del diseño.
@@ -111,7 +115,7 @@ Un perfil representa exactamente **un diseño claro o uno oscuro**. No se genera
 2. Elige **Claro** u **Oscuro**.
 3. Pulsa **Crear diseño**.
 4. Personalízalo en los ajustes.
-5. Guarda el perfil y después aplica el diseño.
+5. Pulsa **Aplicar diseño**. El perfil seleccionado se guarda automáticamente antes de activarse.
 
 ### Gestionar perfiles
 
@@ -120,6 +124,8 @@ Un perfil representa exactamente **un diseño claro o uno oscuro**. No se genera
 - **Renombrar:** cambiar solo el nombre.
 - **Duplicar:** crear una copia independiente.
 - **Eliminar:** borrar el perfil; el tema activo permanece hasta aplicar otro diseño.
+
+En pantallas pequeñas solo se muestran las acciones necesarias para la edición actual. **Duplicar**, **Exportar JSON** e **Importar JSON** siguen disponibles en la vista de escritorio.
 
 Se pueden almacenar hasta 64 diseños independientes. El último perfil aplicado se selecciona automáticamente la próxima vez.
 
@@ -131,12 +137,12 @@ La sección **Colores** ofrece un color principal, acentos predefinidos y colore
 
 ### 6.2 Tarjetas
 
-![Ajustes Standard, Liquid Glass y Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
+![Ajustes Standard, Cristal y Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
 
 Hay tres estilos:
 
 - **Standard:** tarjetas clásicas sin filtro de cristal.
-- **Liquid Glass:** transparencia, desenfoque, saturación y reflejos; los valores incompatibles se controlan automáticamente.
+- **Cristal:** transparencia, desenfoque, saturación y reflejos; los valores incompatibles se controlan automáticamente y se usa una presentación más sencilla si una función del navegador no está disponible.
 - **Tech Frame:** esquinas asimétricas, contorno cerrado, brillo, borde y sombra configurables.
 
 Según el estilo, puedes cambiar el radio o corte, color de tarjeta, texto, iconos, borde, opacidad, grosor, sombra, desenfoque y brillo.
@@ -179,13 +185,13 @@ Busca por nombre, ID o clase de dispositivo y selecciona varias entidades. **Des
 
 Una tarjeta sin estructura Lovelace estándar puede impedir que Theme Studio detecte la entidad. Estos efectos no están disponibles en paneles completamente personalizados.
 
-## 8. Modo experto y reglas de posición antiguas
+## 8. CSS heredado y reglas de posición antiguas
 
-El modo experto se encuentra en **Efectos del panel**. Es opcional, experimental y privado para el usuario actual.
+La versión 0.9 vuelve por completo al flujo sin código para los diseños nuevos. La sección CSS solo aparece cuando el perfil cargado ya contiene CSS libre o reglas visuales de una versión anterior de Theme Studio. En perfiles sin datos heredados permanece oculta.
 
-> **Transición en la versión 0.8.3:** la edición directa y el movimiento de tarjetas se retiraron porque el posicionamiento por píxeles no era fiable en distintos dispositivos. Usa el editor de paneles de Home Assistant para el orden de las tarjetas, las secciones, el tamaño y el diseño. Theme Studio ya no muestra un icono en la barra del panel ni un modo de tarjeta en teléfonos.
+> **Principio de compatibilidad:** los datos CSS existentes nunca se cambian ni eliminan automáticamente al cargar o guardar. La versión 0.9 no crea reglas CSS nuevas, copias de reglas ni posiciones de tarjetas.
 
-Las reglas visuales existentes se conservan y pueden activarse, desactivarse, editarse, duplicarse o eliminarse. Ya no se pueden crear nuevos desplazamientos horizontales o verticales.
+Las reglas existentes se pueden activar, desactivar, editar o eliminar. El CSS libre existente se puede mantener, desactivar o borrar. Todos estos datos siguen siendo privados para el usuario actual.
 
 ### 8.1 Desactivar los ajustes de posición antiguos
 
@@ -202,21 +208,15 @@ Solo se eliminan los desplazamientos horizontales y verticales. El espacio inter
 
 Usa el editor nativo de Home Assistant para mover tarjetas, modificar secciones, tamaños o el diseño. De este modo, el panel sigue siendo adaptable y utiliza las reglas de diseño compatibles con Home Assistant en ordenador, tableta y teléfono.
 
-### 8.3 Reglas avanzadas y CSS libre
+### 8.3 Mantener las reglas y el CSS libre existentes
 
-El editor avanzado puede apuntar a todas las tarjetas, una entidad, una ID personalizada o una tarjeta seleccionada directamente. Añade una ID en el YAML cuando sea necesario:
-
-```yaml
-theme_studio_id: energia
-```
-
-El CSS libre está pensado para usuarios expertos. Se rechazan `@import`, URL remotas/data y construcciones ejecutables antiguas. Una regla incorrecta puede mover, ocultar o bloquear una tarjeta; restablece o desactiva primero la regla afectada.
+El editor de reglas solo se abre mediante **Editar** en una regla ya existente. Se mantienen los objetivos y las restricciones de dispositivo anteriores. Se siguen rechazando `@import`, URL remotas/data y construcciones ejecutables antiguas. Si un perfil antiguo causa problemas, desactiva primero la regla afectada o el CSS heredado de ese perfil. Las exportaciones JSON portátiles excluyen estos datos antiguos de forma intencionada.
 
 ## 9. Aplicar, deshacer, restaurar y restablecer
 
 - **Deshacer / Rehacer** actúa sobre los cambios actuales.
-- **Actualizar perfil** guarda los cambios en el perfil.
-- **Aplicar diseño** genera, guarda y activa el tema para el usuario.
+- **Actualizar perfil** guarda los cambios sin activar el tema.
+- **Aplicar diseño** guarda automáticamente el perfil seleccionado, genera el tema y lo activa. En el teléfono, Theme Studio vuelve después a la vista previa y al selector de secciones.
 - Antes de cada aplicación, el estado activo se guarda como punto de recuperación.
 - **Restaurar último diseño** intercambia el estado activo con ese punto.
 - **Restaurar diseño predeterminado de Home Assistant** desactiva Theme Studio para el usuario y vuelve a **Auto**. Los perfiles e imágenes se conservan.
@@ -287,10 +287,9 @@ Las actualizaciones normales no sustituyen perfiles ni ajustes personales. Aun a
 | Los cambios solo aparecen en la vista previa | Pulsa **Aplicar diseño**. |
 | Sigue apareciendo la interfaz antigua | Recarga con `Ctrl + F5` o reinicia la aplicación. |
 | Faltan los efectos | Usa Lovelace, selecciona entidades compatibles y revisa **Reducir movimiento**. |
-| Faltan efectos en un panel propio | Los paneles completamente personalizados no son compatibles con efectos ni modo experto. |
-| Falta el icono de edición | Activa el modo experto y abre un panel Lovelace real. |
-| Una regla afecta a varias tarjetas | Selecciona la tarjeta directamente o añade una `theme_studio_id` única. |
-| Una tarjeta salta o deja de funcionar | Restablece o desactiva la regla afectada. |
+| Faltan efectos en un panel propio | Los paneles completamente personalizados no son compatibles con los efectos de tarjeta. |
+| Falta la sección de CSS heredado | La versión 0.9 solo la muestra en perfiles que ya contienen datos CSS antiguos. |
+| Una tarjeta salta o deja de funcionar | Desactiva la regla heredada afectada o elimina solo sus valores de posición. |
 | No se puede eliminar una imagen | Todavía la usa el diseño activo o un perfil. |
 | La importación no contiene efectos/CSS | Es normal: los perfiles JSON solo contienen valores portátiles. |
 
@@ -300,9 +299,9 @@ Método recomendado:
 2. Crea un perfil claro u oscuro.
 3. Configura colores y navegación.
 4. Elige estilo de tarjeta y fondo.
-5. Guarda y aplica el diseño.
+5. Aplica el diseño; el perfil seleccionado se guarda automáticamente.
 6. Asigna efectos a pocas entidades adecuadas.
-7. Usa el modo experto al final, tarjeta por tarjeta o en grupos pequeños.
-8. Actualiza el perfil después de cada cambio importante.
+7. Gestiona el orden y el diseño de las tarjetas solo en el editor de Home Assistant.
+8. Abre el CSS heredado únicamente para mantener reglas ya existentes.
 
 Para solicitar ayuda, incluye las versiones de Home Assistant y Theme Studio, la plataforma, el tipo de panel y los registros relevantes en el [seguimiento de problemas de GitHub](https://github.com/CjonesLAB/ha-theme-studio/issues).

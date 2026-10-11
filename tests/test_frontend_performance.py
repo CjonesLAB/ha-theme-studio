@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.22";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.22";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.9.0-beta.23";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.9.0-beta.23";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -260,7 +260,9 @@ def test_expert_css_reuses_the_bounded_material_scan() -> None:
     assert 'window.removeEventListener(\n      "scroll"' in effects_source
     assert "_saveExpertRuleFromForm()" in panel_source
     assert "_handleExpertRuleAction(action, ruleId)" in panel_source
-    assert 'data-rule-action="duplicate"' in panel_source
+    assert 'data-rule-action="duplicate"' not in panel_source
+    assert 'id="legacy-css-panel" class="expert-css-panel" hidden' in panel_source
+    assert 'id="expert-rule-create"' not in panel_source
 
 
 def test_staggered_tech_frame_cards_are_added_without_restyling_existing_cards() -> None:

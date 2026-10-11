@@ -42,7 +42,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - Space-Command-Hintergrundeffekt mit Sternenfeld und Lichtakzenten, ohne sichtbares Raster
 - optionaler Liquid-Glass-Kartenstil mit eigenem Transparenzregler von 0–100 %, Hintergrundunschärfe, Sättigung und Reflexionen; widersprüchliche Karten-Materialwerte werden bei aktivem Glas automatisch gesetzt und gesperrt
 - optionaler Tech-Frame-Kartenstil mit asymmetrischen Eckenschnitten, geschlossener einstellbarer Kontur, Leuchtstärke, Rahmenfarbe, Rahmenstärke und Schatten; Überschriften bleiben unverändert, während normale Karten und deckende Detaildialoge den gewählten Rahmen verwenden
-- zuschaltbarer Expertenmodus für benutzerbezogenes CSS, gezielte Entitäts-/Kartenregeln, kompakte Dashboard-Abstände, Positionen, Größen und responsive Anordnungen
+- nur bei Bedarf sichtbare Legacy-CSS-Pflege mit sicherer Bereinigung alter Positionswerte
 - Dashboard-Effekte werden in den Home-Assistant-Einstellungen unter `/config` und in Overlay-Dialogen automatisch deaktiviert
 - automatischer Wiederherstellungspunkt vor dem Anwenden eines Designs
 - zuletzt aktives Design auch nach einem Neustart mit einem Klick wiederherstellen
@@ -154,13 +154,13 @@ Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-
 
 ### Expertenmodus für CSS
 
-Unter **Dashboard-Effekte** kann eigenes CSS nach Bestätigung des Warnhinweises eingeschaltet werden. Die Regeln gelten nur für den aktuellen Home-Assistant-Benutzer und ausschließlich in Dashboards – nicht in Einstellungen oder Overlay-Dialogen. Beim Ausschalten entfernt Theme Studio die Regeln und Zielmarkierungen vollständig.
+In Version 0.9 erscheint der Legacy-CSS-Bereich nur, wenn das ausgewählte Profil bereits eigenes CSS oder visuelle Regeln aus einer älteren Version enthält. Vorhandene Daten bleiben benutzerbezogen und werden nicht automatisch verändert.
 
-> **Experimentelle Funktion:** Experten-CSS bleibt für vorhandene Darstellungsregeln verfügbar, ist aber nicht mehr der bevorzugte Arbeitsweg. Version 0.8.3 entfernt die direkte Kartenbearbeitung und das Verschieben. Bestehende X/Y-Werte bleiben erhalten und können mit **Alle Positionsanpassungen deaktivieren** entfernt werden, ohne andere Kartenwerte zu verändern.
+> **Experimentelle Legacy-Funktion:** Vorhandene Regeln können aktiviert, deaktiviert, bearbeitet oder gelöscht werden. Version 0.9 bietet keine neuen Regeln, Duplikate, CSS-Beispiele oder Kartenpositionen mehr an. Bestehende X/Y-Werte können mit **Alle Positionsanpassungen deaktivieren** entfernt werden, ohne andere Kartenwerte zu verändern.
 
 > **Kompatibilität:** Karteneffekte und Experten-CSS benötigen die übliche Lovelace-Kartenstruktur. Vollständig selbst entwickelte Dashboards oder Custom Panels mit eigener HTML- beziehungsweise Web-Component-Struktur werden von diesen Funktionen nicht unterstützt. Theme-Farben und kompatible Home-Assistant-Variablen können dort weiterhin wirken, Karteneffekte sind jedoch nicht gewährleistet.
 
-Die visuelle Regelliste verwaltet weiterhin vorhandene Darstellungsanpassungen. Regeln können auf Desktop, Tablet oder Smartphone begrenzt, bearbeitet, dupliziert, vorübergehend deaktiviert oder gelöscht werden. Neue Positionsverschiebungen lassen sich nicht mehr erstellen. Kartenreihenfolge, Abschnitte und Layout werden im Dashboard-Editor von Home Assistant bearbeitet. Das Feld für freies CSS bleibt als experimentelle Legacy-Funktion erhalten.
+Die visuelle Regelliste pflegt weiterhin vorhandene Darstellungsanpassungen. Kartenreihenfolge, Abschnitte und Layout werden im Dashboard-Editor von Home Assistant bearbeitet. Profile ohne Legacy-CSS zeigen diesen Bereich nicht.
 
 Theme Studio stellt dafür stabile Zielattribute im Dashboard bereit:
 

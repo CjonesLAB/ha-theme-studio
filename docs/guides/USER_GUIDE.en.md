@@ -1,14 +1,14 @@
-# Theme Studio 0.8.3 - User Guide
+# Theme Studio 0.9 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through visual dashboard design and safe management of existing card rules. It applies to version **0.8.3**.
+This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.9**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
-![Theme Studio 0.8.0 with profiles, fine-tuning, and dashboard preview](../images/theme-studio-overview-v080.png)
+![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/theme-studio-overview-v083.png)
 
 ## Contents
 
@@ -19,7 +19,7 @@ This guide explains Theme Studio from installation through visual dashboard desi
 5. Custom design profiles
 6. Colors, cards, navigation, and background
 7. Dashboard and card effects
-8. Expert mode and legacy position rules
+8. Legacy CSS and legacy position rules
 9. Apply, undo, restore, and reset
 10. JSON import, export, and publication
 11. Per-user settings, data, and privacy
@@ -89,6 +89,10 @@ The page has three main areas:
 
 The preview reacts immediately. The real Home Assistant theme changes only after **Apply design**. A visible notice indicates unapplied changes or profile changes that have not yet been saved.
 
+![Mobile preview with direct access to the settings sections](../images/mobile-preview-navigation-v090.png)
+
+On a phone, the preview is the starting point: tap **Colors**, **Cards**, **Navigation**, **Background**, or **Effects**. A compact preview remains visible at the top while the settings scroll below it. **Back to preview** returns to the section chooser. **Apply design** saves and activates the selected profile, then returns to the preview and section chooser. On desktop, preview and settings remain side by side.
+
 ## 4. Community Gallery
 
 The gallery loads reviewed designs from [ha-theme-studio.com](https://ha-theme-studio.com/). Each preview shows a compact dashboard and follows the fixed Light or Dark mode of the design.
@@ -113,7 +117,7 @@ A profile is exactly **one Light or one Dark design**. Theme Studio does not gen
 2. Choose **Light** or **Dark**.
 3. Select **Create new design**.
 4. Customize it in Fine-tuning.
-5. Select **Save profile**, then **Apply design**.
+5. Select **Apply design**. The selected profile is saved automatically before activation.
 
 ### Manage profiles
 
@@ -122,6 +126,8 @@ A profile is exactly **one Light or one Dark design**. Theme Studio does not gen
 - **Rename:** change only the profile name.
 - **Duplicate:** create an independent copy.
 - **Delete:** remove the profile; the active theme remains until another design is applied.
+
+On small screens, Theme Studio shows only the actions needed for active editing. **Duplicate**, **Export JSON**, and **Import JSON** remain available in the desktop view.
 
 Up to 64 independent designs can be stored. The most recently applied profile is selected automatically the next time Theme Studio opens.
 
@@ -133,12 +139,12 @@ The **Colors** section provides a primary color, preset accents, and background 
 
 ### 6.2 Cards
 
-![Card settings with Standard, Liquid Glass, and Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
+![Card settings with Standard, Glass, and Tech Frame](../images/fine-settings-cards-tech-frame-v063.png)
 
 Three card styles are available:
 
 - **Standard:** classic Home Assistant cards without glass filtering.
-- **Liquid Glass:** transparent cards with blur, saturation, and light reflections. Conflicting material values are controlled automatically.
+- **Glass:** transparent cards with blur, saturation, and light reflections. Conflicting material values are controlled automatically, with a quieter fallback when a browser feature is unavailable.
 - **Tech Frame:** asymmetric corner cuts with a closed outline, configurable glow, border, and shadow.
 
 Depending on the style, you can adjust radius or corner cut, card color, text and icon color, border color, opacity, border width, shadow, blur, and glow.
@@ -181,13 +187,13 @@ Search by friendly name, entity ID, or device class, then select multiple entiti
 
 Theme Studio may not detect an entity inside cards that do not expose a standard Lovelace structure. These effects are unavailable in fully custom dashboards.
 
-## 8. Expert mode and legacy position rules
+## 8. Legacy CSS and legacy position rules
 
-Expert mode is located under **Dashboard effects**. It is optional, experimental, and private to the current user.
+Version 0.9 returns new designs fully to the no-code workflow. The CSS section is shown only when the loaded profile already contains raw CSS or visual rules from an older Theme Studio version. Profiles without legacy data do not show it.
 
-> **Transition in 0.8.3:** Direct card editing and movement have been retired because pixel-based positioning was not reliable across different devices. Use Home Assistant’s dashboard editor for card order, sections, size, and layout. Theme Studio no longer shows a dashboard toolbar icon or a mobile card mode.
+> **Compatibility principle:** Existing CSS data is never changed or removed automatically when a profile is loaded or saved. Version 0.9 does not create new CSS rules, duplicates, or card positions.
 
-Existing visual rules remain available and can be enabled, disabled, edited, duplicated, or deleted. New horizontal or vertical position offsets can no longer be created.
+Existing visual rules can be enabled, disabled, edited, or deleted. Existing raw CSS can be maintained, disabled, or cleared. All legacy CSS remains private to the current user.
 
 ### 8.1 Disable legacy position adjustments
 
@@ -204,21 +210,15 @@ Only the horizontal and vertical offsets are removed. Padding, width, minimum he
 
 Open Home Assistant’s native dashboard editor to move cards, change sections, or adjust the layout. This keeps the dashboard responsive and uses Home Assistant’s supported layout rules on desktop, tablet, and phone.
 
-### 8.3 Advanced rules and raw CSS
+### 8.3 Maintain existing rules and raw CSS
 
-The advanced rule builder can target all cards, a specific entity, a custom card ID, or a directly selected card. Add a unique ID to card YAML when needed:
-
-```yaml
-theme_studio_id: energy
-```
-
-The optional raw CSS area is intended for experienced users. `@import`, remote/data URLs, and executable legacy CSS constructs are rejected. Invalid rules can move, cover, or disable cards; resetting or disabling the affected rule is the safest recovery path.
+The rule editor opens only through **Edit** on an existing rule. Existing target and device restrictions remain available. `@import`, remote/data URLs, and executable legacy CSS constructs are still rejected. If an older profile causes a problem, first disable the affected rule or turn off legacy CSS for that profile. Portable JSON exports intentionally exclude this legacy data.
 
 ## 9. Apply, undo, restore, and reset
 
 - **Undo / Redo** affects current edits in the open editor.
-- **Update profile** saves changes into the selected profile.
-- **Apply design** generates, stores, and activates the theme for the current user.
+- **Update profile** saves changes into the selected profile without activating the theme.
+- **Apply design** automatically saves the selected profile, generates the theme, and activates it for the current user. On a phone, Theme Studio then returns to the preview and section chooser.
 - Before each application, the current active state is saved as a recovery point.
 - **Restore last design** swaps the active state with that recovery point, allowing you to move between both states.
 - **Restore Home Assistant default** disables Theme Studio for the current user and returns appearance selection to Home Assistant **Auto**. Profiles and background images remain stored.
@@ -290,10 +290,9 @@ Normal updates do not overwrite saved profiles or per-user settings. A backup is
 | Changes appear only in the preview | Select **Apply design**. |
 | Old UI remains after an update | Hard-refresh with `Ctrl + F5`; fully close the Companion App. |
 | Effects are missing | Use a Lovelace dashboard, choose compatible entities, and check **Reduce motion**. |
-| Effects are missing in a custom dashboard | Fully custom dashboards and custom panels are unsupported for effects and Expert mode. |
-| Card-editor icon is missing | Enable Expert mode and open an actual Lovelace dashboard. |
-| A CSS rule affects several cards | Select the card directly or use a unique `theme_studio_id`. |
-| A card jumps or becomes unusable | Reset or disable the affected rule. |
+| Effects are missing in a custom dashboard | Fully custom dashboards and custom panels are unsupported for card effects. |
+| The legacy CSS section is missing | Version 0.9 shows it only for profiles that already contain legacy CSS data. |
+| A card jumps or becomes unusable | Disable the affected legacy rule or remove only its old position values. |
 | A background image cannot be deleted | It is still used by the active design or a saved profile. |
 | Imported profile has no effects or CSS | This is expected; JSON profiles contain portable design values only. |
 
@@ -303,9 +302,9 @@ Recommended order for a new design:
 2. Create a profile with a fixed Light or Dark mode.
 3. Set base colors and navigation.
 4. Select the card style and background.
-5. Save the profile and apply the design.
+5. Apply the design; the selected profile is saved automatically.
 6. Assign effects to a small number of suitable entities.
-7. Use Expert mode last and edit cards individually or in small groups.
-8. Update the profile after each major change.
+7. Manage card order and layout only in Home Assistant's dashboard editor.
+8. Open legacy CSS only to maintain rules that already exist.
 
 For support, include the Home Assistant version, Theme Studio version, platform, dashboard type, and relevant log messages. Report issues through the [GitHub issue tracker](https://github.com/CjonesLAB/ha-theme-studio/issues).

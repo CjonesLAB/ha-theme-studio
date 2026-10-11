@@ -153,9 +153,9 @@ Jusqu’à 24 fichiers JPG, PNG ou WebP peuvent être gérés dans **Arrière-pl
 
 ### CSS expert
 
-Le mode CSS expert reste propre à chaque utilisateur et ne s’applique qu’aux tableaux de bord. La liste des règles visuelles continue à gérer les ajustements d’apparence existants. Les règles peuvent être limitées à l’ordinateur, la tablette ou le téléphone, modifiées, dupliquées, désactivées ou supprimées. Il n’est plus possible de créer de nouveaux décalages de position. L’ordre, les sections et la disposition des cartes se règlent dans l’éditeur de tableau de bord Home Assistant.
+Dans la version 0.9, la section CSS hérité apparaît uniquement si le profil sélectionné contient déjà du CSS ou des règles visuelles d’une ancienne version. Les données restent propres à l’utilisateur et ne sont jamais modifiées automatiquement. Les règles existantes peuvent être activées, désactivées, modifiées ou supprimées.
 
-> **Fonction expérimentale :** le CSS expert reste disponible pour les règles d’apparence existantes, mais ce n’est plus le flux de travail recommandé. Les valeurs X/Y existantes sont conservées et peuvent être supprimées avec **Désactiver tous les ajustements de position**, sans modifier les autres valeurs des cartes.
+> **Fonction expérimentale héritée :** la version 0.9 ne propose plus de nouvelles règles, de copies, d’exemples CSS ni de positions de cartes. Les valeurs X/Y existantes peuvent être supprimées avec **Désactiver tous les ajustements de position**, sans modifier les autres valeurs des cartes.
 
 > **Compatibilité :** les effets de carte et le CSS expert reposent sur la structure standard des cartes Lovelace. Les tableaux de bord entièrement personnalisés ou les panneaux personnalisés qui génèrent leur propre structure HTML ou leurs propres composants Web ne sont pas pris en charge par ces fonctions. Les couleurs du thème et les variables Home Assistant compatibles peuvent encore s’appliquer, mais les effets de carte n’y sont pas garantis.
 

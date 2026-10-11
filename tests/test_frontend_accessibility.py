@@ -1,6 +1,7 @@
 """Accessibility contract tests for the Theme Studio frontend."""
 
 from pathlib import Path
+import subprocess
 
 
 PANEL_SOURCE = (
@@ -161,8 +162,8 @@ def test_visual_expert_rule_actions_have_accessible_names() -> None:
 
     assert 'aria-label="${rule.enabled ? "Regel deaktivieren" : "Regel aktivieren"}"' in PANEL_SOURCE
     assert 'aria-label="Regel bearbeiten"' in PANEL_SOURCE
-    assert 'aria-label="Regel duplizieren"' in PANEL_SOURCE
     assert 'aria-label="Regel löschen"' in PANEL_SOURCE
+    assert 'aria-label="Regel duplizieren"' not in PANEL_SOURCE
 
 
 def test_active_design_is_announced_without_retired_dashboard_editor() -> None:
@@ -177,15 +178,15 @@ def test_active_design_is_announced_without_retired_dashboard_editor() -> None:
     assert "_openDashboardEditor()" not in PANEL_SOURCE
 
 
-def test_advanced_rule_builder_is_collapsed_until_requested() -> None:
-    """Rule management stays compact while advanced creation remains available."""
+def test_legacy_rule_builder_is_available_only_for_existing_rules() -> None:
+    """Legacy rules remain editable without offering new CSS rule creation."""
 
-    assert 'id="expert-rule-create"' in PANEL_SOURCE
-    assert 'aria-controls="expert-rule-builder"' in PANEL_SOURCE
+    assert 'id="legacy-css-panel" class="expert-css-panel" hidden' in PANEL_SOURCE
+    assert 'id="expert-rule-create"' not in PANEL_SOURCE
     assert 'id="expert-rule-builder" class="expert-rule-builder" hidden' in PANEL_SOURCE
     assert "_setExpertRuleBuilderOpen(true)" in PANEL_SOURCE
     assert "_setExpertRuleBuilderOpen(false)" in PANEL_SOURCE
-    assert "Die Kartenposition wird ausschließlich im Home-Assistant-Dashboard bearbeitet." in PANEL_SOURCE
+    assert "Neue CSS-Regeln und Kartenpositionen werden in Version 0.9 nicht mehr angelegt." in PANEL_SOURCE
 
 
 def test_direct_card_mode_is_retired_without_deleting_legacy_rules() -> None:
@@ -225,11 +226,16 @@ def test_legacy_position_rules_can_be_disabled_without_losing_style_values() -> 
     assert "rule.padding = null;" not in PANEL_SOURCE
     assert "offsetX: existingRule?.offsetX ?? null" in PANEL_SOURCE
     assert "offsetY: existingRule?.offsetY ?? null" in PANEL_SOURCE
-    assert "name: `${rule.name} Kopie`.slice(0, 48),\n        offsetX: null,\n        offsetY: null," in PANEL_SOURCE
+    assert 'data-rule-action="duplicate"' not in PANEL_SOURCE
+
+    subprocess.run(
+        ["node", str(Path(__file__).with_name("frontend-legacy-position.cjs"))],
+        check=True, capture_output=True, text=True, timeout=20,
+    )
 
 
-def test_css_example_library_is_searchable_safe_and_keyboard_accessible() -> None:
-    """The library previews trusted snippets without silently applying them."""
+def test_legacy_css_does_not_offer_new_creation_entry_points() -> None:
+    """Version 0.9 keeps old CSS maintainable without promoting new custom code."""
 
     panel_source = (
         Path(__file__).parents[1]
@@ -239,30 +245,11 @@ def test_css_example_library_is_searchable_safe_and_keyboard_accessible() -> Non
         / "theme-studio-panel.js"
     ).read_text(encoding="utf-8")
 
-    insert_start = panel_source.index("  _insertCssLibraryExample(example, button) {")
-    insert_end = panel_source.index("\n  _openImportPreview()", insert_start)
-    insert_source = panel_source[insert_start:insert_end]
-
-    assert "const CSS_LIBRARY_EXAMPLES = [" in panel_source
+    assert 'id="legacy-css-panel"' in panel_source
     assert 'id="css-library-overlay"' in panel_source
-    assert 'aria-labelledby="css-library-title"' in panel_source
-    assert 'id="css-library-search"' in panel_source
-    assert 'id="css-library-category"' in panel_source
-    assert 'data-css-library-action="copy"' in panel_source
-    assert 'data-css-library-action="insert"' in panel_source
-    assert "event.key === \"Escape\"" in panel_source
-    assert "this.cssLibraryReturnFocus?.focus?.();" in panel_source
-    assert 'support: "Offizielles Home-Assistant-Theme"' in panel_source
-    assert 'insertable: false' in panel_source
-    assert 'support: "Theme Studio getestet"' in panel_source
-    assert panel_source.count("\n    id: \"") >= 32
-    assert 'id: "full-width-card"' in panel_source
-    assert 'id: "hide-entity-card"' in panel_source
-    assert 'id: "pulse-card"' in panel_source
-    assert 'id: "light-dark-modes"' in panel_source
-    assert 'support: "Experimentell"' in panel_source
-    assert 'this.settings.effects.expertCssEnabled = true;' in insert_source
-    assert 'currentCss.includes(example.code.trim())' in insert_source
-    assert "this._saveAndApplySettings" not in insert_source
-    assert "Zum Aktivieren „Design anwenden“ wählen." in insert_source
+    assert 'id="css-library-open"' not in panel_source
+    assert 'id="expert-css-example"' not in panel_source
+    assert 'id="expert-rule-create"' not in panel_source
+    assert 'data-rule-action="duplicate"' not in panel_source
+    assert "Neue CSS-Regeln werden in Version 0.9 nicht mehr angelegt." in panel_source
 

@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0-beta.22";
-import "./theme-studio-effects.js?v=0.9.0-beta.22";
+} from "./theme-studio-locales.js?v=0.9.0-beta.23";
+import "./theme-studio-effects.js?v=0.9.0-beta.23";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -5637,23 +5637,19 @@ class ThemeStudioPanel extends HTMLElement {
                 </p>
                 </div>
 
-                <div class="expert-css-panel">
+                <div id="legacy-css-panel" class="expert-css-panel" hidden>
                   <label class="expert-css-toggle">
                     <input id="expert-css-enabled" type="checkbox">
-                    <span>Expertenmodus: eigenes Dashboard-CSS</span>
+                    <span>Legacy-CSS für dieses Profil aktivieren</span>
                   </label>
 
                   <p class="expert-css-warning">
-                    Experimentelle Funktion: Eigene CSS-Regeln können
-                    Darstellung, Bedienbarkeit und responsives Verhalten
-                    beeinflussen. Nach Home-Assistant-Updates können
-                    Anpassungen ausfallen. Der direkte Karten- und
-                    Verschiebemodus wurde in Version 0.8.3 aus
-                    Kompatibilitätsgründen entfernt. Das Kartenlayout wird
-                    wieder vollständig mit den Werkzeugen von Home Assistant
-                    bearbeitet. Der Expertenmodus gilt nur für dein
-                    Benutzerkonto und nicht für Einstellungen oder
-                    Dialogfenster.
+                    Legacy-Kompatibilität: Dieser Bereich wird nur angezeigt,
+                    weil das Profil bereits CSS oder visuelle Regeln aus einer
+                    älteren Theme-Studio-Version enthält. Die vorhandenen
+                    Daten bleiben unverändert erhalten. Für neue Designs
+                    verwende die No-Code-Einstellungen und den
+                    Dashboard-Editor von Home Assistant.
                   </p>
 
                   <div id="legacy-position-notice" class="legacy-position-notice" hidden>
@@ -5670,15 +5666,7 @@ class ThemeStudioPanel extends HTMLElement {
                   <div id="expert-rule-list" class="expert-rule-list"></div>
 
                   <div class="expert-rule-management-actions">
-                    <p>Visuelle Regeln bleiben für bestehende Darstellungsanpassungen verfügbar. Die Kartenposition wird ausschließlich im Home-Assistant-Dashboard bearbeitet.</p>
-                    <button
-                      id="expert-rule-create"
-                      type="button"
-                      aria-controls="expert-rule-builder"
-                      aria-expanded="false"
-                    >
-                      Erweiterte Regel erstellen
-                    </button>
+                    <p>Vorhandene Regeln können gewartet, deaktiviert oder gelöscht werden. Neue CSS-Regeln und Kartenpositionen werden in Version 0.9 nicht mehr angelegt.</p>
                   </div>
 
                   <div id="expert-rule-builder" class="expert-rule-builder" hidden>
@@ -5729,13 +5717,13 @@ class ThemeStudioPanel extends HTMLElement {
                     </div>
 
                     <div class="expert-rule-builder-actions">
-                      <button id="expert-rule-save" class="primary" type="button">Regel hinzufügen</button>
+                      <button id="expert-rule-save" class="primary" type="button">Regel speichern</button>
                       <button id="expert-rule-cancel" type="button" hidden>Bearbeiten abbrechen</button>
                     </div>
                   </div>
 
                   <details class="expert-raw-css">
-                    <summary>Freies CSS (optional)</summary>
+                    <summary>Vorhandenes freies CSS</summary>
 
                   <textarea
                     id="expert-css"
@@ -5747,28 +5735,15 @@ class ThemeStudioPanel extends HTMLElement {
                   ></textarea>
 
                   <div class="expert-css-tools">
-                    <button id="css-library-open" class="primary" type="button">
-                      CSS-Bibliothek öffnen
-                    </button>
-                    <button id="expert-css-example" type="button">
-                      Beispiel einsetzen
-                    </button>
                     <button id="expert-css-clear" type="button">
                       CSS leeren
                     </button>
                   </div>
 
                   <p class="expert-css-help">
-                    Alle Karten: <code>ha-card { ... }</code><br>
-                    Bestimmte Entität:
-                    <code>ha-card[data-theme-studio-entity~="sensor.power"] { ... }</code><br>
-                    Eindeutige Karten-ID: Ergänze in der Karten-YAML
-                    <code>theme_studio_id: energie</code> und verwende
-                    <code>ha-card[data-theme-studio-id="energie"] { ... }</code><br>
-                    Position und Rastergröße einer Karte:
-                    <code>[data-theme-studio-card-container][data-theme-studio-id="energie"] { ... }</code><br>
-                    Abstände in Rasterbereichen:
-                    <code>[data-theme-studio-layout] { gap: 6px !important; }</code>
+                    Vorhandener Code bleibt zur Abwärtskompatibilität erhalten.
+                    Bearbeite ihn nur zur Wartung eines bestehenden Profils.
+                    Neue Designs benötigen kein eigenes CSS.
                   </p>
                   </details>
                 </div>
@@ -6909,12 +6884,6 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
-      .getElementById("css-library-open")
-      .addEventListener("click", () => {
-        this._openCssLibrary();
-      });
-
-    this.shadowRoot
       .getElementById("css-library-close")
       .addEventListener("click", () => {
         this._closeCssLibrary();
@@ -7309,14 +7278,6 @@ class ThemeStudioPanel extends HTMLElement {
     });
 
     this.shadowRoot
-      .getElementById("expert-rule-create")
-      .addEventListener("click", () => {
-        this._resetExpertRuleForm();
-        this._setExpertRuleBuilderOpen(true);
-        this.shadowRoot.getElementById("expert-rule-name").focus();
-      });
-
-    this.shadowRoot
       .getElementById("expert-rule-target-type")
       .addEventListener("change", () => {
         this._syncExpertRuleTargetForm();
@@ -7351,40 +7312,6 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("legacy-position-disable")
       .addEventListener("click", () => {
         this._disableLegacyPositionRules();
-      });
-
-    this.shadowRoot
-      .getElementById("expert-css-example")
-      .addEventListener("click", () => {
-        if (
-          this.settings.effects.expertCss
-          && !this._confirm("Vorhandenes Experten-CSS durch das Beispiel ersetzen?")
-        ) {
-          return;
-        }
-
-        this._recordHistory();
-        this.settings.effects.expertCss = [
-          "/* Bestimmte Karte über ihre Entität auswählen */",
-          "[data-theme-studio-card-container][data-theme-studio-entity~=\"sensor.power\"] {",
-          "  margin: 0 !important;",
-          "  transform: translateY(-4px);",
-          "  grid-column: span 2;",
-          "}",
-          "",
-          "/* Abstände in erkannten Dashboard-Rastern verkleinern */",
-          "[data-theme-studio-layout] {",
-          "  gap: 6px !important;",
-          "}",
-          "",
-          "@media (max-width: 600px) {",
-          "  [data-theme-studio-layout] {",
-          "    gap: 4px !important;",
-          "  }",
-          "}",
-        ].join("\n");
-        this._syncEffectControls();
-        this._finishSettingsChange();
       });
 
     this.shadowRoot
@@ -10598,6 +10525,10 @@ class ThemeStudioPanel extends HTMLElement {
     this.settings.effects.expertRules = Array.isArray(
       this.settings.effects.expertRules
     ) ? this.settings.effects.expertRules : [];
+    const hasLegacyCss = expertCssEnabled
+      || Boolean((this.settings.effects.expertCss || "").trim())
+      || this.settings.effects.expertRules.length > 0;
+    this.shadowRoot.getElementById("legacy-css-panel").hidden = !hasLegacyCss;
     this._renderExpertRules();
     this._syncLegacyPositionNotice();
     this._syncExpertRuleTargetForm();
@@ -10747,8 +10678,12 @@ class ThemeStudioPanel extends HTMLElement {
       (candidate) => candidate.id === rule.id
     );
 
-    if (existingIndex < 0 && rules.length >= 64) {
-      this._setStatus("Es können höchstens 64 CSS-Regeln gespeichert werden.", "error");
+    if (existingIndex < 0) {
+      this._setStatus(
+        "Neue CSS-Regeln werden in Version 0.9 nicht mehr angelegt.",
+        "error"
+      );
+      this._resetExpertRuleForm();
       return;
     }
 
@@ -10758,9 +10693,6 @@ class ThemeStudioPanel extends HTMLElement {
       rule.enabled = rules[existingIndex].enabled;
       rules.splice(existingIndex, 1, rule);
       this._setStatus("CSS-Regel aktualisiert. Bitte Design anwenden.", "success");
-    } else {
-      rules.push(rule);
-      this._setStatus("CSS-Regel hinzugefügt. Bitte Design anwenden.", "success");
     }
 
     this._resetExpertRuleForm();
@@ -10792,19 +10724,6 @@ class ThemeStudioPanel extends HTMLElement {
       if (this.editingExpertRuleId === ruleId) {
         this._resetExpertRuleForm();
       }
-    } else if (action === "duplicate") {
-      if (rules.length >= 64) {
-        this._setStatus("Es können höchstens 64 CSS-Regeln gespeichert werden.", "error");
-        return;
-      }
-      this._recordHistory();
-      rules.splice(index + 1, 0, {
-        ...this._cloneSettings(rule),
-        id: this._newExpertRuleId(),
-        name: `${rule.name} Kopie`.slice(0, 48),
-        offsetX: null,
-        offsetY: null,
-      });
     } else if (action === "toggle") {
       this._recordHistory();
       rule.enabled = !rule.enabled;
@@ -10876,7 +10795,7 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     this.shadowRoot.getElementById("expert-rule-save").textContent =
-      "Regel hinzufügen";
+      "Regel speichern";
     this.shadowRoot.getElementById("expert-rule-cancel").hidden = true;
     this._syncExpertRuleTargetForm();
     this._setExpertRuleBuilderOpen(false);
@@ -10884,11 +10803,7 @@ class ThemeStudioPanel extends HTMLElement {
 
   _setExpertRuleBuilderOpen(open) {
     const builder = this.shadowRoot.getElementById("expert-rule-builder");
-    const createButton = this.shadowRoot.getElementById("expert-rule-create");
-
     builder.hidden = !open;
-    createButton.hidden = open;
-    createButton.setAttribute("aria-expanded", String(open));
   }
 
   _syncExpertRuleTargetForm() {
@@ -10982,7 +10897,6 @@ class ThemeStudioPanel extends HTMLElement {
         <div class="expert-rule-actions">
           <button type="button" data-rule-action="toggle" data-rule-id="${rule.id}" title="${rule.enabled ? "Regel deaktivieren" : "Regel aktivieren"}" aria-label="${rule.enabled ? "Regel deaktivieren" : "Regel aktivieren"}">${rule.enabled ? "✓" : "○"}</button>
           <button type="button" data-rule-action="edit" data-rule-id="${rule.id}" title="Regel bearbeiten" aria-label="Regel bearbeiten">✎</button>
-          <button type="button" data-rule-action="duplicate" data-rule-id="${rule.id}" title="Regel duplizieren" aria-label="Regel duplizieren">⧉</button>
           <button type="button" data-rule-action="delete" data-rule-id="${rule.id}" title="Regel löschen" aria-label="Regel löschen">×</button>
         </div>
       </div>
