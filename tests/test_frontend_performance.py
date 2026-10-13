@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.14";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.14";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.15";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.15";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -560,6 +560,8 @@ def test_dashboard_background_reuses_texture_gallery_without_changing_cards() ->
     assert '"--preview-background-size",\n      "cover"' in panel_source
     assert '"--preview-background-repeat",\n      "no-repeat"' in panel_source
     assert "/theme_studio_files/background-textures/" in panel_source
+    assert "/theme_studio_files/background-texture-thumbnails/" in panel_source
+    assert 'pendingBackgroundTexturePath.split("?", 1)[0]' in panel_source
 
 
 def test_bundled_card_textures_are_complete_and_lightweight() -> None:
@@ -580,8 +582,8 @@ def test_bundled_card_textures_are_complete_and_lightweight() -> None:
         assert len(list(texture_dir.glob(f"{category}-*.webp"))) == 10
 
 
-def test_dashboard_textures_use_large_originals() -> None:
-    """Dashboard materials are large images and never enlarged tiles."""
+def test_dashboard_textures_use_high_resolution_assets() -> None:
+    """Dashboard materials remain practical despite their 4K resolution."""
 
     texture_dir = (
         Path(__file__).parents[1]
@@ -593,9 +595,24 @@ def test_dashboard_textures_use_large_originals() -> None:
     textures = sorted(texture_dir.glob("*.webp"))
 
     assert len(textures) == 40
-    assert sum(path.stat().st_size for path in textures) < 10_000_000
+    assert sum(path.stat().st_size for path in textures) < 30_000_000
+    for path in textures:
+        header = path.read_bytes()[:32]
+        frame_start = header.index(b"\x9d\x01\x2a") + 3
+        width = int.from_bytes(
+            header[frame_start:frame_start + 2], "little"
+        ) & 0x3FFF
+        height = int.from_bytes(
+            header[frame_start + 2:frame_start + 4], "little"
+        ) & 0x3FFF
+        assert (width, height) == (3840, 2160)
     for category in ("carbon", "metal", "wood", "abstract"):
         assert len(list(texture_dir.glob(f"{category}-*.webp"))) == 10
+
+    thumbnail_dir = texture_dir.parent / "background-texture-thumbnails"
+    thumbnails = sorted(thumbnail_dir.glob("*.webp"))
+    assert len(thumbnails) == 40
+    assert sum(path.stat().st_size for path in thumbnails) < 1_500_000
 
 
 def test_local_card_design_badge_is_limited_to_dashboard_edit_mode() -> None:

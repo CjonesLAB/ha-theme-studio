@@ -1,10 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.14";
+} from "./theme-studio-locales.js?v=0.10.0-beta.15";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.14";
+} from "./theme-studio-effects.js?v=0.10.0-beta.15";
+
+const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.15";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -727,9 +729,12 @@ class ThemeStudioPanel extends HTMLElement {
     ).join("");
     const cards = CARD_TEXTURE_LIBRARY.flatMap((category) =>
       category.items.map(([label, filename]) => {
-        const previewPath = `/theme_studio_files/textures/${filename}`;
+        const previewPath =
+          `/theme_studio_files/background-texture-thumbnails/${filename}`
+          + `?v=${BUNDLED_TEXTURE_VERSION}`;
         const backgroundPath =
-          `/theme_studio_files/background-textures/${filename}`;
+          `/theme_studio_files/background-textures/${filename}`
+          + `?v=${BUNDLED_TEXTURE_VERSION}`;
         return `
           <button type="button" class="background-texture-card" data-texture-category="${category.id}" data-texture-path="${backgroundPath}"${category.id === "carbon" ? "" : " hidden"}>
             <img alt="" data-texture-src="${previewPath}" loading="lazy" decoding="async">
@@ -11308,14 +11313,18 @@ class ThemeStudioPanel extends HTMLElement {
 
   _openBackgroundTextureGallery(returnFocus) {
     this.backgroundTextureReturnFocus = returnFocus || null;
-    this.pendingBackgroundTexturePath = this.profile.background === "texture"
-      ? this.profile.backgroundImage.replace(
-        "/theme_studio_files/textures/",
-        "/theme_studio_files/background-textures/"
-      ) : "";
+    const currentTextureFilename = this.profile.background === "texture"
+      ? this.profile.backgroundImage.split("?", 1)[0].split("/").pop()
+      : "";
+    this.pendingBackgroundTexturePath = currentTextureFilename
+      ? `/theme_studio_files/background-textures/${currentTextureFilename}`
+        + `?v=${BUNDLED_TEXTURE_VERSION}`
+      : "";
+    const pendingTextureAssetPath =
+      this.pendingBackgroundTexturePath.split("?", 1)[0];
     const category = CARD_TEXTURE_LIBRARY.find((entry) =>
       entry.items.some(([, filename]) =>
-        this.pendingBackgroundTexturePath.endsWith(`/${filename}`)
+        pendingTextureAssetPath.endsWith(`/${filename}`)
       )
     );
     if (category) this.backgroundTextureCategory = category.id;

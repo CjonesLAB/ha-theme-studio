@@ -246,7 +246,8 @@ BACKGROUND_URL_VALIDATOR = vol.Any(
     ),
     vol.Match(
         r"^/theme_studio_files/background-textures/"
-        r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp$"
+        r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp"
+        r"(\?v=[0-9A-Za-z.-]+)?$"
     ),
 )
 
@@ -722,6 +723,23 @@ def normalize_recovery_state(
     }
 
 
+def normalize_bundled_dashboard_texture_url(value: str) -> str:
+    """Return the current cache-busted URL for a bundled dashboard texture."""
+
+    if value.startswith("/theme_studio_files/textures/"):
+        value = value.replace(
+            "/theme_studio_files/textures/",
+            "/theme_studio_files/background-textures/",
+            1,
+        )
+
+    if value.startswith("/theme_studio_files/background-textures/"):
+        value = value.split("?", 1)[0]
+        return f"{value}?v={VERSION}"
+
+    return value
+
+
 def normalize_profile(
     profile: dict[str, Any],
     defaults: dict[str, Any],
@@ -736,18 +754,11 @@ def normalize_profile(
 
     normalized = PROFILE_SCHEMA(normalized)
 
-    if (
-        normalized["background"] == "texture"
-        and normalized["backgroundImage"].startswith(
-            "/theme_studio_files/textures/"
-        )
-    ):
-        normalized["backgroundImage"] = normalized[
-            "backgroundImage"
-        ].replace(
-            "/theme_studio_files/textures/",
-            "/theme_studio_files/background-textures/",
-            1,
+    if normalized["background"] == "texture":
+        normalized["backgroundImage"] = (
+            normalize_bundled_dashboard_texture_url(
+                normalized["backgroundImage"]
+            )
         )
 
     if normalized["liquidGlass"]:
@@ -2907,18 +2918,11 @@ def sanitize_gallery_settings(
         if profile.get("background") == "image":
             profile["background"] = "color"
             profile["backgroundImage"] = ""
-        elif (
-            profile.get("background") == "texture"
-            and str(profile.get("backgroundImage", "")).startswith(
-                "/theme_studio_files/textures/"
-            )
-        ):
-            profile["backgroundImage"] = str(
-                profile["backgroundImage"]
-            ).replace(
-                "/theme_studio_files/textures/",
-                "/theme_studio_files/background-textures/",
-                1,
+        elif profile.get("background") == "texture":
+            profile["backgroundImage"] = (
+                normalize_bundled_dashboard_texture_url(
+                    str(profile.get("backgroundImage", ""))
+                )
             )
         elif str(profile.get("backgroundImage", "")).startswith("/local/"):
             profile["background"] = "color"

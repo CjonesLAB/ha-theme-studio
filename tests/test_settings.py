@@ -308,10 +308,12 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
 
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
-        "/theme_studio_files/background-textures/wood-01-walnut.webp"
+        "/theme_studio_files/background-textures/"
+        "wood-01-walnut.webp?v=0.10.0-beta.15"
     )
     assert (
-        'url("/theme_studio_files/background-textures/wood-01-walnut.webp")'
+        'url("/theme_studio_files/background-textures/'
+        'wood-01-walnut.webp?v=0.10.0-beta.15")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
