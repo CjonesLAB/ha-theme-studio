@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.7";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.8";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -108,6 +108,7 @@ class ThemeStudioEffects {
     this.expertCss = DEFAULT_EXPERT_CSS;
     this.expertStyleElements = new Set();
     this.expertCards = new Set();
+    this.cardDesignBadgeCards = new Set();
     this.expertCardTargetsByCard = new WeakMap();
     this.expertCardKeyByCard = new WeakMap();
     this.expertLayouts = new Set();
@@ -1473,6 +1474,8 @@ class ThemeStudioEffects {
     const currentExpertLayouts = new Set();
     const currentExpertRoots = new Set();
     const currentLocalTechFrames = new Set();
+    const currentCardDesignBadgeCards = new Set();
+    const dashboardEditMode = this._isHomeAssistantDashboardEditMode();
 
     this._visitElements(document, (element) => {
       if (this.expertCssEnabled || this.dashboardEditorActive) {
@@ -1555,6 +1558,12 @@ class ThemeStudioEffects {
 
       this._restoreLiquidGlassHeading(element);
       if (this._hasLocalCardDesign(element)) {
+        if (dashboardEditMode) {
+          this._syncLocalCardDesignBadge(element);
+          currentCardDesignBadgeCards.add(element);
+        } else {
+          this._removeLocalCardDesignBadge(element);
+        }
         this._restoreLiquidGlassCard(element);
         this._restoreTechFrameCard(element);
         if (this._localCardDesignStyle(element) === "tech-frame") {
@@ -1565,6 +1574,7 @@ class ThemeStudioEffects {
         }
         return;
       }
+      this._removeLocalCardDesignBadge(element);
       this._restoreLocalTechFrameOutline(element);
       currentCards.add(element);
 
@@ -1658,6 +1668,13 @@ class ThemeStudioEffects {
       }
     }
     this.localTechFrameCards = currentLocalTechFrames;
+
+    for (const card of this.cardDesignBadgeCards) {
+      if (!currentCardDesignBadgeCards.has(card) || !card.isConnected) {
+        this._removeLocalCardDesignBadge(card);
+      }
+    }
+    this.cardDesignBadgeCards = currentCardDesignBadgeCards;
   }
 
   _hasLocalCardDesign(card) {
@@ -1678,6 +1695,73 @@ class ThemeStudioEffects {
     } catch (_error) {
       return "";
     }
+  }
+
+  _syncLocalCardDesignBadge(card) {
+    let badge = card.querySelector?.(
+      ":scope > span[data-theme-studio-card-design-badge]"
+    );
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.setAttribute("data-theme-studio-card-design-badge", "");
+      badge.setAttribute("role", "img");
+      const icon = document.createElement("ha-icon");
+      icon.setAttribute("icon", "mdi:palette-swatch");
+      badge.appendChild(icon);
+      Object.assign(badge.style, {
+        position: "absolute",
+        top: "5px",
+        right: "5px",
+        zIndex: "20",
+        display: "inline-flex",
+        width: "24px",
+        height: "24px",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "1px solid color-mix(in srgb, var(--primary-color) 70%, white)",
+        borderRadius: "50%",
+        color: "var(--text-primary-color, #fff)",
+        background: "var(--primary-color, #26b2b3)",
+        boxShadow: "0 2px 8px rgba(0,0,0,.35)",
+        pointerEvents: "none",
+      });
+      icon.style.setProperty("--mdc-icon-size", "15px");
+      card.appendChild(badge);
+    }
+    const label = this._localCardDesignBadgeLabel();
+    badge.setAttribute("aria-label", label);
+    badge.title = label;
+    badge.style.top = this._localCardDesignStyle(card) === "tech-frame"
+      ? "14px" : "5px";
+    this.cardDesignBadgeCards.add(card);
+  }
+
+  _localCardDesignBadgeLabel() {
+    const language = String(
+      this._getHass()?.language || navigator.language || "de"
+    ).split("-", 1)[0].toLowerCase();
+    return {
+      de: "Individuell mit Theme Studio gestaltet",
+      en: "Individually styled with Theme Studio",
+      fr: "Personnalisée avec Theme Studio",
+      es: "Personalizada con Theme Studio",
+    }[language] || "Individually styled with Theme Studio";
+  }
+
+  _removeLocalCardDesignBadge(card) {
+    for (const badge of card?.querySelectorAll?.(
+      ":scope > span[data-theme-studio-card-design-badge]"
+    ) || []) {
+      badge.remove();
+    }
+    this.cardDesignBadgeCards.delete(card);
+  }
+
+  _clearLocalCardDesignBadges() {
+    for (const card of Array.from(this.cardDesignBadgeCards)) {
+      this._removeLocalCardDesignBadge(card);
+    }
+    this.cardDesignBadgeCards.clear();
   }
 
   _isOverlayScrimElement(element) {
@@ -3510,6 +3594,7 @@ class ThemeStudioEffects {
   }
 
   _clearExpertCss() {
+    this._clearLocalCardDesignBadges();
     for (const style of this.expertStyleElements) {
       style.remove();
     }

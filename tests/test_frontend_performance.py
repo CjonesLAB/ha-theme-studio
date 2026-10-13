@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.7";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.7";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.8";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.8";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -515,6 +515,23 @@ def test_native_card_design_image_uses_native_file_label() -> None:
     assert 'class="tsd-file-input" type="file"' in effects_source
     assert 'addEventListener("click", () => fileInput.click())' not in effects_source
     assert 'fileInput.addEventListener("change"' in effects_source
+
+
+def test_local_card_design_badge_is_limited_to_dashboard_edit_mode() -> None:
+    """Saved card overrides are recognizable while editing, not in normal use."""
+
+    effects_source = _effects_source()
+
+    assert "const dashboardEditMode = this._isHomeAssistantDashboardEditMode();" in effects_source
+    assert "if (dashboardEditMode)" in effects_source
+    assert 'data-theme-studio-card-design-badge' in effects_source
+    assert 'icon.setAttribute("icon", "mdi:palette-swatch")' in effects_source
+    assert "Individuell mit Theme Studio gestaltet" in effects_source
+    assert "Individually styled with Theme Studio" in effects_source
+    assert "Personnalisée avec Theme Studio" in effects_source
+    assert "Personalizada con Theme Studio" in effects_source
+    assert "pointerEvents: \"none\"" in effects_source
+    assert "_clearLocalCardDesignBadges();" in effects_source
 
 
 def test_liquid_glass_excludes_overlay_dialogs() -> None:
