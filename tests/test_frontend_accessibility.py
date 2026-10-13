@@ -202,7 +202,10 @@ def test_direct_card_mode_is_retired_without_deleting_legacy_rules() -> None:
 
     assert "const DIRECT_CARD_EDITOR_ENABLED = false;" in effects_source
     assert "if (DIRECT_CARD_EDITOR_ENABLED) {\n      this._createDashboardToolbarButton();" in effects_source
-    assert "if (DIRECT_CARD_EDITOR_ENABLED) {\n      document.addEventListener(" in effects_source
+    assert (
+        "if (DIRECT_CARD_EDITOR_ENABLED || NATIVE_CARD_DESIGN_EDITOR_ENABLED) {\n"
+        "      document.addEventListener(" in effects_source
+    )
     assert "return DIRECT_CARD_EDITOR_ENABLED" in effects_source
     assert "window.sessionStorage.removeItem(DASHBOARD_EDITOR_STORAGE_KEY);" in effects_source
     assert "if (!DIRECT_CARD_EDITOR_ENABLED) {\n      this._stopDashboardEditor(false);" in effects_source

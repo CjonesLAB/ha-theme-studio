@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.8";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.8";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.9";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.9";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -491,8 +491,10 @@ def test_native_card_design_reuses_home_assistant_preview() -> None:
     assert 'class="tsd-save"' in effects_source
     assert "nativeCardDesignSaveHandler" not in effects_source
     assert 'key !== "theme_studio_id"' in effects_source
-    assert "_hasLocalCardDesign(element)" in effects_source
-    assert 'getPropertyValue("--theme-studio-local-card-design")' in effects_source
+    assert "_parseLocalCardDesignStyles" in effects_source
+    assert "this.localCardDesignStyles = new Map();" in effects_source
+    assert 'getPropertyValue("--theme-studio-local-card-design")' not in effects_source
+    assert 'getPropertyValue("--theme-studio-local-card-style")' not in effects_source
     assert "Theme-Studio-Design speichern &amp; anwenden" in effects_source
     assert ".tsd-actions{position:sticky" in effects_source
     assert "Speichern“ unten rechts gehört nur zum Karteninhalt" in effects_source
@@ -504,6 +506,7 @@ def test_native_card_design_reuses_home_assistant_preview() -> None:
     assert 'set("border", "0")' in effects_source
     assert "calc(100% - 48px) 0,calc(100% - 36px) 10px" in effects_source
     assert "26px 100%,12px calc(100% - 10px)" in effects_source
+    assert "&& !node.contains?.(tabGroup)" in effects_source
 
 
 def test_native_card_design_image_uses_native_file_label() -> None:
@@ -532,6 +535,9 @@ def test_local_card_design_badge_is_limited_to_dashboard_edit_mode() -> None:
     assert "Personalizada con Theme Studio" in effects_source
     assert "pointerEvents: \"none\"" in effects_source
     assert "_clearLocalCardDesignBadges();" in effects_source
+    assert "DIRECT_CARD_EDITOR_ENABLED || NATIVE_CARD_DESIGN_EDITOR_ENABLED" in effects_source
+    assert "for (const delay of [80, 240, 600])" in effects_source
+    assert "this._syncLiquidGlassCards(true);" in effects_source
 
 
 def test_liquid_glass_excludes_overlay_dialogs() -> None:

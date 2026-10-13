@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.8";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.9";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -108,6 +108,7 @@ class ThemeStudioEffects {
     this.expertCss = DEFAULT_EXPERT_CSS;
     this.expertStyleElements = new Set();
     this.expertCards = new Set();
+    this.localCardDesignStyles = new Map();
     this.cardDesignBadgeCards = new Set();
     this.expertCardTargetsByCard = new WeakMap();
     this.expertCardKeyByCard = new WeakMap();
@@ -216,6 +217,8 @@ class ThemeStudioEffects {
     this.locationChangedEventHandler = () => {
       this.stateSnapshot.clear();
       this._invalidateCardIndex();
+      this.dashboardEditModeActive = false;
+      this.dashboardEditModeCheckedAt = 0;
       this.glassLastScan = 0;
       this._readThemeSettings();
       this._startStartupSync();
@@ -243,10 +246,12 @@ class ThemeStudioEffects {
       }
       if (this._isDashboardEditModeToggle(event)) {
         this.dashboardEditModeCheckedAt = 0;
-        for (const delay of [60, 180]) {
+        for (const delay of [80, 240, 600]) {
           const timeoutId = window.setTimeout(() => {
             this.dashboardMenuSyncTimeoutIds.delete(timeoutId);
             this.dashboardEditModeCheckedAt = 0;
+            this.glassLastScan = 0;
+            this._syncLiquidGlassCards(true);
             this._syncDashboardToolbarButton();
           }, delay);
           this.dashboardMenuSyncTimeoutIds.add(timeoutId);
@@ -342,7 +347,7 @@ class ThemeStudioEffects {
       "visibilitychange",
       this.visibilityEventHandler
     );
-    if (DIRECT_CARD_EDITOR_ENABLED) {
+    if (DIRECT_CARD_EDITOR_ENABLED || NATIVE_CARD_DESIGN_EDITOR_ENABLED) {
       document.addEventListener(
         "click",
         this.dashboardMenuEventHandler,
@@ -1284,6 +1289,9 @@ class ThemeStudioEffects {
     this.overlayBackground = requestedOverlayBackground;
     this.expertCssEnabled = nextExpertCssEnabled;
     this.expertCss = requestedExpertCss;
+    this.localCardDesignStyles = this._parseLocalCardDesignStyles(
+      requestedExpertCss
+    );
     this.effectsExcludedForConfig =
       effectsExcludedForConfig;
     this.stateSnapshot.clear();
@@ -1557,16 +1565,17 @@ class ThemeStudioEffects {
       }
 
       this._restoreLiquidGlassHeading(element);
-      if (this._hasLocalCardDesign(element)) {
+      const localCardStyle = this._localCardDesignStyle(element);
+      if (localCardStyle) {
         if (dashboardEditMode) {
-          this._syncLocalCardDesignBadge(element);
+          this._syncLocalCardDesignBadge(element, localCardStyle);
           currentCardDesignBadgeCards.add(element);
         } else {
           this._removeLocalCardDesignBadge(element);
         }
         this._restoreLiquidGlassCard(element);
         this._restoreTechFrameCard(element);
-        if (this._localCardDesignStyle(element) === "tech-frame") {
+        if (localCardStyle === "tech-frame") {
           currentLocalTechFrames.add(element);
           this._styleLocalTechFrameOutline(element);
         } else {
@@ -1677,27 +1686,32 @@ class ThemeStudioEffects {
     this.cardDesignBadgeCards = currentCardDesignBadgeCards;
   }
 
-  _hasLocalCardDesign(card) {
-    try {
-      return getComputedStyle(card)
-        .getPropertyValue("--theme-studio-local-card-design")
-        .trim() === "1";
-    } catch (_error) {
-      return false;
-    }
-  }
-
   _localCardDesignStyle(card) {
-    try {
-      return getComputedStyle(card)
-        .getPropertyValue("--theme-studio-local-card-style")
-        .trim();
-    } catch (_error) {
-      return "";
+    const cardKey = card.getAttribute?.("data-theme-studio-card-key");
+    if (cardKey) {
+      const style = this.localCardDesignStyles.get(`card-key:${cardKey}`);
+      if (style) return style;
     }
+    const legacyId = card.getAttribute?.("data-theme-studio-id");
+    return legacyId
+      ? this.localCardDesignStyles.get(`id:${legacyId}`) || ""
+      : "";
   }
 
-  _syncLocalCardDesignBadge(card) {
+  _parseLocalCardDesignStyles(css) {
+    const styles = new Map();
+    const blocks = /ha-card\[data-theme-studio-(card-key|id)="([^"]+)"\]\s*\{([^}]*)\}/g;
+    for (const match of String(css || "").matchAll(blocks)) {
+      if (!/--theme-studio-local-card-design:\s*1\b/.test(match[3])) continue;
+      const style = match[3].match(
+        /--theme-studio-local-card-style:\s*(standard|glass|tech-frame)\b/
+      )?.[1];
+      if (style) styles.set(`${match[1]}:${match[2]}`, style);
+    }
+    return styles;
+  }
+
+  _syncLocalCardDesignBadge(card, localCardStyle) {
     let badge = card.querySelector?.(
       ":scope > span[data-theme-studio-card-design-badge]"
     );
@@ -1731,7 +1745,7 @@ class ThemeStudioEffects {
     const label = this._localCardDesignBadgeLabel();
     badge.setAttribute("aria-label", label);
     badge.title = label;
-    badge.style.top = this._localCardDesignStyle(card) === "tech-frame"
+    badge.style.top = localCardStyle === "tech-frame"
       ? "14px" : "5px";
     this.cardDesignBadgeCards.add(card);
   }
@@ -4741,7 +4755,10 @@ class ThemeStudioEffects {
     tabGroup.appendChild(tab);
     root.appendChild(panel);
     state.nativeNodes = Array.from(root.children).filter((node) =>
-      node !== tabGroup && node !== panel && node.localName !== "style"
+      node !== tabGroup
+      && node !== panel
+      && node.localName !== "style"
+      && !node.contains?.(tabGroup)
     );
 
     tab.addEventListener("click", (event) => {
