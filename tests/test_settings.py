@@ -20,6 +20,7 @@ from custom_components.theme_studio.websocket import (
     recovery_state_from_settings,
     sanitize_gallery_settings,
     build_mode_values,
+    build_card_designs_css,
     build_expert_rules_css,
     build_theme_file,
     normalize_effects,
@@ -176,6 +177,63 @@ def test_expert_css_is_base64_encoded_in_theme_file() -> None:
     assert 'theme-studio-expert-css-enabled: "1"' in theme
     assert f'theme-studio-expert-css-b64: "{encoded}"' in theme
     assert css not in theme
+
+
+def _card_design(**changes: object) -> dict[str, object]:
+    design: dict[str, object] = {
+        "id": "abcdef012345",
+        "target": "ts_living_room",
+        "enabled": True,
+        "style": "glass",
+        "backgroundType": "waves",
+        "backgroundColor": "#24333d",
+        "backgroundImage": "",
+        "backgroundOpacity": 72,
+        "backgroundDarkening": 20,
+        "textColor": "#ffffff",
+        "iconColor": "#26b2b3",
+    }
+    design.update(changes)
+    return design
+
+
+def test_card_designs_are_scoped_and_enable_generated_css() -> None:
+    """One card override is generated independently of expert mode."""
+
+    settings = default_settings()
+    settings["effects"]["cardDesigns"] = [_card_design()]
+    normalized = normalize_settings(settings)
+    css = build_card_designs_css(normalized["effects"]["cardDesigns"])
+    theme = build_theme_file(normalized)
+
+    assert 'ha-card[data-theme-studio-id="ts_living_room"]' in css
+    assert "backdrop-filter: blur(18px)" in css
+    assert "radial-gradient" in css
+    assert "--primary-text-color: #ffffff" in css
+    assert 'theme-studio-expert-css-enabled: "1"' in theme
+
+
+def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:
+    """Card-local settings remain unique and cannot load remote content."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["cardDesigns"] = [
+        _card_design(),
+        _card_design(id="123456789abc"),
+    ]
+    with pytest.raises(vol.Invalid):
+        normalize_effects(effects)
+
+    effects["cardDesigns"] = [
+        _card_design(
+            id="123456789abc",
+            target="ts_other",
+            backgroundType="image",
+            backgroundImage="https://example.com/card.jpg",
+        )
+    ]
+    with pytest.raises(vol.Invalid):
+        normalize_effects(effects)
 
 
 @pytest.mark.parametrize(

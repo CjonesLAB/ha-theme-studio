@@ -1,8 +1,8 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.9.0";
-import "./theme-studio-effects.js?v=0.9.0";
+} from "./theme-studio-locales.js?v=0.10.0-beta.1";
+import "./theme-studio-effects.js?v=0.10.0-beta.1";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -614,6 +614,7 @@ class ThemeStudioPanel extends HTMLElement {
         alertBatteryLow: 20,
         expertCssEnabled: false,
         expertRules: [],
+        cardDesigns: [],
         expertCss: "",
       },
     };
@@ -10525,6 +10526,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.settings.effects.expertRules = Array.isArray(
       this.settings.effects.expertRules
     ) ? this.settings.effects.expertRules : [];
+    this.settings.effects.cardDesigns = Array.isArray(
+      this.settings.effects.cardDesigns
+    ) ? this.settings.effects.cardDesigns : [];
     const hasLegacyCss = expertCssEnabled
       || Boolean((this.settings.effects.expertCss || "").trim())
       || this.settings.effects.expertRules.length > 0;

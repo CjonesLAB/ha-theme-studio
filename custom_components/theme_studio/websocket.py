@@ -140,6 +140,7 @@ DEFAULT_EFFECT_SETTINGS: dict[str, Any] = {
     "alertBatteryLow": 20,
     "expertCssEnabled": False,
     "expertRules": [],
+    "cardDesigns": [],
     "expertCss": "",
 }
 
@@ -244,6 +245,31 @@ BACKGROUND_URL_VALIDATOR = vol.Any(
 BACKGROUND_FILENAME_VALIDATOR = vol.Match(
     r"^(background|background_light|background_dark|image_[a-f0-9]{32})"
     r"\.(jpg|png|webp)$"
+)
+
+CARD_DESIGN_SCHEMA = vol.Schema(
+    {
+        vol.Required("id"): vol.Match(r"^[a-f0-9]{12}$"),
+        vol.Required("target"): vol.Match(r"^[a-zA-Z0-9_-]{1,64}$"),
+        vol.Required("enabled"): bool,
+        vol.Required("style"): vol.In(
+            ("inherit", "standard", "glass", "tech-frame")
+        ),
+        vol.Required("backgroundType"): vol.In(
+            ("inherit", "color", "dots", "waves", "grid", "image")
+        ),
+        vol.Required("backgroundColor"): vol.Any("", COLOR_VALIDATOR),
+        vol.Required("backgroundImage"): BACKGROUND_URL_VALIDATOR,
+        vol.Required("backgroundOpacity"): vol.All(
+            vol.Coerce(int), vol.Range(min=0, max=100)
+        ),
+        vol.Required("backgroundDarkening"): vol.All(
+            vol.Coerce(int), vol.Range(min=0, max=80)
+        ),
+        vol.Required("textColor"): vol.Any("", COLOR_VALIDATOR),
+        vol.Required("iconColor"): vol.Any("", COLOR_VALIDATOR),
+    },
+    extra=vol.PREVENT_EXTRA,
 )
 
 PROFILE_SCHEMA = vol.Schema(
@@ -391,6 +417,10 @@ EFFECT_SCHEMA = vol.Schema(
         vol.Required("expertCssEnabled"): bool,
         vol.Required("expertRules"): vol.All(
             [EXPERT_RULE_SCHEMA],
+            vol.Length(max=64),
+        ),
+        vol.Required("cardDesigns"): vol.All(
+            [CARD_DESIGN_SCHEMA],
             vol.Length(max=64),
         ),
         vol.Required("expertCss"): validate_expert_css,
@@ -813,6 +843,16 @@ def normalize_effects(
 
         if rule["targetType"] in ("all", "layout") and rule["target"]:
             raise vol.Invalid("Diese Regelart benötigt kein Ziel.")
+
+    design_ids: set[str] = set()
+    design_targets: set[str] = set()
+    for design in validated["cardDesigns"]:
+        if design["id"] in design_ids:
+            raise vol.Invalid("Einzelkarten-Design-IDs müssen eindeutig sein.")
+        if design["target"] in design_targets:
+            raise vol.Invalid("Für eine Karte ist nur ein Einzelkarten-Design erlaubt.")
+        design_ids.add(design["id"])
+        design_targets.add(design["target"])
 
     return validated
 
@@ -1669,6 +1709,115 @@ def build_expert_rules_css(rules: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
+def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
+    """Build card-local design overrides without changing the global theme."""
+
+    blocks: list[str] = []
+    for design in designs:
+        if not design["enabled"]:
+            continue
+
+        selector = (
+            'ha-card[data-theme-studio-id="'
+            f'{design["target"]}"]'
+        )
+        declarations: list[str] = [
+            "position: relative !important;",
+            "isolation: isolate !important;",
+        ]
+
+        if design["textColor"]:
+            declarations.extend(
+                (
+                    f'--primary-text-color: {design["textColor"]} !important;',
+                    f'--secondary-text-color: {design["textColor"]} !important;',
+                )
+            )
+        if design["iconColor"]:
+            declarations.extend(
+                (
+                    f'--state-icon-color: {design["iconColor"]} !important;',
+                    f'--paper-item-icon-color: {design["iconColor"]} !important;',
+                )
+            )
+
+        style = design["style"]
+        if style == "standard":
+            declarations.extend(
+                (
+                    "clip-path: none !important;",
+                    "backdrop-filter: none !important;",
+                    "-webkit-backdrop-filter: none !important;",
+                )
+            )
+        elif style == "glass":
+            declarations.extend(
+                (
+                    "clip-path: none !important;",
+                    "backdrop-filter: blur(18px) saturate(145%) !important;",
+                    "-webkit-backdrop-filter: blur(18px) saturate(145%) !important;",
+                    "border: 1px solid rgba(255,255,255,.55) !important;",
+                    "box-shadow: 0 12px 30px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.4) !important;",
+                )
+            )
+        elif style == "tech-frame":
+            declarations.extend(
+                (
+                    "clip-path: polygon(18px 0, calc(100% - 42px) 0, calc(100% - 28px) 14px, 100% 14px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px) !important;",
+                    "border: 2px solid var(--primary-color) !important;",
+                    "box-shadow: 0 0 24px color-mix(in srgb, var(--primary-color) 42%, transparent) !important;",
+                )
+            )
+
+        background_type = design["backgroundType"]
+        background_color = design["backgroundColor"] or "var(--ha-card-background)"
+        opacity = design["backgroundOpacity"]
+        darkening = design["backgroundDarkening"] / 100
+        if background_type == "color":
+            declarations.append(
+                f"background: color-mix(in srgb, {background_color} {opacity}%, transparent) !important;"
+            )
+        elif background_type == "dots":
+            declarations.extend(
+                (
+                    f"background-color: color-mix(in srgb, {background_color} {opacity}%, transparent) !important;",
+                    "background-image: radial-gradient(circle, color-mix(in srgb, var(--primary-color) 55%, transparent) 1.5px, transparent 1.6px) !important;",
+                    "background-size: 18px 18px !important;",
+                )
+            )
+        elif background_type == "waves":
+            declarations.extend(
+                (
+                    f"background-color: color-mix(in srgb, {background_color} {opacity}%, transparent) !important;",
+                    "background-image: radial-gradient(ellipse at 15% 15%, color-mix(in srgb, var(--primary-color) 35%, transparent), transparent 52%), radial-gradient(ellipse at 85% 80%, rgba(72,120,255,.26), transparent 55%) !important;",
+                    "background-size: cover !important;",
+                )
+            )
+        elif background_type == "grid":
+            declarations.extend(
+                (
+                    f"background-color: color-mix(in srgb, {background_color} {opacity}%, transparent) !important;",
+                    "background-image: linear-gradient(color-mix(in srgb, var(--primary-color) 25%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 25%, transparent) 1px, transparent 1px) !important;",
+                    "background-size: 20px 20px !important;",
+                )
+            )
+        elif background_type == "image" and design["backgroundImage"]:
+            image_fade = 100 - opacity
+            declarations.extend(
+                (
+                    f'background-image: linear-gradient(rgba(0,0,0,{darkening:.2f}), rgba(0,0,0,{darkening:.2f})), linear-gradient(color-mix(in srgb, {background_color} {image_fade}%, transparent), color-mix(in srgb, {background_color} {image_fade}%, transparent)), url("{design["backgroundImage"]}") !important;',
+                    "background-position: center !important;",
+                    "background-repeat: no-repeat !important;",
+                    "background-size: cover !important;",
+                )
+            )
+
+        body = "\n".join(f"  {value}" for value in declarations)
+        blocks.append(f"{selector} {{\n{body}\n}}")
+
+    return "\n\n".join(blocks)
+
+
 def build_theme_file(
     settings: dict[str, Any],
     theme_name: str = THEME_NAME,
@@ -1678,8 +1827,13 @@ def build_theme_file(
     effects = settings["effects"]
 
     generated_expert_css = build_expert_rules_css(effects["expertRules"])
+    generated_card_css = build_card_designs_css(effects["cardDesigns"])
     expert_css = "\n\n".join(
-        part for part in (generated_expert_css, effects["expertCss"]) if part
+        part for part in (
+            generated_expert_css,
+            generated_card_css,
+            effects["expertCss"],
+        ) if part
     )
 
     effect_values = {
@@ -1723,7 +1877,7 @@ def build_theme_file(
             effects["alertBatteryLow"]
         ),
         "theme-studio-expert-css-enabled": (
-            "1" if effects["expertCssEnabled"] else "0"
+            "1" if effects["expertCssEnabled"] or effects["cardDesigns"] else "0"
         ),
         "theme-studio-expert-css-b64": base64.b64encode(
             expert_css.encode("utf-8")

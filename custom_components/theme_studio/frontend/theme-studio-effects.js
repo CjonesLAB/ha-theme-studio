@@ -1,6 +1,7 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.9.0";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.1";
 const DIRECT_CARD_EDITOR_ENABLED = false;
+const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
@@ -110,6 +111,8 @@ class ThemeStudioEffects {
     this.expertCardTargetsByCard = new WeakMap();
     this.expertCardKeyByCard = new WeakMap();
     this.expertLayouts = new Set();
+    this.nativeCardDesignEditors = new Map();
+    this.nativeCardDesignSaveBypass = false;
     this.dashboardEditorActive = false;
     this.dashboardEditorRoot = null;
     this.dashboardEditorHighlight = null;
@@ -246,6 +249,9 @@ class ThemeStudioEffects {
         }
       }
     };
+    this.nativeCardDesignSaveHandler = (event) => {
+      this._handleNativeCardDesignSave(event);
+    };
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
     this.themeComputedStyles = null;
@@ -293,6 +299,13 @@ class ThemeStudioEffects {
 
     if (DIRECT_CARD_EDITOR_ENABLED) {
       this._createDashboardToolbarButton();
+    }
+    if (NATIVE_CARD_DESIGN_EDITOR_ENABLED) {
+      document.addEventListener(
+        "click",
+        this.nativeCardDesignSaveHandler,
+        true
+      );
     }
 
     this.context = this.canvas.getContext(
@@ -1378,6 +1391,9 @@ class ThemeStudioEffects {
   }
 
   _checkCardStates() {
+    if (NATIVE_CARD_DESIGN_EDITOR_ENABLED) {
+      this._syncNativeCardDesignEditors();
+    }
     this._syncLiquidGlassCards();
 
     if (this.cardEffects.length === 0) {
@@ -4325,6 +4341,436 @@ class ThemeStudioEffects {
     } else {
       hide();
     }
+  }
+
+  _syncNativeCardDesignEditors() {
+    const found = new Set();
+
+    this._visitElements(document, (element) => {
+      if (element.localName !== "hui-card-element-editor" || !element.shadowRoot) {
+        return;
+      }
+      found.add(element);
+      if (!this.nativeCardDesignEditors.has(element)) {
+        this._decorateNativeCardDesignEditor(element);
+      }
+    });
+
+    for (const [editor, state] of this.nativeCardDesignEditors) {
+      if (!found.has(editor) || !editor.isConnected) {
+        state.panel?.remove();
+        state.tab?.remove();
+        this.nativeCardDesignEditors.delete(editor);
+      }
+    }
+  }
+
+  _nativeCardEditorConfig(editor) {
+    const candidates = [editor];
+    this._visitElements(editor.shadowRoot, (element) => candidates.push(element));
+
+    for (const candidate of candidates) {
+      for (const property of ["_config", "config", "value"]) {
+        try {
+          const value = candidate?.[property];
+          if (
+            value
+            && typeof value === "object"
+            && !Array.isArray(value)
+            && (
+              typeof value.type === "string"
+              || typeof value.entity === "string"
+              || Array.isArray(value.entities)
+            )
+          ) {
+            return { owner: candidate, config: value };
+          }
+        } catch (_error) {
+          // Guarded properties are ignored.
+        }
+      }
+    }
+
+    return { owner: editor, config: {} };
+  }
+
+  _newCardDesignId(prefix = "") {
+    const bytes = new Uint8Array(prefix ? 8 : 6);
+    globalThis.crypto?.getRandomValues?.(bytes);
+    const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+    return prefix ? `${prefix}${hex}`.slice(0, 32) : hex.slice(0, 12);
+  }
+
+  _defaultNativeCardDesign(target = "") {
+    return {
+      id: this._newCardDesignId(),
+      target,
+      enabled: false,
+      style: "inherit",
+      backgroundType: "inherit",
+      backgroundColor: "",
+      backgroundImage: "",
+      backgroundOpacity: 45,
+      backgroundDarkening: 20,
+      textColor: "",
+      iconColor: "",
+    };
+  }
+
+  _decorateNativeCardDesignEditor(editor) {
+    const root = editor.shadowRoot;
+    const tabGroup = root.querySelector("ha-tab-group");
+    const nativeTabs = Array.from(
+      root.querySelectorAll("ha-tab-group-tab, ha-tab, mwc-tab")
+    );
+    const sourceTab = nativeTabs.at(-1);
+
+    if (!tabGroup || !sourceTab) {
+      return;
+    }
+
+    const tab = sourceTab.cloneNode(true);
+    tab.textContent = "Design";
+    tab.setAttribute("slot", "nav");
+    tab.setAttribute("panel", "theme-studio-design");
+    tab.removeAttribute("selected");
+    tab.removeAttribute("active");
+    tab.removeAttribute("aria-selected");
+    tab.setAttribute("data-theme-studio-design-tab", "");
+
+    const panel = document.createElement("div");
+    panel.slot = "panel";
+    panel.setAttribute("panel", "theme-studio-design");
+    panel.setAttribute("data-theme-studio-card-design-panel", "");
+    panel.hidden = true;
+    panel.innerHTML = `
+      <style>
+        [data-theme-studio-card-design-panel]{box-sizing:border-box;padding:20px 24px 24px;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit);overflow:auto;max-height:min(68vh,760px)}
+        .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.9fr);gap:22px}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(4,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=dots]{background-image:radial-gradient(circle,var(--primary-color) 1px,transparent 1.2px)}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=grid]{background-image:linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-preview-wrap{position:sticky;top:0;align-self:start;padding:18px;border-radius:16px;background:var(--secondary-background-color);min-height:260px}.tsd-preview-label{font-size:12px;color:var(--secondary-text-color);margin-bottom:10px}.tsd-preview{position:relative;overflow:hidden;isolation:isolate;min-height:110px;padding:20px;border-radius:22px;background:var(--ha-card-background,var(--card-background-color));box-shadow:var(--ha-card-box-shadow);border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,var(--divider-color))}.tsd-preview>*{position:relative;z-index:1}.tsd-preview .title{font-size:18px;font-weight:700}.tsd-preview .value{margin-top:5px;color:var(--secondary-text-color)}.tsd-preview .only{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--secondary-text-color)}.tsd-status{min-height:20px;margin-top:10px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
+        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-grid{grid-template-columns:1fr}.tsd-preview-wrap{position:relative;grid-row:1}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}}
+      </style>
+      <div class="tsd-head"><div><h2>Theme Studio Design</h2><p>Diese Einstellungen gelten nur für diese Karte.</p></div><label class="tsd-toggle"><input class="tsd-enabled" type="checkbox"> Eigene Gestaltung für diese Karte</label></div>
+      <div class="tsd-help">Nicht gesetzte Werte folgen dem globalen Design.</div>
+      <div class="tsd-grid">
+        <fieldset class="tsd-controls" disabled>
+          <section class="tsd-section"><h3>Kartenstil</h3><div class="tsd-choices tsd-styles">
+            <button type="button" class="tsd-choice" data-value="inherit"><strong>Globales Design</strong><small>Keine Abweichung</small></button>
+            <button type="button" class="tsd-choice" data-value="standard"><strong>Standard</strong><small>Klar und ruhig</small></button>
+            <button type="button" class="tsd-choice" data-value="glass"><strong>Glas</strong><small>Transparenz und Unschärfe</small></button>
+            <button type="button" class="tsd-choice" data-value="tech-frame"><strong>Tech Frame</strong><small>Technischer Rahmen</small></button>
+          </div></section>
+          <section class="tsd-section"><h3>Kartenhintergrund</h3><div class="tsd-choices tsd-patterns">
+            <button type="button" class="tsd-choice tsd-pattern" data-value="inherit"><strong>Global</strong></button>
+            <button type="button" class="tsd-choice tsd-pattern" data-value="color"><strong>Farbe</strong></button>
+            <button type="button" class="tsd-choice tsd-pattern" data-value="dots"><strong>Punkte</strong></button>
+            <button type="button" class="tsd-choice tsd-pattern" data-value="waves"><strong>Wellen</strong></button>
+            <button type="button" class="tsd-choice tsd-pattern" data-value="grid"><strong>Raster</strong></button>
+            <button type="button" class="tsd-choice tsd-pattern" data-value="image"><strong>Bild</strong></button>
+          </div><div class="tsd-upload"><button type="button" class="tsd-upload-button">Eigenes Bild auswählen</button><span class="tsd-file">Kein Bild gewählt</span><input class="tsd-file-input" type="file" accept="image/jpeg,image/png,image/webp" hidden></div></section>
+          <section class="tsd-section"><div class="tsd-row"><label>Bilddeckkraft</label><output class="tsd-opacity-output">45 %</output><input class="tsd-opacity" type="range" min="0" max="100" value="45"></div><div class="tsd-row"><label>Abdunkeln</label><output class="tsd-dark-output">20 %</output><input class="tsd-dark" type="range" min="0" max="80" value="20"></div></section>
+          <section class="tsd-section"><h3>Farben</h3><div class="tsd-color-row"><label class="tsd-color">Hintergrund <input class="tsd-bg-color" type="color" value="#26343d"></label><label class="tsd-color">Textfarbe <input class="tsd-text-color" type="color" value="#ffffff"></label><label class="tsd-color">Iconfarbe <input class="tsd-icon-color" type="color" value="#26b2b3"></label></div></section>
+          <button type="button" class="tsd-reset">Kartendesign zurücksetzen</button>
+        </fieldset>
+        <aside class="tsd-preview-wrap"><div class="tsd-preview-label">Vorschau · nur diese Karte</div><div class="tsd-preview"><div class="title">Kartenname</div><div class="value">Beispielwert</div><div class="only">Nur diese Karte</div></div><div class="tsd-status"></div></aside>
+      </div>`;
+
+    const state = {
+      editor, root, tab, panel, tabGroup,
+      active: false, saving: false, settings: null,
+      configOwner: null, config: {}, draft: this._defaultNativeCardDesign(),
+      nativeNodes: [],
+    };
+    this.nativeCardDesignEditors.set(editor, state);
+
+    tabGroup.appendChild(tab);
+    root.appendChild(panel);
+    state.nativeNodes = Array.from(root.children).filter((node) =>
+      node !== tabGroup && node !== panel && node.localName !== "style"
+    );
+
+    tab.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this._showNativeCardDesignPanel(state);
+    });
+    for (const nativeTab of nativeTabs) {
+      nativeTab.addEventListener("click", () => this._hideNativeCardDesignPanel(state));
+    }
+
+    this._bindNativeCardDesignPanel(state);
+    this._loadNativeCardDesignState(state);
+  }
+
+  _showNativeCardDesignPanel(state) {
+    state.active = true;
+    state.panel.hidden = false;
+    state.tab.setAttribute("selected", "");
+    state.tab.setAttribute("aria-selected", "true");
+    for (const node of state.nativeNodes) node.hidden = true;
+    for (const child of state.tabGroup.querySelectorAll('[slot="panel"]')) {
+      if (child !== state.panel) child.hidden = true;
+    }
+    this._renderNativeCardDesignPanel(state);
+  }
+
+  _hideNativeCardDesignPanel(state) {
+    state.active = false;
+    state.panel.hidden = true;
+    state.tab.removeAttribute("selected");
+    state.tab.setAttribute("aria-selected", "false");
+    for (const node of state.nativeNodes) node.hidden = false;
+    for (const child of state.tabGroup.querySelectorAll('[slot="panel"]')) {
+      if (child !== state.panel) child.hidden = false;
+    }
+  }
+
+  async _loadNativeCardDesignState(state) {
+    const { owner, config } = this._nativeCardEditorConfig(state.editor);
+    state.configOwner = owner;
+    state.config = JSON.parse(JSON.stringify(config || {}));
+    const target = typeof state.config.theme_studio_id === "string"
+      ? state.config.theme_studio_id : "";
+
+    try {
+      const result = await this._getHass()?.callWS({ type: "theme_studio/get_settings" });
+      if (!result) return;
+      state.settings = {
+        light: result.light, dark: result.dark, effects: result.effects,
+      };
+      state.activeProfileId = result.active_profile_id || "";
+      state.themeActive = result.theme_studio_active !== false;
+      const existing = (result.effects?.cardDesigns || []).find(
+        (design) => design.target === target
+      );
+      state.draft = existing
+        ? JSON.parse(JSON.stringify(existing))
+        : this._defaultNativeCardDesign(target);
+      this._renderNativeCardDesignPanel(state);
+    } catch (error) {
+      this._setNativeCardDesignStatus(state, `Design konnte nicht geladen werden: ${error.message || error}`, "error");
+    }
+  }
+
+  _bindNativeCardDesignPanel(state) {
+    const panel = state.panel;
+    panel.querySelector(".tsd-enabled").addEventListener("change", (event) => {
+      state.draft.enabled = event.target.checked;
+      if (state.draft.enabled) this._ensureNativeCardDesignTarget(state);
+      this._nativeCardDesignChanged(state);
+    });
+    panel.querySelectorAll(".tsd-styles .tsd-choice").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.draft.style = button.dataset.value;
+        this._nativeCardDesignChanged(state);
+      });
+    });
+    panel.querySelectorAll(".tsd-patterns .tsd-choice").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.draft.backgroundType = button.dataset.value;
+        this._nativeCardDesignChanged(state);
+      });
+    });
+    for (const [selector, field] of [
+      [".tsd-opacity", "backgroundOpacity"],
+      [".tsd-dark", "backgroundDarkening"],
+    ]) {
+      panel.querySelector(selector).addEventListener("input", (event) => {
+        state.draft[field] = Number(event.target.value);
+        this._nativeCardDesignChanged(state);
+      });
+    }
+    for (const [selector, field] of [
+      [".tsd-bg-color", "backgroundColor"],
+      [".tsd-text-color", "textColor"],
+      [".tsd-icon-color", "iconColor"],
+    ]) {
+      panel.querySelector(selector).addEventListener("input", (event) => {
+        state.draft[field] = event.target.value;
+        this._nativeCardDesignChanged(state);
+      });
+    }
+    const fileInput = panel.querySelector(".tsd-file-input");
+    panel.querySelector(".tsd-upload-button").addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => this._uploadNativeCardDesignImage(state, fileInput));
+    panel.querySelector(".tsd-reset").addEventListener("click", () => {
+      const target = state.draft.target;
+      state.draft = this._defaultNativeCardDesign(target);
+      this._nativeCardDesignChanged(state);
+    });
+  }
+
+  _ensureNativeCardDesignTarget(state) {
+    if (state.draft.target) return;
+    const target = `ts_${this._newCardDesignId()}${this._newCardDesignId()}`.slice(0, 24);
+    state.draft.target = target;
+    state.config = { ...state.config, theme_studio_id: target };
+  }
+
+  _nativeCardDesignChanged(state) {
+    if (state.draft.enabled) this._ensureNativeCardDesignTarget(state);
+    state.config = {
+      ...state.config,
+      ...(state.draft.target ? { theme_studio_id: state.draft.target } : {}),
+    };
+    state.editor.dispatchEvent(new CustomEvent("config-changed", {
+      detail: { config: { ...state.config } }, bubbles: true, composed: true,
+    }));
+    this._renderNativeCardDesignPanel(state);
+    this._setNativeCardDesignStatus(state, "Wird mit „Speichern“ übernommen.", "");
+  }
+
+  _renderNativeCardDesignPanel(state) {
+    if (!state.panel?.isConnected) return;
+    const draft = state.draft;
+    state.panel.querySelector(".tsd-enabled").checked = Boolean(draft.enabled);
+    state.panel.querySelector(".tsd-controls").disabled = !draft.enabled;
+    state.panel.querySelectorAll(".tsd-styles .tsd-choice").forEach((button) =>
+      button.classList.toggle("selected", button.dataset.value === draft.style)
+    );
+    state.panel.querySelectorAll(".tsd-patterns .tsd-choice").forEach((button) =>
+      button.classList.toggle("selected", button.dataset.value === draft.backgroundType)
+    );
+    const opacity = state.panel.querySelector(".tsd-opacity");
+    const dark = state.panel.querySelector(".tsd-dark");
+    opacity.value = draft.backgroundOpacity;
+    dark.value = draft.backgroundDarkening;
+    state.panel.querySelector(".tsd-opacity-output").textContent = `${draft.backgroundOpacity} %`;
+    state.panel.querySelector(".tsd-dark-output").textContent = `${draft.backgroundDarkening} %`;
+    if (draft.backgroundColor) state.panel.querySelector(".tsd-bg-color").value = draft.backgroundColor;
+    if (draft.textColor) state.panel.querySelector(".tsd-text-color").value = draft.textColor;
+    if (draft.iconColor) state.panel.querySelector(".tsd-icon-color").value = draft.iconColor;
+    state.panel.querySelector(".tsd-file").textContent = draft.backgroundImage
+      ? draft.backgroundImage.split("/").at(-1).split("?")[0] : "Kein Bild gewählt";
+    this._styleNativeCardDesignPreview(state.panel.querySelector(".tsd-preview"), draft);
+  }
+
+  _styleNativeCardDesignPreview(preview, draft) {
+    preview.style.cssText = "";
+    const background = draft.backgroundColor || "var(--ha-card-background,var(--card-background-color))";
+    preview.style.color = draft.textColor || "var(--primary-text-color)";
+    if (draft.style === "glass") {
+      preview.style.backdropFilter = "blur(18px) saturate(145%)";
+      preview.style.border = "1px solid rgba(255,255,255,.65)";
+      preview.style.boxShadow = "0 14px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.45)";
+    } else if (draft.style === "tech-frame") {
+      preview.style.clipPath = "polygon(18px 0,calc(100% - 42px) 0,calc(100% - 28px) 14px,100% 14px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px)";
+      preview.style.border = "2px solid var(--primary-color)";
+    }
+    if (draft.backgroundType === "color") preview.style.background = background;
+    if (draft.backgroundType === "dots") {
+      preview.style.backgroundColor = background;
+      preview.style.backgroundImage = "radial-gradient(circle,var(--primary-color) 1.5px,transparent 1.6px)";
+      preview.style.backgroundSize = "18px 18px";
+    }
+    if (draft.backgroundType === "waves") {
+      preview.style.backgroundColor = background;
+      preview.style.backgroundImage = "radial-gradient(ellipse at 15% 15%,color-mix(in srgb,var(--primary-color) 38%,transparent),transparent 52%),radial-gradient(ellipse at 85% 80%,rgba(72,120,255,.3),transparent 55%)";
+    }
+    if (draft.backgroundType === "grid") {
+      preview.style.backgroundColor = background;
+      preview.style.backgroundImage = "linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)";
+      preview.style.backgroundSize = "20px 20px";
+    }
+    if (draft.backgroundType === "image" && draft.backgroundImage) {
+      const shade = Math.max(0, Math.min(.8, draft.backgroundDarkening / 100));
+      const fade = Math.max(0, Math.min(100, 100 - draft.backgroundOpacity));
+      preview.style.backgroundImage = `linear-gradient(rgba(0,0,0,${shade}),rgba(0,0,0,${shade})),linear-gradient(color-mix(in srgb,${background} ${fade}%,transparent),color-mix(in srgb,${background} ${fade}%,transparent)),url("${draft.backgroundImage}")`;
+      preview.style.backgroundSize = "cover";
+      preview.style.backgroundPosition = "center";
+    }
+    preview.style.opacity = draft.enabled ? "1" : ".65";
+  }
+
+  async _uploadNativeCardDesignImage(state, input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      this._setNativeCardDesignStatus(state, "Bitte JPG, PNG oder WebP bis 5 MB auswählen.", "error");
+      input.value = "";
+      return;
+    }
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
+        reader.readAsDataURL(file);
+      });
+      const result = await this._getHass().callWS({
+        type: "theme_studio/upload_background",
+        name: file.name.replace(/\.[^.]+$/, "").slice(0, 48),
+        mime_type: file.type,
+        content: String(dataUrl).split(",", 2)[1],
+      });
+      state.draft.backgroundImage = result.url;
+      state.draft.backgroundType = "image";
+      state.draft.enabled = true;
+      this._nativeCardDesignChanged(state);
+    } catch (error) {
+      this._setNativeCardDesignStatus(state, error.message || String(error), "error");
+    } finally {
+      input.value = "";
+    }
+  }
+
+  _setNativeCardDesignStatus(state, message, kind = "") {
+    const status = state.panel?.querySelector(".tsd-status");
+    if (!status) return;
+    status.textContent = message;
+    status.className = `tsd-status ${kind}`.trim();
+  }
+
+  _handleNativeCardDesignSave(event) {
+    if (this.nativeCardDesignSaveBypass) return;
+    const button = (event.composedPath?.() || []).find((element) =>
+      ["BUTTON", "HA-BUTTON", "MWC-BUTTON"].includes(element?.tagName)
+    );
+    const label = String(button?.textContent || "").trim().toLowerCase();
+    if (!button || !/^(speichern|save|enregistrer|guardar)/.test(label)) return;
+    const state = Array.from(this.nativeCardDesignEditors.values()).find(
+      (candidate) => candidate.active && candidate.editor.isConnected
+    );
+    if (!state || state.saving) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    state.saving = true;
+    this._saveNativeCardDesignState(state).then(() => {
+      this.nativeCardDesignSaveBypass = true;
+      button.click();
+      queueMicrotask(() => { this.nativeCardDesignSaveBypass = false; });
+    }).catch((error) => {
+      this._setNativeCardDesignStatus(state, `Speichern fehlgeschlagen: ${error.message || error}`, "error");
+    }).finally(() => { state.saving = false; });
+  }
+
+  async _saveNativeCardDesignState(state) {
+    if (!state.settings) {
+      await this._loadNativeCardDesignState(state);
+    }
+    if (!state.settings) throw new Error("Theme Studio ist noch nicht bereit.");
+    const settings = JSON.parse(JSON.stringify(state.settings));
+    const designs = settings.effects.cardDesigns || [];
+    const index = designs.findIndex((design) =>
+      design.id === state.draft.id || design.target === state.draft.target
+    );
+    if (state.draft.enabled) {
+      this._ensureNativeCardDesignTarget(state);
+      if (index >= 0) designs.splice(index, 1, state.draft);
+      else designs.push(state.draft);
+    } else if (index >= 0) {
+      designs.splice(index, 1);
+    }
+    settings.effects.cardDesigns = designs;
+    const result = await this._getHass().callWS({
+      type: "theme_studio/save_settings",
+      settings,
+      previous_theme_studio_active: state.themeActive,
+      ...(state.activeProfileId ? { active_profile_id: state.activeProfileId } : {}),
+    });
+    state.settings = JSON.parse(JSON.stringify(result.settings));
+    this.glassLastScan = 0;
+    this._readThemeSettings();
+    this._setNativeCardDesignStatus(state, "Kartendesign gespeichert und angewendet.", "success");
   }
 
   async _loadDashboardEditorSettings() {
