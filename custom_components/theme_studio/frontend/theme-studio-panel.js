@@ -1,10 +1,10 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.13";
+} from "./theme-studio-locales.js?v=0.10.0-beta.14";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.13";
+} from "./theme-studio-effects.js?v=0.10.0-beta.14";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -727,10 +727,12 @@ class ThemeStudioPanel extends HTMLElement {
     ).join("");
     const cards = CARD_TEXTURE_LIBRARY.flatMap((category) =>
       category.items.map(([label, filename]) => {
-        const path = `/theme_studio_files/textures/${filename}`;
+        const previewPath = `/theme_studio_files/textures/${filename}`;
+        const backgroundPath =
+          `/theme_studio_files/background-textures/${filename}`;
         return `
-          <button type="button" class="background-texture-card" data-texture-category="${category.id}" data-texture-path="${path}"${category.id === "carbon" ? "" : " hidden"}>
-            <img alt="" data-texture-src="${path}" loading="lazy" decoding="async">
+          <button type="button" class="background-texture-card" data-texture-category="${category.id}" data-texture-path="${backgroundPath}"${category.id === "carbon" ? "" : " hidden"}>
+            <img alt="" data-texture-src="${previewPath}" loading="lazy" decoding="async">
             <span>${label}</span>
           </button>`;
       })
@@ -11307,7 +11309,10 @@ class ThemeStudioPanel extends HTMLElement {
   _openBackgroundTextureGallery(returnFocus) {
     this.backgroundTextureReturnFocus = returnFocus || null;
     this.pendingBackgroundTexturePath = this.profile.background === "texture"
-      ? this.profile.backgroundImage : "";
+      ? this.profile.backgroundImage.replace(
+        "/theme_studio_files/textures/",
+        "/theme_studio_files/background-textures/"
+      ) : "";
     const category = CARD_TEXTURE_LIBRARY.find((entry) =>
       entry.items.some(([, filename]) =>
         this.pendingBackgroundTexturePath.endsWith(`/${filename}`)
@@ -11760,18 +11765,17 @@ class ThemeStudioPanel extends HTMLElement {
       this._backgroundImage()
     );
 
-    const textureBackground = this.profile.background === "texture";
     preview.style.setProperty(
       "--preview-background-position",
-      textureBackground ? "left top" : "center"
+      "center"
     );
     preview.style.setProperty(
       "--preview-background-size",
-      textureBackground ? "320px 200px" : "cover"
+      "cover"
     );
     preview.style.setProperty(
       "--preview-background-repeat",
-      textureBackground ? "repeat" : "no-repeat"
+      "no-repeat"
     );
 
     preview.style.setProperty(

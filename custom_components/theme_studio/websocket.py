@@ -244,6 +244,10 @@ BACKGROUND_URL_VALIDATOR = vol.Any(
         r"^/theme_studio_files/textures/"
         r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp$"
     ),
+    vol.Match(
+        r"^/theme_studio_files/background-textures/"
+        r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp$"
+    ),
 )
 
 BACKGROUND_FILENAME_VALIDATOR = vol.Match(
@@ -731,6 +735,20 @@ def normalize_profile(
             normalized[key] = profile[key]
 
     normalized = PROFILE_SCHEMA(normalized)
+
+    if (
+        normalized["background"] == "texture"
+        and normalized["backgroundImage"].startswith(
+            "/theme_studio_files/textures/"
+        )
+    ):
+        normalized["backgroundImage"] = normalized[
+            "backgroundImage"
+        ].replace(
+            "/theme_studio_files/textures/",
+            "/theme_studio_files/background-textures/",
+            1,
+        )
 
     if normalized["liquidGlass"]:
         is_light_mode = defaults is DEFAULT_LIGHT_PROFILE
@@ -1406,7 +1424,7 @@ def build_background(
         return (
             f"{overlay}, "
             f"url({image_url}) "
-            "left top / 640px 400px repeat fixed"
+            "center / cover no-repeat fixed"
         )
 
     if profile["background"] == "image" and profile["backgroundImage"]:
@@ -2889,6 +2907,19 @@ def sanitize_gallery_settings(
         if profile.get("background") == "image":
             profile["background"] = "color"
             profile["backgroundImage"] = ""
+        elif (
+            profile.get("background") == "texture"
+            and str(profile.get("backgroundImage", "")).startswith(
+                "/theme_studio_files/textures/"
+            )
+        ):
+            profile["backgroundImage"] = str(
+                profile["backgroundImage"]
+            ).replace(
+                "/theme_studio_files/textures/",
+                "/theme_studio_files/background-textures/",
+                1,
+            )
         elif str(profile.get("backgroundImage", "")).startswith("/local/"):
             profile["background"] = "color"
             profile["backgroundImage"] = ""

@@ -2,8 +2,8 @@
 
 DOMAIN = "theme_studio"
 NAME = "Theme Studio"
-VERSION = "0.10.0-beta.13"
-FRONTEND_REVISION = "0.10.0-beta.13"
+VERSION = "0.10.0-beta.14"
+FRONTEND_REVISION = "0.10.0-beta.14"
 
 GALLERY_BASE_URL = "https://ha-theme-studio.com"
 GALLERY_LIST_URL = f"{GALLERY_BASE_URL}/api/designs"

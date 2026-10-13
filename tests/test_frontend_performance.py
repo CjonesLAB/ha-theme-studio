@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.13";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.13";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.14";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.14";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -557,8 +557,9 @@ def test_dashboard_background_reuses_texture_gallery_without_changing_cards() ->
     assert 'this.profile.background = "texture"' in panel_source
     assert 'class="background-texture-apply" disabled>Anwenden</button>' in panel_source
     assert "Karten bleiben unverändert" in panel_source
-    assert 'textureBackground ? "320px 200px" : "cover"' in panel_source
-    assert 'textureBackground ? "repeat" : "no-repeat"' in panel_source
+    assert '"--preview-background-size",\n      "cover"' in panel_source
+    assert '"--preview-background-repeat",\n      "no-repeat"' in panel_source
+    assert "/theme_studio_files/background-textures/" in panel_source
 
 
 def test_bundled_card_textures_are_complete_and_lightweight() -> None:
@@ -575,6 +576,24 @@ def test_bundled_card_textures_are_complete_and_lightweight() -> None:
 
     assert len(textures) == 40
     assert sum(path.stat().st_size for path in textures) < 1_200_000
+    for category in ("carbon", "metal", "wood", "abstract"):
+        assert len(list(texture_dir.glob(f"{category}-*.webp"))) == 10
+
+
+def test_dashboard_textures_use_large_originals() -> None:
+    """Dashboard materials are large images and never enlarged tiles."""
+
+    texture_dir = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "background-textures"
+    )
+    textures = sorted(texture_dir.glob("*.webp"))
+
+    assert len(textures) == 40
+    assert sum(path.stat().st_size for path in textures) < 10_000_000
     for category in ("carbon", "metal", "wood", "abstract"):
         assert len(list(texture_dir.glob(f"{category}-*.webp"))) == 10
 

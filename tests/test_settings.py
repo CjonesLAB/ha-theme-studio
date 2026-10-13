@@ -307,15 +307,21 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     background = build_background(normalized)
 
     assert normalized["background"] == "texture"
-    assert 'url("/theme_studio_files/textures/wood-01-walnut.webp")' in background
-    assert "left top / 640px 400px repeat fixed" in background
+    assert normalized["backgroundImage"] == (
+        "/theme_studio_files/background-textures/wood-01-walnut.webp"
+    )
+    assert (
+        'url("/theme_studio_files/background-textures/wood-01-walnut.webp")'
+        in background
+    )
+    assert "center / cover no-repeat fixed" in background
 
     portable, notices = portable_import_settings({
         **default_settings(),
         "dark": profile,
     })
     assert portable["dark"]["background"] == "texture"
-    assert portable["dark"]["backgroundImage"] == profile["backgroundImage"]
+    assert portable["dark"]["backgroundImage"] == normalized["backgroundImage"]
     assert not any("Dunkelmodus" in notice for notice in notices)
 
     gallery = sanitize_gallery_settings({
@@ -324,7 +330,7 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
         "effects": deepcopy(DEFAULT_EFFECT_SETTINGS),
     })
     assert gallery["dark"]["background"] == "texture"
-    assert gallery["dark"]["backgroundImage"] == profile["backgroundImage"]
+    assert gallery["dark"]["backgroundImage"] == normalized["backgroundImage"]
 
 
 def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:
