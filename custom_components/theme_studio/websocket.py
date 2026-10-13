@@ -1596,6 +1596,9 @@ def build_mode_values(
             if profile["cardBackgroundImage"]
             else "none"
         ),
+        "theme-studio-card-texture-opacity": (
+            f'{profile["cardOpacity"] / 100:.2f}'
+        ),
         "theme-studio-tech-frame-cut": str(profile["techFrameCut"]),
         "theme-studio-tech-frame-glow": str(profile["techFrameGlow"]),
         "theme-studio-tech-frame-border-color": profile["cardBorderColor"],

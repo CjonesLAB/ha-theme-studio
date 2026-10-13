@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.18";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.19";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -2225,8 +2225,7 @@ class ThemeStudioEffects {
       + `rgba(255, 255, 255, ${highlight}) 0%, `
       + `rgba(255, 255, 255, ${highlight * 0.28}) 36%, `
       + "rgba(255, 255, 255, 0) 62%, "
-      + "rgba(0, 0, 0, 0.08) 100%), "
-      + "var(--theme-studio-card-background-image, none)";
+      + "rgba(0, 0, 0, 0.08) 100%)";
 
     if (
       typeof CSS === "undefined"
@@ -2578,10 +2577,21 @@ class ThemeStudioEffects {
       style.setAttribute("data-theme-studio-global-card-texture-style", "");
       style.textContent = `
         ha-card[data-theme-studio-global-card-texture] {
-          background-image: var(--theme-studio-card-background-image, none) !important;
-          background-position: center !important;
-          background-size: cover !important;
-          background-repeat: no-repeat !important;
+          position: relative !important;
+          isolation: isolate !important;
+        }
+        ha-card[data-theme-studio-global-card-texture]::before {
+          position: absolute;
+          inset: 0;
+          z-index: -1;
+          content: "";
+          border-radius: inherit;
+          background-image: var(--theme-studio-card-background-image, none);
+          background-position: center;
+          background-size: cover;
+          background-repeat: no-repeat;
+          opacity: var(--theme-studio-card-texture-opacity, 1);
+          pointer-events: none;
         }
       `;
       const target = root.nodeType === 9

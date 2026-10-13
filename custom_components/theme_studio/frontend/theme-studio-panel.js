@@ -1,12 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.18";
+} from "./theme-studio-locales.js?v=0.10.0-beta.19";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.18";
+} from "./theme-studio-effects.js?v=0.10.0-beta.19";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.18";
+const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.19";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3929,13 +3929,13 @@ class ThemeStudioPanel extends HTMLElement {
         }
 
         .preview-card {
+          position: relative;
+          isolation: isolate;
           min-height: 150px;
           padding: 15px;
           color: var(--preview-card-text);
           background-color: var(--preview-card);
-          background-image:
-            var(--preview-glass-highlight, none),
-            var(--preview-card-image, none);
+          background-image: var(--preview-glass-highlight, none);
           background-position: center;
           background-size: cover;
           border:
@@ -3946,6 +3946,25 @@ class ThemeStudioPanel extends HTMLElement {
           box-shadow: var(--preview-shadow);
           backdrop-filter: var(--preview-backdrop-filter, none);
           -webkit-backdrop-filter: var(--preview-backdrop-filter, none);
+        }
+
+        .preview-card::after {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          content: "";
+          border-radius: inherit;
+          background-image: var(--preview-card-image, none);
+          background-position: center;
+          background-size: cover;
+          background-repeat: no-repeat;
+          opacity: var(--preview-card-texture-opacity, 1);
+          pointer-events: none;
+        }
+
+        .preview-card > * {
+          position: relative;
+          z-index: 1;
         }
 
         .preview.tech-frame .preview-card {
@@ -3970,6 +3989,8 @@ class ThemeStudioPanel extends HTMLElement {
           background-image: var(--preview-card-image, none);
           background-position: center;
           background-size: cover;
+          background-repeat: no-repeat;
+          opacity: var(--preview-card-texture-opacity, 1);
           clip-path: polygon(
             0 var(--preview-tech-cut),
             var(--preview-tech-cut) 0,
@@ -3993,6 +4014,10 @@ class ThemeStudioPanel extends HTMLElement {
               color-mix(in srgb, var(--preview-border-color) 58%, transparent)
             );
           pointer-events: none;
+        }
+
+        .preview.tech-frame :is(.preview-card)::after {
+          content: none;
         }
 
         .preview.tech-frame .preview-card.preview-context-selected::before {
@@ -11922,6 +11947,10 @@ class ThemeStudioPanel extends HTMLElement {
       previewProfile.cardBackgroundImage
         ? `url("${previewProfile.cardBackgroundImage}")`
         : "none"
+    );
+    preview.style.setProperty(
+      "--preview-card-texture-opacity",
+      String(previewProfile.cardOpacity / 100)
     );
 
     preview.style.setProperty(
