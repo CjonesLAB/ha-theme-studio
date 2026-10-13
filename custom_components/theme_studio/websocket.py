@@ -1724,8 +1724,24 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
         )
         selector = f'ha-card[{target_attribute}="{design["target"]}"]'
         declarations: list[str] = [
+            "--theme-studio-local-card-design: 1 !important;",
             "position: relative !important;",
             "isolation: isolate !important;",
+            "clip-path: none !important;",
+            "border-radius: 12px !important;",
+            "border-style: solid !important;",
+            "border-width: 0 !important;",
+            "border-color: transparent !important;",
+            "filter: none !important;",
+            "box-shadow: none !important;",
+            "backdrop-filter: none !important;",
+            "-webkit-backdrop-filter: none !important;",
+            "overflow: hidden !important;",
+            "background: var(--ha-card-background, var(--card-background-color)) !important;",
+            "background-image: none !important;",
+            "background-size: auto !important;",
+            "background-position: initial !important;",
+            "background-repeat: repeat !important;",
         ]
 
         if design["textColor"]:
@@ -1756,6 +1772,7 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
             declarations.extend(
                 (
                     "clip-path: none !important;",
+                    "border-radius: 18px !important;",
                     "backdrop-filter: blur(18px) saturate(145%) !important;",
                     "-webkit-backdrop-filter: blur(18px) saturate(145%) !important;",
                     "border: 1px solid rgba(255,255,255,.55) !important;",
@@ -1765,9 +1782,10 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
         elif style == "tech-frame":
             declarations.extend(
                 (
+                    "border-radius: 0 !important;",
                     "clip-path: polygon(18px 0, calc(100% - 42px) 0, calc(100% - 28px) 14px, 100% 14px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px) !important;",
                     "border: 2px solid var(--primary-color) !important;",
-                    "box-shadow: 0 0 24px color-mix(in srgb, var(--primary-color) 42%, transparent) !important;",
+                    "filter: drop-shadow(0 0 8px color-mix(in srgb, var(--primary-color) 42%, transparent)) !important;",
                 )
             )
 

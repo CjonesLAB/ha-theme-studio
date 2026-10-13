@@ -210,6 +210,11 @@ def test_card_designs_are_scoped_and_enable_generated_css() -> None:
     assert "backdrop-filter: blur(18px)" in css
     assert "radial-gradient" in css
     assert "--primary-text-color: #ffffff" in css
+    assert "--theme-studio-local-card-design: 1 !important" in css
+    assert "clip-path: none !important" in css
+    assert "border-radius: 12px !important" in css
+    assert "filter: none !important" in css
+    assert "background-image: none !important" in css
     assert 'theme-studio-expert-css-enabled: "1"' in theme
 
 
@@ -225,6 +230,26 @@ def test_card_design_can_target_a_native_dashboard_card_key() -> None:
 
     assert 'ha-card[data-theme-studio-card-key="0123456789abcdef"]' in css
     assert "data-theme-studio-id" not in css
+
+
+def test_local_tech_frame_replaces_global_card_material() -> None:
+    """A local preset starts clean instead of mixing with the global card style."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["cardDesigns"] = [
+        _card_design(
+            target="0123456789abcdef",
+            style="tech-frame",
+            backgroundType="grid",
+        )
+    ]
+    css = build_card_designs_css(normalize_effects(effects)["cardDesigns"])
+
+    assert "--theme-studio-local-card-design: 1 !important" in css
+    assert "border-radius: 0 !important" in css
+    assert "filter: drop-shadow(" in css
+    assert "background-image: linear-gradient(" in css
+    assert "box-shadow: 0 0 24px" not in css
 
 
 def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:

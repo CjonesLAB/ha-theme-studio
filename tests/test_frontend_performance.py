@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.4";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.4";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.5";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.5";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -491,6 +491,14 @@ def test_native_card_design_reuses_home_assistant_preview() -> None:
     assert 'class="tsd-save"' in effects_source
     assert "nativeCardDesignSaveHandler" not in effects_source
     assert 'key !== "theme_studio_id"' in effects_source
+    assert "_hasLocalCardDesign(element)" in effects_source
+    assert 'getPropertyValue("--theme-studio-local-card-design")' in effects_source
+    assert "Theme-Studio-Design speichern &amp; anwenden" in effects_source
+    assert ".tsd-actions{position:sticky" in effects_source
+    assert "Speichern“ unten rechts gehört nur zum Karteninhalt" in effects_source
+    assert 'data-value="inherit"><strong>Globales Design</strong>' not in effects_source
+    assert 'data-value="inherit"><strong>Ohne Muster</strong>' in effects_source
+    assert 'style: "standard"' in effects_source
 
 
 def test_native_card_design_image_uses_native_file_label() -> None:
