@@ -70,6 +70,7 @@ DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
     "cardIconColor": "#2f6fa3",
     "cardBorderColor": "#d5dde5",
     "cardBackgroundImage": "",
+    "cardTextureDarkening": 0,
     "headerBackgroundColor": "#eef2f5",
     "headerTextColor": "#1c1c1c",
     "sidebarBackgroundColor": "#eef2f5",
@@ -101,6 +102,7 @@ DEFAULT_DARK_PROFILE: dict[str, Any] = {
     "cardIconColor": "#26b2b3",
     "cardBorderColor": "#26b2b3",
     "cardBackgroundImage": "",
+    "cardTextureDarkening": 0,
     "headerBackgroundColor": "#101719",
     "headerTextColor": "#ffffff",
     "sidebarBackgroundColor": "#101719",
@@ -302,6 +304,10 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Required("cardIconColor"): COLOR_VALIDATOR,
         vol.Required("cardBorderColor"): COLOR_VALIDATOR,
         vol.Required("cardBackgroundImage"): BACKGROUND_URL_VALIDATOR,
+        vol.Required("cardTextureDarkening"): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=0, max=80),
+        ),
         vol.Required("headerBackgroundColor"): COLOR_VALIDATOR,
         vol.Required("headerTextColor"): COLOR_VALIDATOR,
         vol.Required("sidebarBackgroundColor"): COLOR_VALIDATOR,
@@ -1598,6 +1604,9 @@ def build_mode_values(
         ),
         "theme-studio-card-texture-opacity": (
             f'{profile["cardOpacity"] / 100:.2f}'
+        ),
+        "theme-studio-card-texture-darkening": (
+            f'{profile["cardTextureDarkening"] / 100:.2f}'
         ),
         "theme-studio-tech-frame-cut": str(profile["techFrameCut"]),
         "theme-studio-tech-frame-glow": str(profile["techFrameGlow"]),

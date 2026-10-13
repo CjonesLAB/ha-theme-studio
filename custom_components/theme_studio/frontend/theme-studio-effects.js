@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.19";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.20";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -2586,7 +2586,12 @@ class ThemeStudioEffects {
           z-index: -1;
           content: "";
           border-radius: inherit;
-          background-image: var(--theme-studio-card-background-image, none);
+          background-image:
+            linear-gradient(
+              rgba(0, 0, 0, var(--theme-studio-card-texture-darkening, 0)),
+              rgba(0, 0, 0, var(--theme-studio-card-texture-darkening, 0))
+            ),
+            var(--theme-studio-card-background-image, none);
           background-position: center;
           background-size: cover;
           background-repeat: no-repeat;

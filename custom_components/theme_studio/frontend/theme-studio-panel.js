@@ -1,12 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.19";
+} from "./theme-studio-locales.js?v=0.10.0-beta.20";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.19";
+} from "./theme-studio-effects.js?v=0.10.0-beta.20";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.19";
+const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.20";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -556,6 +556,7 @@ class ThemeStudioPanel extends HTMLElement {
         cardIconColor: "#2f6fa3",
         cardBorderColor: "#d5dde5",
         cardBackgroundImage: "",
+        cardTextureDarkening: 0,
         headerBackgroundColor: "#eef2f5",
         headerTextColor: "#1c1c1c",
         sidebarBackgroundColor: "#eef2f5",
@@ -586,6 +587,7 @@ class ThemeStudioPanel extends HTMLElement {
         cardIconColor: "#26b2b3",
         cardBorderColor: "#26b2b3",
         cardBackgroundImage: "",
+        cardTextureDarkening: 0,
         headerBackgroundColor: "#101719",
         headerTextColor: "#ffffff",
         sidebarBackgroundColor: "#101719",
@@ -3954,7 +3956,12 @@ class ThemeStudioPanel extends HTMLElement {
           z-index: 0;
           content: "";
           border-radius: inherit;
-          background-image: var(--preview-card-image, none);
+          background-image:
+            linear-gradient(
+              rgba(0, 0, 0, var(--preview-card-texture-darkening, 0)),
+              rgba(0, 0, 0, var(--preview-card-texture-darkening, 0))
+            ),
+            var(--preview-card-image, none);
           background-position: center;
           background-size: cover;
           background-repeat: no-repeat;
@@ -3986,7 +3993,12 @@ class ThemeStudioPanel extends HTMLElement {
           z-index: 0;
           content: "";
           background-color: var(--preview-card);
-          background-image: var(--preview-card-image, none);
+          background-image:
+            linear-gradient(
+              rgba(0, 0, 0, var(--preview-card-texture-darkening, 0)),
+              rgba(0, 0, 0, var(--preview-card-texture-darkening, 0))
+            ),
+            var(--preview-card-image, none);
           background-position: center;
           background-size: cover;
           background-repeat: no-repeat;
@@ -5428,6 +5440,14 @@ class ThemeStudioPanel extends HTMLElement {
                   </button>
                 </div>
                 <p id="card-texture-status" class="effect-hint"></p>
+                <div id="card-texture-darkening-control">
+                  ${this._rangeField(
+                    "card-texture-darkening",
+                    "Karten abdunkeln",
+                    0,
+                    80
+                  )}
+                </div>
 
                 <div id="card-material-controls">
                 ${this._colorField(
@@ -7397,6 +7417,11 @@ class ThemeStudioPanel extends HTMLElement {
     );
 
     this._bindRange("card-opacity", "cardOpacity", "%");
+    this._bindRange(
+      "card-texture-darkening",
+      "cardTextureDarkening",
+      "%"
+    );
     this._bindRange(
       "card-border-width",
       "cardBorderWidth",
@@ -10633,6 +10658,7 @@ class ThemeStudioPanel extends HTMLElement {
 
     const ranges = {
       "card-opacity": ["cardOpacity", "%"],
+      "card-texture-darkening": ["cardTextureDarkening", "%"],
       "card-border-width": ["cardBorderWidth", "px"],
       "card-shadow": ["cardShadow", ""],
       "border-radius": ["borderRadius", "px"],
@@ -10753,6 +10779,8 @@ class ThemeStudioPanel extends HTMLElement {
     this._syncImageOption();
     this._syncTextureOption();
     this._syncCardTextureOption();
+    this.shadowRoot.getElementById("card-texture-darkening-control").hidden =
+      !this.profile.cardBackgroundImage;
     this._renderBackgroundLibrary();
     this._syncEffectControls();
   }
@@ -11951,6 +11979,10 @@ class ThemeStudioPanel extends HTMLElement {
     preview.style.setProperty(
       "--preview-card-texture-opacity",
       String(previewProfile.cardOpacity / 100)
+    );
+    preview.style.setProperty(
+      "--preview-card-texture-darkening",
+      String(previewProfile.cardTextureDarkening / 100)
     );
 
     preview.style.setProperty(
