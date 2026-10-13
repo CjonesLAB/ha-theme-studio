@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.6";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.6";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.7";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.7";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -502,6 +502,8 @@ def test_native_card_design_reuses_home_assistant_preview() -> None:
     assert "_styleLocalTechFrameOutline(element)" in effects_source
     assert "_syncTechFrameOutline(card, 18, 2)" in effects_source
     assert 'set("border", "0")' in effects_source
+    assert "calc(100% - 48px) 0,calc(100% - 36px) 10px" in effects_source
+    assert "26px 100%,12px calc(100% - 10px)" in effects_source
 
 
 def test_native_card_design_image_uses_native_file_label() -> None:

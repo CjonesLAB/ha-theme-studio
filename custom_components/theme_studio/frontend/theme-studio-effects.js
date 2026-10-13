@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.6";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.7";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -4947,7 +4947,7 @@ class ThemeStudioEffects {
       set("box-shadow", "0 14px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.45)");
     } else if (draft.style === "tech-frame") {
       set("border-radius", "0");
-      set("clip-path", "polygon(18px 0,calc(100% - 42px) 0,calc(100% - 28px) 14px,100% 14px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px)");
+      set("clip-path", "polygon(18px 0,calc(100% - 48px) 0,calc(100% - 36px) 10px,100% 10px,100% calc(100% - 18px),calc(100% - 18px) 100%,26px 100%,12px calc(100% - 10px),0 calc(100% - 10px),0 18px)");
       set("border", "0");
       set("filter", "drop-shadow(0 0 8px color-mix(in srgb,var(--primary-color) 42%,transparent))");
       this._styleLocalTechFrameOutline(preview, false);

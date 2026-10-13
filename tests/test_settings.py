@@ -249,6 +249,8 @@ def test_local_tech_frame_replaces_global_card_material() -> None:
     assert "--theme-studio-local-card-style: tech-frame !important" in css
     assert "border-radius: 0 !important" in css
     assert "border: 0 !important" in css
+    assert "calc(100% - 48px) 0" in css
+    assert "26px 100%, 12px calc(100% - 10px)" in css
     assert "filter: drop-shadow(" in css
     assert "background-image: linear-gradient(" in css
     assert "box-shadow: 0 0 24px" not in css

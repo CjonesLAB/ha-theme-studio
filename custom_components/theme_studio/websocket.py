@@ -1787,7 +1787,7 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
             declarations.extend(
                 (
                     "border-radius: 0 !important;",
-                    "clip-path: polygon(18px 0, calc(100% - 42px) 0, calc(100% - 28px) 14px, 100% 14px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px) !important;",
+                    "clip-path: polygon(18px 0, calc(100% - 48px) 0, calc(100% - 36px) 10px, 100% 10px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 26px 100%, 12px calc(100% - 10px), 0 calc(100% - 10px), 0 18px) !important;",
                     "border: 0 !important;",
                     "filter: drop-shadow(0 0 8px color-mix(in srgb, var(--primary-color) 42%, transparent)) !important;",
                 )
