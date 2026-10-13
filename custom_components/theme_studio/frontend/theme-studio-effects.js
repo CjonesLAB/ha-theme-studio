@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.15";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.18";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -218,6 +218,7 @@ class ThemeStudioEffects {
     this.glassSaturation = DEFAULT_GLASS_SATURATION;
     this.glassHighlight = DEFAULT_GLASS_HIGHLIGHT;
     this.overlayBackground = "#182326";
+    this.cardBackgroundImage = "none";
     this.effectsExcludedForConfig = false;
     this.stateSnapshot = new Map();
     this.cardAnimations = new WeakMap();
@@ -225,6 +226,8 @@ class ThemeStudioEffects {
     this.climateCards = new Set();
     this.alertCards = new Set();
     this.originalCardStyles = new WeakMap();
+    this.globalCardTextureCards = new Set();
+    this.globalCardTextureStyles = new Set();
     this.glassCards = new Set();
     this.originalGlassStyles = new WeakMap();
     this.glassHeadings = new Set();
@@ -1232,6 +1235,11 @@ class ThemeStudioEffects {
         "--theme-studio-overlay-background"
       ) || "#182326";
 
+    const requestedCardBackgroundImage =
+      this._readCssVariable(
+        "--theme-studio-card-background-image"
+      ) || "none";
+
     const reduceMotion =
       this.reduceMotionQuery.matches;
 
@@ -1252,6 +1260,10 @@ class ThemeStudioEffects {
       : requestedCardShape === "tech-frame" && !this.techFrameSupported
         ? "standard"
         : requestedCardShape;
+
+    const nextCardBackgroundImage = effectsExcludedForConfig
+      ? "none"
+      : requestedCardBackgroundImage;
 
     const nextExpertCssEnabled =
       !effectsExcludedForConfig
@@ -1294,6 +1306,7 @@ class ThemeStudioEffects {
       || requestedGlassSaturation !== this.glassSaturation
       || requestedGlassHighlight !== this.glassHighlight
       || requestedOverlayBackground !== this.overlayBackground
+      || nextCardBackgroundImage !== this.cardBackgroundImage
       || nextExpertCssEnabled !== this.expertCssEnabled
       || requestedExpertCss !== this.expertCss
       || effectsExcludedForConfig !==
@@ -1308,6 +1321,7 @@ class ThemeStudioEffects {
     this._clearAlertCards();
     this._clearLiquidGlassCards();
     this._clearTechFrameCards();
+    this._clearGlobalCardTextures();
     this._clearExpertCss();
 
     this.effect = nextEffect;
@@ -1345,6 +1359,7 @@ class ThemeStudioEffects {
     this.glassSaturation = requestedGlassSaturation;
     this.glassHighlight = requestedGlassHighlight;
     this.overlayBackground = requestedOverlayBackground;
+    this.cardBackgroundImage = nextCardBackgroundImage;
     this.expertCssEnabled = nextExpertCssEnabled;
     this.expertCss = requestedExpertCss;
     this.localCardDesignStyles = this._parseLocalCardDesignStyles(
@@ -1506,11 +1521,13 @@ class ThemeStudioEffects {
     if (
       !this.liquidGlass
       && !techFrameEnabled
+      && this.cardBackgroundImage === "none"
       && !this.expertCssEnabled
       && !this.dashboardEditorActive
     ) {
       this._clearLiquidGlassCards();
       this._clearTechFrameCards();
+      this._clearGlobalCardTextures();
       this._clearExpertCss();
 
       if (this.dashboardToolbarThemeActive) {
@@ -1541,6 +1558,8 @@ class ThemeStudioEffects {
     const currentExpertRoots = new Set();
     const currentLocalTechFrames = new Set();
     const currentCardDesignBadgeCards = new Set();
+    const currentGlobalCardTextureCards = new Set();
+    const currentGlobalCardTextureStyles = new Set();
     const dashboardEditMode = this._isHomeAssistantDashboardEditMode();
 
     this._visitElements(document, (element) => {
@@ -1603,6 +1622,7 @@ class ThemeStudioEffects {
       }
 
       if (this._isInsideOverlay(element)) {
+        element.removeAttribute("data-theme-studio-global-card-texture");
         this._restoreLiquidGlassCard(element);
         this._restoreLiquidGlassHeading(element);
         this._restoreTechFrameCard(element);
@@ -1610,6 +1630,7 @@ class ThemeStudioEffects {
       }
 
       if (this._isHeadingCard(element)) {
+        element.removeAttribute("data-theme-studio-global-card-texture");
         this._restoreLiquidGlassCard(element);
         this._restoreTechFrameCard(element);
 
@@ -1625,6 +1646,7 @@ class ThemeStudioEffects {
       this._restoreLiquidGlassHeading(element);
       const localCardStyle = this._localCardDesignStyle(element);
       if (localCardStyle) {
+        element.removeAttribute("data-theme-studio-global-card-texture");
         if (dashboardEditMode) {
           this._syncLocalCardDesignBadge(element, localCardStyle);
           currentCardDesignBadgeCards.add(element);
@@ -1644,6 +1666,17 @@ class ThemeStudioEffects {
       this._removeLocalCardDesignBadge(element);
       this._restoreLocalTechFrameOutline(element);
       currentCards.add(element);
+
+      if (this.cardBackgroundImage !== "none") {
+        element.setAttribute("data-theme-studio-global-card-texture", "");
+        currentGlobalCardTextureCards.add(element);
+        const textureStyle = this._ensureGlobalCardTextureStyle(
+          element.getRootNode?.()
+        );
+        if (textureStyle) currentGlobalCardTextureStyles.add(textureStyle);
+      } else {
+        element.removeAttribute("data-theme-studio-global-card-texture");
+      }
 
       if (this.liquidGlass) {
         this._restoreTechFrameCard(element);
@@ -1742,6 +1775,18 @@ class ThemeStudioEffects {
       }
     }
     this.cardDesignBadgeCards = currentCardDesignBadgeCards;
+    for (const card of this.globalCardTextureCards) {
+      if (!currentGlobalCardTextureCards.has(card) || !card.isConnected) {
+        card.removeAttribute("data-theme-studio-global-card-texture");
+      }
+    }
+    this.globalCardTextureCards = currentGlobalCardTextureCards;
+    for (const style of this.globalCardTextureStyles) {
+      if (!currentGlobalCardTextureStyles.has(style) || !style.isConnected) {
+        style.remove();
+      }
+    }
+    this.globalCardTextureStyles = currentGlobalCardTextureStyles;
   }
 
   _localCardDesignStyle(card) {
@@ -2180,7 +2225,8 @@ class ThemeStudioEffects {
       + `rgba(255, 255, 255, ${highlight}) 0%, `
       + `rgba(255, 255, 255, ${highlight * 0.28}) 36%, `
       + "rgba(255, 255, 255, 0) 62%, "
-      + "rgba(0, 0, 0, 0.08) 100%)";
+      + "rgba(0, 0, 0, 0.08) 100%), "
+      + "var(--theme-studio-card-background-image, none)";
 
     if (
       typeof CSS === "undefined"
@@ -2520,6 +2566,39 @@ class ThemeStudioEffects {
     card.style.removeProperty("--theme-studio-tech-frame-border-color");
     card.style.removeProperty("--theme-studio-tech-frame-border-width");
     this.localTechFrameCards.delete(card);
+  }
+
+  _ensureGlobalCardTextureStyle(root) {
+    if (!root?.querySelector || !root?.appendChild) return null;
+    let style = root.querySelector(
+      "style[data-theme-studio-global-card-texture-style]"
+    );
+    if (!style) {
+      style = document.createElement("style");
+      style.setAttribute("data-theme-studio-global-card-texture-style", "");
+      style.textContent = `
+        ha-card[data-theme-studio-global-card-texture] {
+          background-image: var(--theme-studio-card-background-image, none) !important;
+          background-position: center !important;
+          background-size: cover !important;
+          background-repeat: no-repeat !important;
+        }
+      `;
+      const target = root.nodeType === 9
+        ? root.head
+        : root;
+      target?.appendChild(style);
+    }
+    return style;
+  }
+
+  _clearGlobalCardTextures() {
+    for (const card of this.globalCardTextureCards) {
+      card.removeAttribute("data-theme-studio-global-card-texture");
+    }
+    this.globalCardTextureCards.clear();
+    for (const style of this.globalCardTextureStyles) style.remove();
+    this.globalCardTextureStyles.clear();
   }
 
   _ensureTechFrameStyle(root) {

@@ -1,12 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.15";
+} from "./theme-studio-locales.js?v=0.10.0-beta.18";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.15";
+} from "./theme-studio-effects.js?v=0.10.0-beta.18";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.15";
+const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.18";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -526,6 +526,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.backgroundTextureCategory = "carbon";
     this.pendingBackgroundTexturePath = "";
     this.backgroundTextureReturnFocus = null;
+    this.cardTextureCategory = "carbon";
+    this.pendingCardTexturePath = "";
+    this.cardTextureReturnFocus = null;
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
     this.activeThemeName = "Theme Studio";
@@ -552,6 +555,7 @@ class ThemeStudioPanel extends HTMLElement {
         cardTextColor: "#1c1c1c",
         cardIconColor: "#2f6fa3",
         cardBorderColor: "#d5dde5",
+        cardBackgroundImage: "",
         headerBackgroundColor: "#eef2f5",
         headerTextColor: "#1c1c1c",
         sidebarBackgroundColor: "#eef2f5",
@@ -581,6 +585,7 @@ class ThemeStudioPanel extends HTMLElement {
         cardTextColor: "#ffffff",
         cardIconColor: "#26b2b3",
         cardBorderColor: "#26b2b3",
+        cardBackgroundImage: "",
         headerBackgroundColor: "#101719",
         headerTextColor: "#ffffff",
         sidebarBackgroundColor: "#101719",
@@ -747,6 +752,38 @@ class ThemeStudioPanel extends HTMLElement {
         <section class="background-texture-dialog" role="dialog" aria-modal="true" aria-labelledby="background-texture-title">
           <header class="background-texture-head">
             <div><h2 id="background-texture-title">Dashboard-Textur</h2><p>Die Textur gilt nur für den Dashboard-Hintergrund. Karten bleiben unverändert.</p></div>
+            <button type="button" class="background-texture-close" aria-label="Schließen">×</button>
+          </header>
+          <div class="background-texture-tabs" role="tablist" aria-label="Texturkategorien">${tabs}</div>
+          <div class="background-texture-gallery">${cards}</div>
+          <footer class="background-texture-actions">
+            <span class="background-texture-selection">Noch keine Textur ausgewählt</span>
+            <button type="button" class="background-texture-apply" disabled>Anwenden</button>
+          </footer>
+        </section>
+      </div>`;
+  }
+
+  _cardTextureGalleryMarkup() {
+    const tabs = CARD_TEXTURE_LIBRARY.map((category, index) => `
+      <button type="button" class="background-texture-tab${index === 0 ? " selected" : ""}" data-texture-category="${category.id}" role="tab" aria-selected="${index === 0 ? "true" : "false"}">${category.label}</button>`
+    ).join("");
+    const cards = CARD_TEXTURE_LIBRARY.flatMap((category) =>
+      category.items.map(([label, filename]) => {
+        const texturePath = `/theme_studio_files/textures/${filename}`
+          + `?v=${BUNDLED_TEXTURE_VERSION}`;
+        return `
+          <button type="button" class="background-texture-card" data-texture-category="${category.id}" data-texture-path="${texturePath}"${category.id === "carbon" ? "" : " hidden"}>
+            <img alt="" data-texture-src="${texturePath}" loading="lazy" decoding="async">
+            <span>${label}</span>
+          </button>`;
+      })
+    ).join("");
+    return `
+      <div id="card-texture-overlay" class="background-texture-overlay" hidden>
+        <section class="background-texture-dialog" role="dialog" aria-modal="true" aria-labelledby="card-texture-title">
+          <header class="background-texture-head">
+            <div><h2 id="card-texture-title">Globale Kartentextur</h2><p>Die ausgewählte Textur gilt für alle Karten. Individuelle Kartendesigns behalten ihre eigene Gestaltung.</p></div>
             <button type="button" class="background-texture-close" aria-label="Schließen">×</button>
           </header>
           <div class="background-texture-tabs" role="tablist" aria-label="Texturkategorien">${tabs}</div>
@@ -3896,7 +3933,11 @@ class ThemeStudioPanel extends HTMLElement {
           padding: 15px;
           color: var(--preview-card-text);
           background-color: var(--preview-card);
-          background-image: var(--preview-glass-highlight, none);
+          background-image:
+            var(--preview-glass-highlight, none),
+            var(--preview-card-image, none);
+          background-position: center;
+          background-size: cover;
           border:
             var(--preview-border-width)
             solid
@@ -3926,6 +3967,9 @@ class ThemeStudioPanel extends HTMLElement {
           z-index: 0;
           content: "";
           background-color: var(--preview-card);
+          background-image: var(--preview-card-image, none);
+          background-position: center;
+          background-size: cover;
           clip-path: polygon(
             0 var(--preview-tech-cut),
             var(--preview-tech-cut) 0,
@@ -4970,6 +5014,7 @@ class ThemeStudioPanel extends HTMLElement {
         </div>
 
         ${this._backgroundTextureGalleryMarkup()}
+        ${this._cardTextureGalleryMarkup()}
 
         <section class="panel community-panel">
           <div class="panel-heading community-heading">
@@ -5337,6 +5382,27 @@ class ThemeStudioPanel extends HTMLElement {
                     70
                   )}
                 </div>
+
+                <h4 class="control-subheading">Globaler Kartenhintergrund</h4>
+                <div class="background-options">
+                  <button
+                    id="card-texture-option"
+                    class="background-option background-texture-option"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    Texturgalerie
+                  </button>
+                  <button
+                    id="card-texture-clear"
+                    class="background-option"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    Ohne Textur
+                  </button>
+                </div>
+                <p id="card-texture-status" class="effect-hint"></p>
 
                 <div id="card-material-controls">
                 ${this._colorField(
@@ -7588,7 +7654,7 @@ class ThemeStudioPanel extends HTMLElement {
       });
 
     this.shadowRoot
-      .querySelectorAll(".background-option")
+      .querySelectorAll(".background-option[data-background]")
       .forEach((button) => {
         button.addEventListener("click", () => {
           if (button.dataset.background === "texture") {
@@ -7644,6 +7710,50 @@ class ThemeStudioPanel extends HTMLElement {
       });
     textureOverlay.querySelector(".background-texture-apply")
       .addEventListener("click", () => this._applyBackgroundTexture());
+
+    const cardTextureOption = this.shadowRoot.getElementById(
+      "card-texture-option"
+    );
+    cardTextureOption.addEventListener("click", () => {
+      this._openCardTextureGallery(cardTextureOption);
+    });
+    this.shadowRoot.getElementById("card-texture-clear")
+      .addEventListener("click", () => {
+        if (!this.profile.cardBackgroundImage) return;
+        this._recordHistory();
+        this.profile.cardBackgroundImage = "";
+        this._syncControls();
+        this._updatePreview();
+        this._finishSettingsChange();
+      });
+
+    const cardTextureOverlay = this.shadowRoot.getElementById(
+      "card-texture-overlay"
+    );
+    cardTextureOverlay.querySelector(".background-texture-close")
+      .addEventListener("click", () => this._closeCardTextureGallery());
+    cardTextureOverlay.addEventListener("click", (event) => {
+      if (event.target === cardTextureOverlay) this._closeCardTextureGallery();
+    });
+    cardTextureOverlay.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") this._closeCardTextureGallery();
+    });
+    cardTextureOverlay.querySelectorAll(".background-texture-tab")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this.cardTextureCategory = button.dataset.textureCategory;
+          this._syncCardTextureGallery();
+        });
+      });
+    cardTextureOverlay.querySelectorAll(".background-texture-card")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this.pendingCardTexturePath = button.dataset.texturePath;
+          this._syncCardTextureGallery();
+        });
+      });
+    cardTextureOverlay.querySelector(".background-texture-apply")
+      .addEventListener("click", () => this._applyCardTexture());
 
     this.shadowRoot
       .getElementById("background-file")
@@ -10617,6 +10727,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._syncBackgroundSelection();
     this._syncImageOption();
     this._syncTextureOption();
+    this._syncCardTextureOption();
     this._renderBackgroundLibrary();
     this._syncEffectControls();
   }
@@ -11386,6 +11497,94 @@ class ThemeStudioPanel extends HTMLElement {
     this._closeBackgroundTextureGallery();
   }
 
+  _openCardTextureGallery(returnFocus) {
+    this.cardTextureReturnFocus = returnFocus || null;
+    const currentTextureFilename = this.profile.cardBackgroundImage
+      ? this.profile.cardBackgroundImage.split("?", 1)[0].split("/").pop()
+      : "";
+    this.pendingCardTexturePath = currentTextureFilename
+      ? `/theme_studio_files/textures/${currentTextureFilename}`
+        + `?v=${BUNDLED_TEXTURE_VERSION}`
+      : "";
+    const pendingTextureAssetPath = this.pendingCardTexturePath.split("?", 1)[0];
+    const category = CARD_TEXTURE_LIBRARY.find((entry) =>
+      entry.items.some(([, filename]) =>
+        pendingTextureAssetPath.endsWith(`/${filename}`)
+      )
+    );
+    if (category) this.cardTextureCategory = category.id;
+    this._syncCardTextureGallery();
+    const overlay = this.shadowRoot.getElementById("card-texture-overlay");
+    overlay.hidden = false;
+    overlay.querySelector(
+      `.background-texture-tab[data-texture-category="${this.cardTextureCategory}"]`
+    )?.focus();
+  }
+
+  _closeCardTextureGallery() {
+    const overlay = this.shadowRoot.getElementById("card-texture-overlay");
+    if (overlay) overlay.hidden = true;
+    this.cardTextureReturnFocus?.focus?.();
+    this.cardTextureReturnFocus = null;
+  }
+
+  _syncCardTextureGallery() {
+    const overlay = this.shadowRoot.getElementById("card-texture-overlay");
+    if (!overlay) return;
+    overlay.querySelectorAll(".background-texture-tab").forEach((button) => {
+      const active = button.dataset.textureCategory === this.cardTextureCategory;
+      button.classList.toggle("selected", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+    overlay.querySelectorAll(".background-texture-card").forEach((button) => {
+      const visible = button.dataset.textureCategory === this.cardTextureCategory;
+      button.hidden = !visible;
+      button.classList.toggle(
+        "selected",
+        button.dataset.texturePath === this.pendingCardTexturePath
+      );
+      if (visible) {
+        const image = button.querySelector("img[data-texture-src]");
+        if (image && !image.src) image.src = image.dataset.textureSrc;
+      }
+    });
+    const selectedButton = overlay.querySelector(
+      `.background-texture-card[data-texture-path="${this.pendingCardTexturePath}"]`
+    );
+    overlay.querySelector(".background-texture-selection").textContent =
+      selectedButton?.querySelector("span")?.textContent
+        || "Noch keine Textur ausgewählt";
+    overlay.querySelector(".background-texture-apply").disabled =
+      !this.pendingCardTexturePath;
+  }
+
+  _applyCardTexture() {
+    if (!this.pendingCardTexturePath) return;
+    this._recordHistory();
+    this.profile.cardBackgroundImage = this.pendingCardTexturePath;
+    this._syncControls();
+    this._updatePreview();
+    this._finishSettingsChange();
+    this._closeCardTextureGallery();
+  }
+
+  _syncCardTextureOption() {
+    const option = this.shadowRoot.getElementById("card-texture-option");
+    const clear = this.shadowRoot.getElementById("card-texture-clear");
+    const status = this.shadowRoot.getElementById("card-texture-status");
+    const selected = Boolean(this.profile.cardBackgroundImage);
+    option.style.backgroundImage = selected
+      ? `linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.2)),url("${this.profile.cardBackgroundImage}")`
+      : "";
+    option.classList.toggle("active", selected);
+    option.setAttribute("aria-pressed", String(selected));
+    clear.classList.toggle("active", !selected);
+    clear.setAttribute("aria-pressed", String(!selected));
+    status.textContent = selected
+      ? "Diese Textur wird auf alle Karten ohne individuelle Gestaltung angewendet."
+      : "Alle Karten verwenden nur den gewählten Kartenstil und die Kartenfarbe.";
+  }
+
   _syncImageOption() {
     const option =
       this.shadowRoot.getElementById("image-option");
@@ -11716,6 +11915,13 @@ class ThemeStudioPanel extends HTMLElement {
         previewProfile.cardColor,
         previewProfile.cardOpacity / 100
       )
+    );
+
+    preview.style.setProperty(
+      "--preview-card-image",
+      previewProfile.cardBackgroundImage
+        ? `url("${previewProfile.cardBackgroundImage}")`
+        : "none"
     );
 
     preview.style.setProperty(

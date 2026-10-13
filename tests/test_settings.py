@@ -309,11 +309,11 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
         "/theme_studio_files/background-textures/"
-        "wood-01-walnut.webp?v=0.10.0-beta.15"
+        "wood-01-walnut.webp?v=0.10.0-beta.18"
     )
     assert (
         'url("/theme_studio_files/background-textures/'
-        'wood-01-walnut.webp?v=0.10.0-beta.15")'
+        'wood-01-walnut.webp?v=0.10.0-beta.18")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
@@ -558,6 +558,28 @@ def test_tech_frame_defaults_and_theme_values_are_backward_compatible() -> None:
     assert values["theme-studio-tech-frame-border-color"] == "#26b2b3"
     assert values["theme-studio-tech-frame-border-width"] == "0px"
     assert values["theme-studio-tech-frame-shadow"] == "28"
+
+
+def test_global_card_texture_is_normalized_and_exported_as_theme_variable() -> None:
+    """One bundled texture can be applied globally without altering the dashboard."""
+
+    profile = deepcopy(DEFAULT_DARK_PROFILE)
+    profile["cardBackgroundImage"] = (
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=stale"
+    )
+
+    normalized = normalize_profile(profile, DEFAULT_DARK_PROFILE)
+    values = build_mode_values(normalized, "dark")
+
+    assert normalized["background"] == "color"
+    assert normalized["backgroundImage"] == ""
+    assert normalized["cardBackgroundImage"] == (
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.0-beta.18"
+    )
+    assert values["theme-studio-card-background-image"] == (
+        'url("/theme_studio_files/textures/'
+        'carbon-01-classic.webp?v=0.10.0-beta.18")'
+    )
 
 
 def test_liquid_glass_normalization_prevents_conflicting_card_settings() -> None:

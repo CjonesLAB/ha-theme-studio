@@ -69,6 +69,7 @@ DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
     "cardTextColor": "#1c1c1c",
     "cardIconColor": "#2f6fa3",
     "cardBorderColor": "#d5dde5",
+    "cardBackgroundImage": "",
     "headerBackgroundColor": "#eef2f5",
     "headerTextColor": "#1c1c1c",
     "sidebarBackgroundColor": "#eef2f5",
@@ -99,6 +100,7 @@ DEFAULT_DARK_PROFILE: dict[str, Any] = {
     "cardTextColor": "#ffffff",
     "cardIconColor": "#26b2b3",
     "cardBorderColor": "#26b2b3",
+    "cardBackgroundImage": "",
     "headerBackgroundColor": "#101719",
     "headerTextColor": "#ffffff",
     "sidebarBackgroundColor": "#101719",
@@ -242,7 +244,8 @@ BACKGROUND_URL_VALIDATOR = vol.Any(
     ),
     vol.Match(
         r"^/theme_studio_files/textures/"
-        r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp$"
+        r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp"
+        r"(\?v=[0-9A-Za-z.-]+)?$"
     ),
     vol.Match(
         r"^/theme_studio_files/background-textures/"
@@ -298,6 +301,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Required("cardTextColor"): COLOR_VALIDATOR,
         vol.Required("cardIconColor"): COLOR_VALIDATOR,
         vol.Required("cardBorderColor"): COLOR_VALIDATOR,
+        vol.Required("cardBackgroundImage"): BACKGROUND_URL_VALIDATOR,
         vol.Required("headerBackgroundColor"): COLOR_VALIDATOR,
         vol.Required("headerTextColor"): COLOR_VALIDATOR,
         vol.Required("sidebarBackgroundColor"): COLOR_VALIDATOR,
@@ -740,6 +744,16 @@ def normalize_bundled_dashboard_texture_url(value: str) -> str:
     return value
 
 
+def normalize_bundled_card_texture_url(value: str) -> str:
+    """Return the current cache-busted URL for a bundled card texture."""
+
+    if value.startswith("/theme_studio_files/textures/"):
+        value = value.split("?", 1)[0]
+        return f"{value}?v={VERSION}"
+
+    return value
+
+
 def normalize_profile(
     profile: dict[str, Any],
     defaults: dict[str, Any],
@@ -753,6 +767,10 @@ def normalize_profile(
             normalized[key] = profile[key]
 
     normalized = PROFILE_SCHEMA(normalized)
+
+    normalized["cardBackgroundImage"] = normalize_bundled_card_texture_url(
+        normalized["cardBackgroundImage"]
+    )
 
     if normalized["background"] == "texture":
         normalized["backgroundImage"] = (
@@ -1000,6 +1018,11 @@ def portable_import_settings(
             profile["backgroundImage"] = ""
             notices.append(
                 f"Lokaler Hintergrundbild-Pfad im {label} wurde entfernt."
+            )
+        if str(profile["cardBackgroundImage"]).startswith("/local/"):
+            profile["cardBackgroundImage"] = ""
+            notices.append(
+                f"Lokaler Kartenbild-Pfad im {label} wurde entfernt."
             )
 
     if portable["effects"] != DEFAULT_EFFECT_SETTINGS:
@@ -1364,9 +1387,11 @@ def background_is_referenced(
 
     def settings_use_file(candidate: dict[str, Any]) -> bool:
         return any(
-            str(candidate[mode].get("backgroundImage", ""))
-            .split("?", 1)[0]
-            == expected_path
+            any(
+                str(candidate[mode].get(key, "")).split("?", 1)[0]
+                == expected_path
+                for key in ("backgroundImage", "cardBackgroundImage")
+            )
             for mode in ("light", "dark")
         )
 
@@ -1566,6 +1591,11 @@ def build_mode_values(
             "1" if profile["liquidGlass"] else "0"
         ),
         "theme-studio-card-shape": profile["cardShape"],
+        "theme-studio-card-background-image": (
+            f'url({json.dumps(profile["cardBackgroundImage"])})'
+            if profile["cardBackgroundImage"]
+            else "none"
+        ),
         "theme-studio-tech-frame-cut": str(profile["techFrameCut"]),
         "theme-studio-tech-frame-glow": str(profile["techFrameGlow"]),
         "theme-studio-tech-frame-border-color": profile["cardBorderColor"],
@@ -2927,6 +2957,14 @@ def sanitize_gallery_settings(
         elif str(profile.get("backgroundImage", "")).startswith("/local/"):
             profile["background"] = "color"
             profile["backgroundImage"] = ""
+
+        card_background = str(profile.get("cardBackgroundImage", ""))
+        if card_background.startswith("/local/"):
+            profile["cardBackgroundImage"] = ""
+        else:
+            profile["cardBackgroundImage"] = (
+                normalize_bundled_card_texture_url(card_background)
+            )
 
     return sanitized
 

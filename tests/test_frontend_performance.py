@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.15";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.15";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.18";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.18";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -672,3 +672,19 @@ def test_config_area_excludes_all_special_effects() -> None:
     assert '"--ha-card-background": this.overlayBackground' in effects_source
     assert '"--ha-card-box-shadow": "none"' in effects_source
     assert "this._restoreConfigSurface();" in effects_source
+
+
+def test_global_card_texture_keeps_local_card_designs_and_overlays_separate() -> None:
+    """Global textures target normal cards while local overrides keep priority."""
+
+    panel_source = _panel_source()
+    effects_source = _effects_source()
+
+    assert "Globale Kartentextur" in panel_source
+    assert "Individuelle Kartendesigns behalten ihre eigene Gestaltung." in panel_source
+    assert 'id="card-texture-clear"' in panel_source
+    assert '"--theme-studio-card-background-image"' in effects_source
+    assert 'data-theme-studio-global-card-texture' in effects_source
+    assert 'if (localCardStyle) {' in effects_source
+    assert 'element.removeAttribute("data-theme-studio-global-card-texture")' in effects_source
+    assert 'var(--theme-studio-card-background-image, none)' in effects_source
