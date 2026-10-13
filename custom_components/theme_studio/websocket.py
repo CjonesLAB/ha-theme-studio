@@ -1723,8 +1723,12 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
             else "data-theme-studio-id"
         )
         selector = f'ha-card[{target_attribute}="{design["target"]}"]'
+        local_style = (
+            "standard" if design["style"] == "inherit" else design["style"]
+        )
         declarations: list[str] = [
             "--theme-studio-local-card-design: 1 !important;",
+            f"--theme-studio-local-card-style: {local_style} !important;",
             "position: relative !important;",
             "isolation: isolate !important;",
             "clip-path: none !important;",
@@ -1784,7 +1788,7 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
                 (
                     "border-radius: 0 !important;",
                     "clip-path: polygon(18px 0, calc(100% - 42px) 0, calc(100% - 28px) 14px, 100% 14px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px) !important;",
-                    "border: 2px solid var(--primary-color) !important;",
+                    "border: 0 !important;",
                     "filter: drop-shadow(0 0 8px color-mix(in srgb, var(--primary-color) 42%, transparent)) !important;",
                 )
             )

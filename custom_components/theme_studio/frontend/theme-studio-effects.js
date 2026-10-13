@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.5";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.6";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -170,6 +170,7 @@ class ThemeStudioEffects {
     this.glassHeadings = new Set();
     this.originalGlassHeadingStyles = new WeakMap();
     this.techFrameCards = new Set();
+    this.localTechFrameCards = new Set();
     this.originalTechFrameStyles = new WeakMap();
     this.techFrameOutlines = new WeakMap();
     this.techFrameResizeObserver = typeof window.ResizeObserver === "function"
@@ -177,7 +178,9 @@ class ThemeStudioEffects {
         for (const entry of entries) {
           const card = entry.target;
 
-          if (
+          if (card.isConnected && this.localTechFrameCards.has(card)) {
+            this._syncTechFrameOutline(card, 18, 2);
+          } else if (
             this.cardShape === "tech-frame"
             && card.isConnected
             && this.techFrameCards.has(card)
@@ -1469,6 +1472,7 @@ class ThemeStudioEffects {
     const currentExpertCards = new Set();
     const currentExpertLayouts = new Set();
     const currentExpertRoots = new Set();
+    const currentLocalTechFrames = new Set();
 
     this._visitElements(document, (element) => {
       if (this.expertCssEnabled || this.dashboardEditorActive) {
@@ -1553,8 +1557,15 @@ class ThemeStudioEffects {
       if (this._hasLocalCardDesign(element)) {
         this._restoreLiquidGlassCard(element);
         this._restoreTechFrameCard(element);
+        if (this._localCardDesignStyle(element) === "tech-frame") {
+          currentLocalTechFrames.add(element);
+          this._styleLocalTechFrameOutline(element);
+        } else {
+          this._restoreLocalTechFrameOutline(element);
+        }
         return;
       }
+      this._restoreLocalTechFrameOutline(element);
       currentCards.add(element);
 
       if (this.liquidGlass) {
@@ -1640,6 +1651,13 @@ class ThemeStudioEffects {
     }
 
     this.expertStyleElements = currentExpertStyles;
+
+    for (const card of this.localTechFrameCards) {
+      if (!currentLocalTechFrames.has(card) || !card.isConnected) {
+        this._restoreLocalTechFrameOutline(card);
+      }
+    }
+    this.localTechFrameCards = currentLocalTechFrames;
   }
 
   _hasLocalCardDesign(card) {
@@ -1649,6 +1667,16 @@ class ThemeStudioEffects {
         .trim() === "1";
     } catch (_error) {
       return false;
+    }
+  }
+
+  _localCardDesignStyle(card) {
+    try {
+      return getComputedStyle(card)
+        .getPropertyValue("--theme-studio-local-card-style")
+        .trim();
+    } catch (_error) {
+      return "";
     }
   }
 
@@ -2227,7 +2255,7 @@ class ThemeStudioEffects {
     this.techFrameResizeObserver?.observe(card);
   }
 
-  _syncTechFrameOutline(card, cut) {
+  _syncTechFrameOutline(card, cut, borderWidth = this.techFrameBorderWidth) {
     const namespace = "http://www.w3.org/2000/svg";
     let outline = this.techFrameOutlines.get(card);
 
@@ -2280,7 +2308,7 @@ class ThemeStudioEffects {
     const rect = card.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
-    const inset = Math.max(0.5, this.techFrameBorderWidth / 2);
+    const inset = Math.max(0.5, borderWidth / 2);
     const left = inset;
     const top = inset;
     const right = Math.max(left, width - inset);
@@ -2303,8 +2331,39 @@ class ThemeStudioEffects {
     outline.polygon.setAttribute("points", points);
     outline.polygon.setAttribute(
       "stroke-width",
-      String(this.techFrameBorderWidth)
+      String(borderWidth)
     );
+  }
+
+  _styleLocalTechFrameOutline(card, track = true) {
+    this._ensureTechFrameStyle(card.getRootNode?.());
+    card.setAttribute("data-theme-studio-tech-frame", "");
+    card.style.setProperty(
+      "--theme-studio-tech-frame-border-color",
+      "var(--primary-color)"
+    );
+    card.style.setProperty("--theme-studio-tech-frame-border-width", "2px");
+    this._syncTechFrameOutline(card, 18, 2);
+    if (track) {
+      this.localTechFrameCards.add(card);
+      this.techFrameResizeObserver?.observe(card);
+    }
+  }
+
+  _restoreLocalTechFrameOutline(card) {
+    if (!card || this.techFrameCards.has(card)) return;
+    this.techFrameResizeObserver?.unobserve(card);
+    this.techFrameOutlines.get(card)?.svg?.remove();
+    this.techFrameOutlines.delete(card);
+    for (const outline of card.querySelectorAll?.(
+      ":scope > svg[data-theme-studio-tech-frame-outline]"
+    ) || []) {
+      outline.remove();
+    }
+    card.removeAttribute("data-theme-studio-tech-frame");
+    card.style.removeProperty("--theme-studio-tech-frame-border-color");
+    card.style.removeProperty("--theme-studio-tech-frame-border-width");
+    this.localTechFrameCards.delete(card);
   }
 
   _ensureTechFrameStyle(root) {
@@ -2392,6 +2451,10 @@ class ThemeStudioEffects {
     }
 
     this.techFrameCards.clear();
+    for (const card of Array.from(this.localTechFrameCards)) {
+      this._restoreLocalTechFrameOutline(card);
+    }
+    this.localTechFrameCards.clear();
   }
 
   _collectChangedPulseEntities(hass) {
@@ -4827,6 +4890,7 @@ class ThemeStudioEffects {
 
   _restoreNativeCardDesignPreview(state) {
     if (state.previewCard?.isConnected) {
+      this._restoreLocalTechFrameOutline(state.previewCard);
       state.previewCard.style.cssText = state.previewOriginalCssText || "";
     }
     state.previewCard = null;
@@ -4872,6 +4936,9 @@ class ThemeStudioEffects {
       preview.style.setProperty("--state-icon-color", draft.iconColor, "important");
       preview.style.setProperty("--paper-item-icon-color", draft.iconColor, "important");
     }
+    if (draft.style !== "tech-frame") {
+      this._restoreLocalTechFrameOutline(preview);
+    }
     if (draft.style === "glass") {
       set("border-radius", "18px");
       set("backdrop-filter", "blur(18px) saturate(145%)");
@@ -4881,8 +4948,9 @@ class ThemeStudioEffects {
     } else if (draft.style === "tech-frame") {
       set("border-radius", "0");
       set("clip-path", "polygon(18px 0,calc(100% - 42px) 0,calc(100% - 28px) 14px,100% 14px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px)");
-      set("border", "2px solid var(--primary-color)");
+      set("border", "0");
       set("filter", "drop-shadow(0 0 8px color-mix(in srgb,var(--primary-color) 42%,transparent))");
+      this._styleLocalTechFrameOutline(preview, false);
     }
     if (draft.backgroundType === "color") set("background", background);
     if (draft.backgroundType === "dots") {

@@ -246,7 +246,9 @@ def test_local_tech_frame_replaces_global_card_material() -> None:
     css = build_card_designs_css(normalize_effects(effects)["cardDesigns"])
 
     assert "--theme-studio-local-card-design: 1 !important" in css
+    assert "--theme-studio-local-card-style: tech-frame !important" in css
     assert "border-radius: 0 !important" in css
+    assert "border: 0 !important" in css
     assert "filter: drop-shadow(" in css
     assert "background-image: linear-gradient(" in css
     assert "box-shadow: 0 0 24px" not in css
