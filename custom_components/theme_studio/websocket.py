@@ -240,6 +240,10 @@ BACKGROUND_URL_VALIDATOR = vol.Any(
         r"(background|background_light|background_dark|image_[a-f0-9]{32})"
         r"\.(jpg|png|webp)(\?v=[0-9]+)?$"
     ),
+    vol.Match(
+        r"^/theme_studio_files/textures/"
+        r"(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp$"
+    ),
 )
 
 BACKGROUND_FILENAME_VALIDATOR = vol.Match(
@@ -257,7 +261,13 @@ CARD_DESIGN_SCHEMA = vol.Schema(
         ),
         vol.Required("backgroundType"): vol.In(
             (
-                "inherit", "color", "waves", "carbon", "metal", "image",
+                "inherit",
+                "color",
+                "waves",
+                "carbon",
+                "metal",
+                "texture",
+                "image",
                 "dots", "grid",
             )
         ),
@@ -1845,7 +1855,7 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
                     "background-size: 20px 20px !important;",
                 )
             )
-        elif background_type == "image" and design["backgroundImage"]:
+        elif background_type in ("image", "texture") and design["backgroundImage"]:
             image_fade = 100 - opacity
             declarations.extend(
                 (

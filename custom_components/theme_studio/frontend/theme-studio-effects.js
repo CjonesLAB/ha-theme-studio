@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.10";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.11";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -68,6 +68,64 @@ const DASHBOARD_LAYOUT_CLASSES = new Set([
 ]);
 const DASHBOARD_EDITOR_STORAGE_KEY = "theme-studio-dashboard-editor";
 const LAST_DASHBOARD_PATH_STORAGE_KEY = "theme-studio-last-dashboard-path";
+const CARD_TEXTURE_LIBRARY = [
+  {
+    id: "carbon", label: "Carbon", items: [
+      ["Klassisch", "carbon-01-classic.webp"],
+      ["Graphit", "carbon-02-graphite.webp"],
+      ["Forged Carbon", "carbon-03-forged.webp"],
+      ["Blue Carbon", "carbon-04-blue.webp"],
+      ["Silber", "carbon-05-silver.webp"],
+      ["Racing Matt", "carbon-06-racing.webp"],
+      ["Hochglanz", "carbon-07-gloss.webp"],
+      ["Feingewebe", "carbon-08-plain.webp"],
+      ["Honeycomb", "carbon-09-honeycomb.webp"],
+      ["Bronze", "carbon-10-bronze.webp"],
+    ],
+  },
+  {
+    id: "metal", label: "Metall", items: [
+      ["Edelstahl", "metal-01-steel.webp"],
+      ["Aluminium", "metal-02-aluminum.webp"],
+      ["Titan", "metal-03-titanium.webp"],
+      ["Gunmetal", "metal-04-gunmetal.webp"],
+      ["Kupfer", "metal-05-copper.webp"],
+      ["Schwarzer Stahl", "metal-06-black-steel.webp"],
+      ["Champagner", "metal-07-champagne.webp"],
+      ["Bronze", "metal-08-bronze.webp"],
+      ["Zink", "metal-09-zinc.webp"],
+      ["Rauchchrom", "metal-10-smoked-chrome.webp"],
+    ],
+  },
+  {
+    id: "wood", label: "Holz", items: [
+      ["Walnuss", "wood-01-walnut.webp"],
+      ["Räuchereiche", "wood-02-smoked-oak.webp"],
+      ["Teak", "wood-03-teak.webp"],
+      ["Ebenholz", "wood-04-ebony.webp"],
+      ["Mahagoni", "wood-05-mahogany.webp"],
+      ["Esche", "wood-06-ash.webp"],
+      ["Palisander", "wood-07-rosewood.webp"],
+      ["Wenge", "wood-08-wenge.webp"],
+      ["Ahorn Anthrazit", "wood-09-charcoal-maple.webp"],
+      ["Altholz", "wood-10-reclaimed.webp"],
+    ],
+  },
+  {
+    id: "abstract", label: "Abstrakt", items: [
+      ["Fluid", "abstract-01-fluid.webp"],
+      ["Nebel", "abstract-02-smoke.webp"],
+      ["Facetten", "abstract-03-facets.webp"],
+      ["Aurora", "abstract-04-aurora.webp"],
+      ["Konturen", "abstract-05-contours.webp"],
+      ["Ebenen", "abstract-06-layers.webp"],
+      ["Lichtfäden", "abstract-07-threads.webp"],
+      ["Wellenringe", "abstract-08-ripples.webp"],
+      ["Kristall", "abstract-09-crystal.webp"],
+      ["Sunset", "abstract-10-sunset.webp"],
+    ],
+  },
+];
 
 
 class ThemeStudioEffects {
@@ -4688,6 +4746,30 @@ class ThemeStudioEffects {
     };
   }
 
+  _nativeCardTextureGalleryMarkup() {
+    const tabs = CARD_TEXTURE_LIBRARY.map((category, index) => `
+      <button type="button" class="tsd-texture-tab${index === 0 ? " selected" : ""}" data-texture-category="${category.id}" role="tab" aria-selected="${index === 0 ? "true" : "false"}">${category.label}</button>`
+    ).join("");
+    const cards = CARD_TEXTURE_LIBRARY.flatMap((category) =>
+      category.items.map(([label, filename]) => {
+        const path = `/theme_studio_files/textures/${filename}`;
+        return `
+          <button type="button" class="tsd-texture-card" data-texture-category="${category.id}" data-texture-path="${path}"${category.id === "carbon" ? "" : " hidden"}>
+            <img alt="" data-texture-src="${path}" loading="lazy" decoding="async">
+            <span>${label}</span>
+          </button>`;
+      })
+    ).join("");
+    return `
+      <div class="tsd-texture-overlay" hidden>
+        <section class="tsd-texture-dialog" role="dialog" aria-modal="true" aria-label="Texturgalerie">
+          <header class="tsd-texture-head"><h3>Texturgalerie</h3><button type="button" class="tsd-texture-close" aria-label="Schließen">×</button></header>
+          <div class="tsd-texture-tabs" role="tablist" aria-label="Texturkategorien">${tabs}</div>
+          <div class="tsd-texture-gallery">${cards}</div>
+        </section>
+      </div>`;
+  }
+
   _decorateNativeCardDesignEditor(editor) {
     const root = editor.shadowRoot;
     const tabGroup = root.querySelector("ha-tab-group");
@@ -4719,7 +4801,8 @@ class ThemeStudioEffects {
         [data-theme-studio-card-design-panel]{box-sizing:border-box;padding:20px 24px 24px;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit);overflow:auto;max-height:min(68vh,760px)}
         .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:block}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(3,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=carbon]{background-color:#20242a;background-image:linear-gradient(45deg,rgba(255,255,255,.08) 25%,transparent 25%,transparent 75%,rgba(255,255,255,.08) 75%),linear-gradient(45deg,rgba(0,0,0,.35) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.35) 75%);background-position:0 0,7px 7px;background-size:14px 14px}.tsd-pattern[data-value=metal]{background-color:#66717a;background-image:linear-gradient(110deg,rgba(255,255,255,.28),transparent 28%,rgba(255,255,255,.08) 48%,rgba(0,0,0,.24) 72%,rgba(255,255,255,.18)),repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 1px,rgba(0,0,0,.08) 1px 2px);background-size:cover,100% 3px}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-save,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-actions{display:flex;gap:10px;flex-wrap:wrap}.tsd-save{background:var(--primary-color);color:var(--text-primary-color,#fff);border-color:var(--primary-color)}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-status{min-height:20px;margin-top:12px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
         .tsd-upload-button{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700;cursor:pointer}.tsd-file-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.tsd-actions{position:sticky;bottom:0;z-index:3;padding:14px 0 4px;background:linear-gradient(transparent 0,var(--primary-background-color) 18px);display:grid}.tsd-save{width:100%;padding:13px 16px}.tsd-save-help{margin:0;color:var(--secondary-text-color);font-size:12px;line-height:1.45}
-        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}}
+        .tsd-texture-open{background-image:linear-gradient(120deg,#111820,#34495a,#3c2418)}.tsd-texture-overlay[hidden]{display:none}.tsd-texture-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:22px;background:rgba(5,9,13,.78);backdrop-filter:blur(8px)}.tsd-texture-dialog{display:grid;grid-template-rows:auto auto minmax(0,1fr);width:min(920px,calc(100vw - 32px));max-height:min(780px,calc(100vh - 32px));overflow:hidden;border:1px solid var(--divider-color);border-radius:20px;background:var(--primary-background-color);box-shadow:0 24px 80px rgba(0,0,0,.55)}.tsd-texture-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px 12px}.tsd-texture-head h3{margin:0;font-size:21px}.tsd-texture-close{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--divider-color);border-radius:50%;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-size:24px;cursor:pointer}.tsd-texture-tabs{display:flex;gap:8px;padding:0 20px 14px;overflow-x:auto}.tsd-texture-tab{flex:1 0 auto;padding:10px 16px;border:1px solid var(--divider-color);border-radius:999px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700;cursor:pointer}.tsd-texture-tab.selected{border-color:var(--primary-color);background:color-mix(in srgb,var(--primary-color) 22%,var(--card-background-color))}.tsd-texture-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:4px 20px 20px;overflow:auto}.tsd-texture-card{position:relative;display:grid;grid-template-rows:auto auto;gap:0;padding:0;overflow:hidden;border:2px solid transparent;border-radius:13px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-texture-card[hidden]{display:none}.tsd-texture-card img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:#182027}.tsd-texture-card span{padding:9px 10px;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tsd-texture-card.selected{border-color:var(--primary-color);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 28%,transparent)}
+        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}.tsd-texture-overlay{padding:8px}.tsd-texture-dialog{width:calc(100vw - 16px);max-height:calc(100vh - 16px);border-radius:16px}.tsd-texture-head{padding:14px 14px 10px}.tsd-texture-tabs{padding:0 14px 12px}.tsd-texture-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:3px 14px 16px}}
       </style>
       <div class="tsd-head"><div><h2>Theme Studio Design</h2><p>Diese Einstellungen gelten nur für diese Karte.</p></div><label class="tsd-toggle"><input class="tsd-enabled" type="checkbox"> Eigene Gestaltung für diese Karte</label></div>
       <div class="tsd-help">Der gewählte Kartenstil ersetzt das globale Kartendesign vollständig. Farben ohne eigene Auswahl bleiben global.</div>
@@ -4734,29 +4817,33 @@ class ThemeStudioEffects {
             <button type="button" class="tsd-choice tsd-pattern" data-value="inherit"><strong>Ohne Muster</strong></button>
             <button type="button" class="tsd-choice tsd-pattern" data-value="color"><strong>Farbe</strong></button>
             <button type="button" class="tsd-choice tsd-pattern" data-value="waves"><strong>Wellen</strong></button>
-            <button type="button" class="tsd-choice tsd-pattern" data-value="carbon"><strong>Carbon</strong></button>
-            <button type="button" class="tsd-choice tsd-pattern" data-value="metal"><strong>Metall</strong></button>
+            <button type="button" class="tsd-choice tsd-pattern tsd-texture-open" data-value="texture"><strong>Texturgalerie</strong><small>40 Oberflächen</small></button>
             <button type="button" class="tsd-choice tsd-pattern" data-value="image"><strong>Bild</strong></button>
           </div><div class="tsd-upload"><label class="tsd-upload-button">Eigenes Bild auswählen<input class="tsd-file-input" type="file" accept="image/jpeg,image/png,image/webp"></label><span class="tsd-file">Kein Bild gewählt</span></div></section>
           <section class="tsd-section"><div class="tsd-row"><label>Bilddeckkraft</label><output class="tsd-opacity-output">45 %</output><input class="tsd-opacity" type="range" min="0" max="100" value="45"></div><div class="tsd-row"><label>Abdunkeln</label><output class="tsd-dark-output">20 %</output><input class="tsd-dark" type="range" min="0" max="80" value="20"></div></section>
           <section class="tsd-section"><h3>Farben</h3><div class="tsd-color-row"><label class="tsd-color">Hintergrund <input class="tsd-bg-color" type="color" value="#26343d"></label><label class="tsd-color">Textfarbe <input class="tsd-text-color" type="color" value="#ffffff"></label><label class="tsd-color">Iconfarbe <input class="tsd-icon-color" type="color" value="#26b2b3"></label></div></section>
         </fieldset>
         <div class="tsd-actions"><button type="button" class="tsd-save">Theme-Studio-Design speichern &amp; anwenden</button><button type="button" class="tsd-reset">Kartendesign zurücksetzen</button><p class="tsd-save-help">Hier wird das Kartendesign gespeichert. „Speichern“ unten rechts gehört nur zum Karteninhalt von Home Assistant.</p></div>
-      </div><div class="tsd-status"></div>`;
+      </div><div class="tsd-status"></div>${this._nativeCardTextureGalleryMarkup()}`;
 
+    const textureOverlay = panel.querySelector(".tsd-texture-overlay");
+    textureOverlay.remove();
     const state = {
       editor, root, tab, panel, tabGroup,
       active: false, saving: false, settings: null,
       configOwner: null, config: {}, draft: this._defaultNativeCardDesign(),
       nativeNodes: [], previewCard: null, previewOriginalCssText: "",
+      textureCategory: "carbon", textureOverlay,
     };
     this.nativeCardDesignEditors.set(editor, state);
 
     tabGroup.appendChild(tab);
     root.appendChild(panel);
+    root.appendChild(textureOverlay);
     state.nativeNodes = Array.from(root.children).filter((node) =>
       node !== tabGroup
       && node !== panel
+      && node !== textureOverlay
       && node.localName !== "style"
       && !node.contains?.(tabGroup)
     );
@@ -4791,6 +4878,7 @@ class ThemeStudioEffects {
     state.panel.hidden = true;
     state.tab.removeAttribute("selected");
     state.tab.setAttribute("aria-selected", "false");
+    state.textureOverlay.hidden = true;
     for (const node of state.nativeNodes) node.hidden = false;
     for (const child of state.tabGroup.querySelectorAll('[slot="panel"]')) {
       if (child !== state.panel) child.hidden = false;
@@ -4842,9 +4930,35 @@ class ThemeStudioEffects {
         this._nativeCardDesignChanged(state);
       });
     });
-    panel.querySelectorAll(".tsd-patterns .tsd-choice").forEach((button) => {
+    panel.querySelectorAll(".tsd-patterns .tsd-choice:not(.tsd-texture-open)").forEach((button) => {
       button.addEventListener("click", () => {
         state.draft.backgroundType = button.dataset.value;
+        this._nativeCardDesignChanged(state);
+      });
+    });
+    const textureOverlay = state.textureOverlay;
+    panel.querySelector(".tsd-texture-open").addEventListener("click", () => {
+      this._openNativeCardTextureGallery(state);
+    });
+    textureOverlay.querySelector(".tsd-texture-close").addEventListener("click", () => {
+      textureOverlay.hidden = true;
+    });
+    textureOverlay.addEventListener("click", (event) => {
+      if (event.target === textureOverlay) textureOverlay.hidden = true;
+    });
+    textureOverlay.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") textureOverlay.hidden = true;
+    });
+    textureOverlay.querySelectorAll(".tsd-texture-tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.textureCategory = button.dataset.textureCategory;
+        this._syncNativeCardTextureGallery(state);
+      });
+    });
+    textureOverlay.querySelectorAll(".tsd-texture-card").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.draft.backgroundType = "texture";
+        state.draft.backgroundImage = button.dataset.texturePath;
         this._nativeCardDesignChanged(state);
       });
     });
@@ -4934,7 +5048,42 @@ class ThemeStudioEffects {
     if (draft.iconColor) state.panel.querySelector(".tsd-icon-color").value = draft.iconColor;
     state.panel.querySelector(".tsd-file").textContent = draft.backgroundImage
       ? draft.backgroundImage.split("/").at(-1).split("?")[0] : "Kein Bild gewählt";
+    this._syncNativeCardTextureGallery(state);
     this._syncNativeCardDesignPreview(state);
+  }
+
+  _openNativeCardTextureGallery(state) {
+    const selected = state.draft.backgroundImage || "";
+    const category = CARD_TEXTURE_LIBRARY.find((entry) =>
+      entry.items.some(([, filename]) => selected.endsWith(`/${filename}`))
+    );
+    if (category) state.textureCategory = category.id;
+    this._syncNativeCardTextureGallery(state);
+    state.textureOverlay.hidden = false;
+    state.textureOverlay.querySelector(
+      `.tsd-texture-tab[data-texture-category="${state.textureCategory}"]`
+    )?.focus();
+  }
+
+  _syncNativeCardTextureGallery(state) {
+    if (!state.panel?.isConnected) return;
+    state.textureOverlay.querySelectorAll(".tsd-texture-tab").forEach((button) => {
+      const active = button.dataset.textureCategory === state.textureCategory;
+      button.classList.toggle("selected", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    state.textureOverlay.querySelectorAll(".tsd-texture-card").forEach((button) => {
+      const visible = button.dataset.textureCategory === state.textureCategory;
+      button.hidden = !visible;
+      button.classList.toggle(
+        "selected",
+        button.dataset.texturePath === state.draft.backgroundImage
+      );
+      if (visible) {
+        const image = button.querySelector("img[data-texture-src]");
+        if (image && !image.src) image.src = image.dataset.textureSrc;
+      }
+    });
   }
 
   _findNativeCardDesignPreview(state) {
@@ -5080,7 +5229,7 @@ class ThemeStudioEffects {
       set("background-image", "linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)");
       set("background-size", "20px 20px");
     }
-    if (draft.backgroundType === "image" && draft.backgroundImage) {
+    if (["image", "texture"].includes(draft.backgroundType) && draft.backgroundImage) {
       const shade = Math.max(0, Math.min(.8, draft.backgroundDarkening / 100));
       const fade = Math.max(0, Math.min(100, 100 - draft.backgroundOpacity));
       set("background-image", `linear-gradient(rgba(0,0,0,${shade}),rgba(0,0,0,${shade})),linear-gradient(color-mix(in srgb,${background} ${fade}%,transparent),color-mix(in srgb,${background} ${fade}%,transparent)),url("${draft.backgroundImage}")`);

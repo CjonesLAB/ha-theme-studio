@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.10";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.10";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.11";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.11";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -521,16 +521,43 @@ def test_native_card_design_image_uses_native_file_label() -> None:
 
 
 def test_native_card_design_uses_material_background_choices() -> None:
-    """The obsolete dot and grid buttons are replaced by material surfaces."""
+    """The obsolete dot and grid buttons are replaced by a texture gallery."""
 
     effects_source = _effects_source()
 
     assert 'data-value="dots"><strong>Punkte</strong>' not in effects_source
     assert 'data-value="grid"><strong>Raster</strong>' not in effects_source
-    assert 'data-value="carbon"><strong>Carbon</strong>' in effects_source
-    assert 'data-value="metal"><strong>Metall</strong>' in effects_source
-    assert 'draft.backgroundType === "carbon"' in effects_source
-    assert 'draft.backgroundType === "metal"' in effects_source
+    assert 'data-value="carbon"><strong>Carbon</strong>' not in effects_source
+    assert 'data-value="metal"><strong>Metall</strong>' not in effects_source
+    assert 'data-value="texture"><strong>Texturgalerie</strong>' in effects_source
+    assert "const CARD_TEXTURE_LIBRARY = [" in effects_source
+    assert 'id: "carbon", label: "Carbon"' in effects_source
+    assert 'id: "metal", label: "Metall"' in effects_source
+    assert 'id: "wood", label: "Holz"' in effects_source
+    assert 'id: "abstract", label: "Abstrakt"' in effects_source
+    assert effects_source.count('.webp"]') == 40
+    assert "_nativeCardTextureGalleryMarkup" in effects_source
+    assert "_openNativeCardTextureGallery" in effects_source
+    assert "_syncNativeCardTextureGallery" in effects_source
+    assert 'loading="lazy" decoding="async"' in effects_source
+
+
+def test_bundled_card_textures_are_complete_and_lightweight() -> None:
+    """Four ten-item galleries stay small enough for the editor bundle."""
+
+    texture_dir = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "textures"
+    )
+    textures = sorted(texture_dir.glob("*.webp"))
+
+    assert len(textures) == 40
+    assert sum(path.stat().st_size for path in textures) < 1_200_000
+    for category in ("carbon", "metal", "wood", "abstract"):
+        assert len(list(texture_dir.glob(f"{category}-*.webp"))) == 10
 
 
 def test_local_card_design_badge_is_limited_to_dashboard_edit_mode() -> None:

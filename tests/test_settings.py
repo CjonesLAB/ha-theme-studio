@@ -275,6 +275,24 @@ def test_card_design_offers_carbon_and_metal_materials() -> None:
     assert "background-size: cover, 100% 3px !important" in css
 
 
+def test_card_design_accepts_bundled_texture_library_paths() -> None:
+    """Bundled textures are allowed without opening arbitrary remote URLs."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["cardDesigns"] = [
+        _card_design(
+            target="0123456789abcdef",
+            backgroundType="texture",
+            backgroundImage=(
+                "/theme_studio_files/textures/carbon-01-classic.webp"
+            ),
+        )
+    ]
+    css = build_card_designs_css(normalize_effects(effects)["cardDesigns"])
+
+    assert 'url("/theme_studio_files/textures/carbon-01-classic.webp")' in css
+
+
 def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:
     """Card-local settings remain unique and cannot load remote content."""
 
