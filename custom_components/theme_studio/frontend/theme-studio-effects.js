@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.2";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.3";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -112,7 +112,7 @@ class ThemeStudioEffects {
     this.expertCardKeyByCard = new WeakMap();
     this.expertLayouts = new Set();
     this.nativeCardDesignEditors = new Map();
-    this.nativeCardDesignSaveBypass = false;
+    this.nativeCardDesignLegacyCleanup = new WeakSet();
     this.dashboardEditorActive = false;
     this.dashboardEditorRoot = null;
     this.dashboardEditorHighlight = null;
@@ -249,9 +249,6 @@ class ThemeStudioEffects {
         }
       }
     };
-    this.nativeCardDesignSaveHandler = (event) => {
-      this._handleNativeCardDesignSave(event);
-    };
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
     this.themeComputedStyles = null;
@@ -300,14 +297,6 @@ class ThemeStudioEffects {
     if (DIRECT_CARD_EDITOR_ENABLED) {
       this._createDashboardToolbarButton();
     }
-    if (NATIVE_CARD_DESIGN_EDITOR_ENABLED) {
-      document.addEventListener(
-        "click",
-        this.nativeCardDesignSaveHandler,
-        true
-      );
-    }
-
     this.context = this.canvas.getContext(
       "2d",
       {
@@ -3376,7 +3365,11 @@ class ThemeStudioEffects {
     }
 
     const entries = Object.keys(value)
-      .filter((key) => !key.startsWith("_") && typeof value[key] !== "function")
+      .filter((key) =>
+        !key.startsWith("_")
+        && key !== "theme_studio_id"
+        && typeof value[key] !== "function"
+      )
       .sort()
       .slice(0, 100)
       .map((key) => `${JSON.stringify(key)}:${this._stableDashboardCardValue(
@@ -4351,6 +4344,7 @@ class ThemeStudioEffects {
         return;
       }
       found.add(element);
+      if (this._cleanupLegacyNativeCardDesignId(element)) return;
       if (!this.nativeCardDesignEditors.has(element)) {
         this._decorateNativeCardDesignEditor(element);
       } else {
@@ -4396,6 +4390,102 @@ class ThemeStudioEffects {
     }
 
     return { owner: editor, config: {} };
+  }
+
+  _cardDesignComparableConfig(config) {
+    if (!config || typeof config !== "object" || Array.isArray(config)) {
+      return config;
+    }
+    const comparable = {};
+    for (const [key, value] of Object.entries(config)) {
+      if (key !== "theme_studio_id") comparable[key] = value;
+    }
+    return comparable;
+  }
+
+  _findDashboardCardForNativeEditor(editor, config) {
+    const wanted = this._stableDashboardCardValue(
+      this._cardDesignComparableConfig(config)
+    );
+    const matches = [];
+    this._visitElements(document, (element) => {
+      if (
+        element.localName !== "ha-card"
+        || this._isInsideOverlay(element)
+        || this._isHeadingCard(element)
+      ) {
+        return;
+      }
+      let current = element;
+      let isMatch = false;
+      for (let depth = 0; current && depth < 8 && !isMatch; depth += 1) {
+        for (const candidate of this._configCandidates(current)) {
+          const comparable = this._stableDashboardCardValue(
+            this._cardDesignComparableConfig(candidate)
+          );
+          if (comparable === wanted) {
+            isMatch = true;
+            break;
+          }
+        }
+        current = current.parentElement || current.getRootNode?.()?.host || null;
+      }
+      if (isMatch) matches.push(element);
+    });
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  _cleanupLegacyNativeCardDesignId(editor) {
+    if (this.nativeCardDesignLegacyCleanup.has(editor)) return false;
+    const { config } = this._nativeCardEditorConfig(editor);
+    const legacyTarget = typeof config.theme_studio_id === "string"
+      ? config.theme_studio_id : "";
+    if (!legacyTarget) return false;
+    this.nativeCardDesignLegacyCleanup.add(editor);
+
+    const dashboardCard = this._findDashboardCardForNativeEditor(editor, config);
+    const nextTarget = dashboardCard ? this._dashboardCardKey(dashboardCard) : "";
+    if (nextTarget) {
+      (async () => {
+        try {
+          const result = await this._getHass()?.callWS({
+            type: "theme_studio/get_settings",
+          });
+          const designs = result?.effects?.cardDesigns || [];
+          const existing = designs.find((design) => design.target === legacyTarget);
+          if (existing) {
+            const settings = {
+              light: result.light,
+              dark: result.dark,
+              effects: JSON.parse(JSON.stringify(result.effects)),
+            };
+            const duplicate = settings.effects.cardDesigns.find(
+              (design) => design.target === nextTarget && design.id !== existing.id
+            );
+            settings.effects.cardDesigns = settings.effects.cardDesigns
+              .filter((design) => design !== duplicate)
+              .map((design) => design.id === existing.id
+                ? { ...design, target: nextTarget } : design);
+            await this._getHass().callWS({
+              type: "theme_studio/save_settings",
+              settings,
+              previous_theme_studio_active: result.theme_studio_active !== false,
+              ...(result.active_profile_id
+                ? { active_profile_id: result.active_profile_id } : {}),
+            });
+          }
+        } catch (_error) {
+          // The card config is still repaired; a missing beta design is harmless.
+        }
+      })();
+    }
+
+    const cleanConfig = { ...config };
+    delete cleanConfig.theme_studio_id;
+    editor.dispatchEvent(new CustomEvent("config-changed", {
+      detail: { config: cleanConfig }, bubbles: true, composed: true,
+    }));
+    return true;
   }
 
   _newCardDesignId(prefix = "") {
@@ -4450,7 +4540,7 @@ class ThemeStudioEffects {
     panel.innerHTML = `
       <style>
         [data-theme-studio-card-design-panel]{box-sizing:border-box;padding:20px 24px 24px;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit);overflow:auto;max-height:min(68vh,760px)}
-        .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:block}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(3,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=dots]{background-image:radial-gradient(circle,var(--primary-color) 1px,transparent 1.2px)}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=grid]{background-image:linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-status{min-height:20px;margin-top:12px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
+        .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:block}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(3,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=dots]{background-image:radial-gradient(circle,var(--primary-color) 1px,transparent 1.2px)}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=grid]{background-image:linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-save,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-actions{display:flex;gap:10px;flex-wrap:wrap}.tsd-save{background:var(--primary-color);color:var(--text-primary-color,#fff);border-color:var(--primary-color)}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-status{min-height:20px;margin-top:12px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
         @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}}
       </style>
       <div class="tsd-head"><div><h2>Theme Studio Design</h2><p>Diese Einstellungen gelten nur für diese Karte.</p></div><label class="tsd-toggle"><input class="tsd-enabled" type="checkbox"> Eigene Gestaltung für diese Karte</label></div>
@@ -4473,8 +4563,8 @@ class ThemeStudioEffects {
           </div><div class="tsd-upload"><button type="button" class="tsd-upload-button">Eigenes Bild auswählen</button><span class="tsd-file">Kein Bild gewählt</span><input class="tsd-file-input" type="file" accept="image/jpeg,image/png,image/webp" hidden></div></section>
           <section class="tsd-section"><div class="tsd-row"><label>Bilddeckkraft</label><output class="tsd-opacity-output">45 %</output><input class="tsd-opacity" type="range" min="0" max="100" value="45"></div><div class="tsd-row"><label>Abdunkeln</label><output class="tsd-dark-output">20 %</output><input class="tsd-dark" type="range" min="0" max="80" value="20"></div></section>
           <section class="tsd-section"><h3>Farben</h3><div class="tsd-color-row"><label class="tsd-color">Hintergrund <input class="tsd-bg-color" type="color" value="#26343d"></label><label class="tsd-color">Textfarbe <input class="tsd-text-color" type="color" value="#ffffff"></label><label class="tsd-color">Iconfarbe <input class="tsd-icon-color" type="color" value="#26b2b3"></label></div></section>
-          <button type="button" class="tsd-reset">Kartendesign zurücksetzen</button>
         </fieldset>
+        <div class="tsd-actions"><button type="button" class="tsd-save">Kartendesign speichern</button><button type="button" class="tsd-reset">Kartendesign zurücksetzen</button></div>
       </div><div class="tsd-status"></div>`;
 
     const state = {
@@ -4531,8 +4621,12 @@ class ThemeStudioEffects {
     const { owner, config } = this._nativeCardEditorConfig(state.editor);
     state.configOwner = owner;
     state.config = JSON.parse(JSON.stringify(config || {}));
-    const target = typeof state.config.theme_studio_id === "string"
-      ? state.config.theme_studio_id : "";
+    const dashboardCard = this._findDashboardCardForNativeEditor(
+      state.editor, state.config
+    );
+    state.dashboardCard = dashboardCard;
+    if (dashboardCard) this._markExpertCard(dashboardCard);
+    const target = dashboardCard ? this._dashboardCardKey(dashboardCard) : "";
 
     try {
       const result = await this._getHass()?.callWS({ type: "theme_studio/get_settings" });
@@ -4595,6 +4689,15 @@ class ThemeStudioEffects {
     const fileInput = panel.querySelector(".tsd-file-input");
     panel.querySelector(".tsd-upload-button").addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", () => this._uploadNativeCardDesignImage(state, fileInput));
+    panel.querySelector(".tsd-save").addEventListener("click", async () => {
+      try {
+        await this._saveNativeCardDesignState(state);
+      } catch (error) {
+        this._setNativeCardDesignStatus(
+          state, `Speichern fehlgeschlagen: ${error.message || error}`, "error"
+        );
+      }
+    });
     panel.querySelector(".tsd-reset").addEventListener("click", () => {
       const target = state.draft.target;
       state.draft = this._defaultNativeCardDesign(target);
@@ -4604,22 +4707,29 @@ class ThemeStudioEffects {
 
   _ensureNativeCardDesignTarget(state) {
     if (state.draft.target) return;
-    const target = `ts_${this._newCardDesignId()}${this._newCardDesignId()}`.slice(0, 24);
-    state.draft.target = target;
-    state.config = { ...state.config, theme_studio_id: target };
+    const dashboardCard = state.dashboardCard
+      || this._findDashboardCardForNativeEditor(state.editor, state.config);
+    if (!dashboardCard) {
+      throw new Error("Die bearbeitete Dashboard-Karte konnte nicht eindeutig gefunden werden.");
+    }
+    this._markExpertCard(dashboardCard);
+    state.dashboardCard = dashboardCard;
+    state.draft.target = this._dashboardCardKey(dashboardCard);
   }
 
   _nativeCardDesignChanged(state) {
-    if (state.draft.enabled) this._ensureNativeCardDesignTarget(state);
-    state.config = {
-      ...state.config,
-      ...(state.draft.target ? { theme_studio_id: state.draft.target } : {}),
-    };
-    state.editor.dispatchEvent(new CustomEvent("config-changed", {
-      detail: { config: { ...state.config } }, bubbles: true, composed: true,
-    }));
+    if (state.draft.enabled && !state.draft.target) {
+      try {
+        this._ensureNativeCardDesignTarget(state);
+      } catch (error) {
+        this._setNativeCardDesignStatus(state, error.message, "error");
+        return;
+      }
+    }
     this._renderNativeCardDesignPanel(state);
-    this._setNativeCardDesignStatus(state, "Wird mit „Speichern“ übernommen.", "");
+    this._setNativeCardDesignStatus(
+      state, "Noch nicht gespeichert. Home Assistant bleibt unverändert.", ""
+    );
   }
 
   _renderNativeCardDesignPanel(state) {
@@ -4648,12 +4758,25 @@ class ThemeStudioEffects {
   }
 
   _findNativeCardDesignPreview(state) {
+    let dialog = state.editor;
+    for (let depth = 0; dialog && depth < 14; depth += 1) {
+      const name = String(dialog.localName || "");
+      if (
+        name === "hui-dialog-edit-card"
+        || name === "ha-dialog"
+        || dialog.getAttribute?.("aria-modal") === "true"
+      ) {
+        break;
+      }
+      dialog = dialog.parentElement || dialog.getRootNode?.()?.host || null;
+    }
+
     let preview = null;
-    this._visitElements(document, (element) => {
+    const searchRoot = dialog?.shadowRoot || dialog || state.editor.getRootNode();
+    this._visitElements(searchRoot, (element) => {
       if (
         !preview
         && element.localName === "ha-card"
-        && this._isInsideOverlay(element)
         && !state.panel.contains(element)
       ) {
         preview = element;
@@ -4764,29 +4887,6 @@ class ThemeStudioEffects {
     status.className = `tsd-status ${kind}`.trim();
   }
 
-  _handleNativeCardDesignSave(event) {
-    if (this.nativeCardDesignSaveBypass) return;
-    const button = (event.composedPath?.() || []).find((element) =>
-      ["BUTTON", "HA-BUTTON", "MWC-BUTTON"].includes(element?.tagName)
-    );
-    const label = String(button?.textContent || "").trim().toLowerCase();
-    if (!button || !/^(speichern|save|enregistrer|guardar)/.test(label)) return;
-    const state = Array.from(this.nativeCardDesignEditors.values()).find(
-      (candidate) => candidate.active && candidate.editor.isConnected
-    );
-    if (!state || state.saving) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    state.saving = true;
-    this._saveNativeCardDesignState(state).then(() => {
-      this.nativeCardDesignSaveBypass = true;
-      button.click();
-      queueMicrotask(() => { this.nativeCardDesignSaveBypass = false; });
-    }).catch((error) => {
-      this._setNativeCardDesignStatus(state, `Speichern fehlgeschlagen: ${error.message || error}`, "error");
-    }).finally(() => { state.saving = false; });
-  }
-
   async _saveNativeCardDesignState(state) {
     if (!state.settings) {
       await this._loadNativeCardDesignState(state);
@@ -4814,6 +4914,7 @@ class ThemeStudioEffects {
     state.settings = JSON.parse(JSON.stringify(result.settings));
     this.glassLastScan = 0;
     this._readThemeSettings();
+    this._startStartupSync();
     this._setNativeCardDesignStatus(state, "Kartendesign gespeichert und angewendet.", "success");
   }
 

@@ -1717,10 +1717,12 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
         if not design["enabled"]:
             continue
 
-        selector = (
-            'ha-card[data-theme-studio-id="'
-            f'{design["target"]}"]'
+        target_attribute = (
+            "data-theme-studio-card-key"
+            if re.fullmatch(r"[a-f0-9]{16}", design["target"])
+            else "data-theme-studio-id"
         )
+        selector = f'ha-card[{target_attribute}="{design["target"]}"]'
         declarations: list[str] = [
             "position: relative !important;",
             "isolation: isolate !important;",

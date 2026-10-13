@@ -213,6 +213,20 @@ def test_card_designs_are_scoped_and_enable_generated_css() -> None:
     assert 'theme-studio-expert-css-enabled: "1"' in theme
 
 
+def test_card_design_can_target_a_native_dashboard_card_key() -> None:
+    """New designs use runtime card keys and never add unsupported config keys."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["cardDesigns"] = [
+        _card_design(target="0123456789abcdef")
+    ]
+    normalized = normalize_effects(effects)
+    css = build_card_designs_css(normalized["cardDesigns"])
+
+    assert 'ha-card[data-theme-studio-card-key="0123456789abcdef"]' in css
+    assert "data-theme-studio-id" not in css
+
+
 def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:
     """Card-local settings remain unique and cannot load remote content."""
 
