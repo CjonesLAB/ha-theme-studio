@@ -240,7 +240,7 @@ def test_local_tech_frame_replaces_global_card_material() -> None:
         _card_design(
             target="0123456789abcdef",
             style="tech-frame",
-            backgroundType="grid",
+            backgroundType="metal",
         )
     ]
     css = build_card_designs_css(normalize_effects(effects)["cardDesigns"])
@@ -254,6 +254,25 @@ def test_local_tech_frame_replaces_global_card_material() -> None:
     assert "filter: drop-shadow(" in css
     assert "background-image: linear-gradient(" in css
     assert "box-shadow: 0 0 24px" not in css
+
+
+def test_card_design_offers_carbon_and_metal_materials() -> None:
+    """The new material choices generate distinct CSS-only surfaces."""
+
+    effects = deepcopy(DEFAULT_EFFECT_SETTINGS)
+    effects["cardDesigns"] = [
+        _card_design(target="0123456789abcdef", backgroundType="carbon"),
+        _card_design(
+            id="123456789abc",
+            target="fedcba9876543210",
+            backgroundType="metal",
+        ),
+    ]
+    css = build_card_designs_css(normalize_effects(effects)["cardDesigns"])
+
+    assert "background-position: 0 0, 7px 7px !important" in css
+    assert "repeating-linear-gradient(0deg" in css
+    assert "background-size: cover, 100% 3px !important" in css
 
 
 def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:

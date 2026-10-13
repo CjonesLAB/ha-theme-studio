@@ -256,7 +256,10 @@ CARD_DESIGN_SCHEMA = vol.Schema(
             ("inherit", "standard", "glass", "tech-frame")
         ),
         vol.Required("backgroundType"): vol.In(
-            ("inherit", "color", "dots", "waves", "grid", "image")
+            (
+                "inherit", "color", "waves", "carbon", "metal", "image",
+                "dots", "grid",
+            )
         ),
         vol.Required("backgroundColor"): vol.Any("", COLOR_VALIDATOR),
         vol.Required("backgroundImage"): BACKGROUND_URL_VALIDATOR,
@@ -1815,6 +1818,23 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
                     f"background-color: color-mix(in srgb, {background_color} {opacity}%, transparent) !important;",
                     "background-image: radial-gradient(ellipse at 15% 15%, color-mix(in srgb, var(--primary-color) 35%, transparent), transparent 52%), radial-gradient(ellipse at 85% 80%, rgba(72,120,255,.26), transparent 55%) !important;",
                     "background-size: cover !important;",
+                )
+            )
+        elif background_type == "carbon":
+            declarations.extend(
+                (
+                    f"background-color: color-mix(in srgb, {background_color} {opacity}%, #171a1e) !important;",
+                    "background-image: linear-gradient(45deg, rgba(255,255,255,.07) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.07) 75%), linear-gradient(45deg, rgba(0,0,0,.34) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.34) 75%) !important;",
+                    "background-position: 0 0, 7px 7px !important;",
+                    "background-size: 14px 14px !important;",
+                )
+            )
+        elif background_type == "metal":
+            declarations.extend(
+                (
+                    f"background-color: color-mix(in srgb, {background_color} {opacity}%, #66717a) !important;",
+                    "background-image: linear-gradient(110deg, rgba(255,255,255,.26), transparent 28%, rgba(255,255,255,.08) 48%, rgba(0,0,0,.22) 72%, rgba(255,255,255,.16)), repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 1px, rgba(0,0,0,.07) 1px 2px) !important;",
+                    "background-size: cover, 100% 3px !important;",
                 )
             )
         elif background_type == "grid":
