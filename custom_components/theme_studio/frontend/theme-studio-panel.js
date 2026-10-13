@@ -1,8 +1,10 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.11";
-import "./theme-studio-effects.js?v=0.10.0-beta.11";
+} from "./theme-studio-locales.js?v=0.10.0-beta.12";
+import {
+  CARD_TEXTURE_LIBRARY,
+} from "./theme-studio-effects.js?v=0.10.0-beta.12";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -519,6 +521,9 @@ class ThemeStudioPanel extends HTMLElement {
     this.pendingProfileImport = null;
     this.importPreviewReturnFocus = null;
     this.cssLibraryReturnFocus = null;
+    this.backgroundTextureCategory = "carbon";
+    this.pendingBackgroundTexturePath = "";
+    this.backgroundTextureReturnFocus = null;
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
     this.activeThemeName = "Theme Studio";
@@ -714,6 +719,37 @@ class ThemeStudioPanel extends HTMLElement {
 
   set panel(panel) {
     this._panel = panel;
+  }
+
+  _backgroundTextureGalleryMarkup() {
+    const tabs = CARD_TEXTURE_LIBRARY.map((category, index) => `
+      <button type="button" class="background-texture-tab${index === 0 ? " selected" : ""}" data-texture-category="${category.id}" role="tab" aria-selected="${index === 0 ? "true" : "false"}">${category.label}</button>`
+    ).join("");
+    const cards = CARD_TEXTURE_LIBRARY.flatMap((category) =>
+      category.items.map(([label, filename]) => {
+        const path = `/theme_studio_files/textures/${filename}`;
+        return `
+          <button type="button" class="background-texture-card" data-texture-category="${category.id}" data-texture-path="${path}"${category.id === "carbon" ? "" : " hidden"}>
+            <img alt="" data-texture-src="${path}" loading="lazy" decoding="async">
+            <span>${label}</span>
+          </button>`;
+      })
+    ).join("");
+    return `
+      <div id="background-texture-overlay" class="background-texture-overlay" hidden>
+        <section class="background-texture-dialog" role="dialog" aria-modal="true" aria-labelledby="background-texture-title">
+          <header class="background-texture-head">
+            <div><h2 id="background-texture-title">Dashboard-Textur</h2><p>Die Textur gilt nur für den Dashboard-Hintergrund. Karten bleiben unverändert.</p></div>
+            <button type="button" class="background-texture-close" aria-label="Schließen">×</button>
+          </header>
+          <div class="background-texture-tabs" role="tablist" aria-label="Texturkategorien">${tabs}</div>
+          <div class="background-texture-gallery">${cards}</div>
+          <footer class="background-texture-actions">
+            <span class="background-texture-selection">Noch keine Textur ausgewählt</span>
+            <button type="button" class="background-texture-apply" disabled>Anwenden</button>
+          </footer>
+        </section>
+      </div>`;
   }
 
   _render() {
@@ -2533,6 +2569,205 @@ class ThemeStudioPanel extends HTMLElement {
         .background-image-option {
           background:
             linear-gradient(135deg, #32363b, #17191c);
+        }
+
+        .background-texture-option {
+          background:
+            linear-gradient(120deg, #111820, #34495a, #3c2418);
+        }
+
+        .background-texture-overlay[hidden] {
+          display: none;
+        }
+
+        .background-texture-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1100;
+          display: grid;
+          place-items: center;
+          padding: 22px;
+          background: rgba(5, 9, 13, 0.78);
+          backdrop-filter: blur(8px);
+        }
+
+        .background-texture-dialog {
+          display: grid;
+          grid-template-rows: auto auto minmax(0, 1fr) auto;
+          width: min(920px, calc(100vw - 32px));
+          max-height: min(780px, calc(100vh - 32px));
+          overflow: hidden;
+          border: 1px solid var(--divider-color);
+          border-radius: 20px;
+          background: var(--primary-background-color);
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+        }
+
+        .background-texture-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 18px 20px 12px;
+        }
+
+        .background-texture-head h2,
+        .background-texture-head p {
+          margin: 0;
+        }
+
+        .background-texture-head p {
+          margin-top: 4px;
+          color: var(--secondary-text-color);
+          font-size: 13px;
+        }
+
+        .background-texture-close {
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+          width: 42px;
+          height: 42px;
+          border: 1px solid var(--divider-color);
+          border-radius: 50%;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font-size: 24px;
+        }
+
+        .background-texture-tabs {
+          display: flex;
+          gap: 8px;
+          padding: 0 20px 14px;
+          overflow-x: auto;
+        }
+
+        .background-texture-tab {
+          flex: 1 0 auto;
+          padding: 10px 16px;
+          border: 1px solid var(--divider-color);
+          border-radius: 999px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font-weight: 700;
+        }
+
+        .background-texture-tab.selected {
+          border-color: var(--primary-color);
+          background: color-mix(in srgb, var(--primary-color) 22%, var(--card-background-color));
+        }
+
+        .background-texture-gallery {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+          padding: 4px 20px 20px;
+          overflow: auto;
+        }
+
+        .background-texture-card {
+          display: grid;
+          grid-template-rows: auto auto;
+          padding: 0;
+          overflow: hidden;
+          border: 2px solid transparent;
+          border-radius: 13px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          text-align: left;
+        }
+
+        .background-texture-card[hidden] {
+          display: none;
+        }
+
+        .background-texture-card img {
+          display: block;
+          width: 100%;
+          aspect-ratio: 16 / 10;
+          object-fit: cover;
+          background: #182027;
+        }
+
+        .background-texture-card span {
+          padding: 9px 10px;
+          font-size: 13px;
+          font-weight: 700;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .background-texture-card.selected {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 28%, transparent);
+        }
+
+        .background-texture-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 20px;
+          border-top: 1px solid var(--divider-color);
+          background: var(--primary-background-color);
+        }
+
+        .background-texture-selection {
+          min-width: 0;
+          color: var(--secondary-text-color);
+          font-size: 13px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .background-texture-apply {
+          min-width: 150px;
+          padding: 11px 18px;
+          border: 1px solid var(--primary-color);
+          border-radius: 10px;
+          background: var(--primary-color);
+          color: var(--text-primary-color, #fff);
+          font-weight: 700;
+        }
+
+        .background-texture-apply:disabled {
+          opacity: 0.45;
+        }
+
+        @media (max-width: 760px) {
+          .background-texture-overlay {
+            padding: 8px;
+          }
+
+          .background-texture-dialog {
+            width: calc(100vw - 16px);
+            max-height: calc(100vh - 16px);
+            border-radius: 16px;
+          }
+
+          .background-texture-head {
+            padding: 14px 14px 10px;
+          }
+
+          .background-texture-tabs {
+            padding: 0 14px 12px;
+          }
+
+          .background-texture-gallery {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+            padding: 3px 14px 16px;
+          }
+
+          .background-texture-actions {
+            padding: 12px 14px;
+          }
+
+          .background-texture-apply {
+            min-width: 120px;
+          }
         }
 
         .effect-options {
@@ -4726,6 +4961,8 @@ class ThemeStudioPanel extends HTMLElement {
           </section>
         </div>
 
+        ${this._backgroundTextureGalleryMarkup()}
+
         <section class="panel community-panel">
           <div class="panel-heading community-heading">
             <div>
@@ -5242,6 +5479,16 @@ class ThemeStudioPanel extends HTMLElement {
                     aria-pressed="false"
                   >
                     Eigenes Bild
+                  </button>
+
+                  <button
+                    id="texture-option"
+                    class="background-option background-texture-option"
+                    data-background="texture"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    Texturgalerie
                   </button>
                 </div>
 
@@ -7336,6 +7583,11 @@ class ThemeStudioPanel extends HTMLElement {
       .querySelectorAll(".background-option")
       .forEach((button) => {
         button.addEventListener("click", () => {
+          if (button.dataset.background === "texture") {
+            this._openBackgroundTextureGallery(button);
+            return;
+          }
+
           if (
             button.dataset.background === "image"
             && !this.profile.backgroundImage
@@ -7356,6 +7608,34 @@ class ThemeStudioPanel extends HTMLElement {
           this._finishSettingsChange();
         });
       });
+
+    const textureOverlay = this.shadowRoot.getElementById(
+      "background-texture-overlay"
+    );
+    textureOverlay.querySelector(".background-texture-close")
+      .addEventListener("click", () => this._closeBackgroundTextureGallery());
+    textureOverlay.addEventListener("click", (event) => {
+      if (event.target === textureOverlay) this._closeBackgroundTextureGallery();
+    });
+    textureOverlay.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") this._closeBackgroundTextureGallery();
+    });
+    textureOverlay.querySelectorAll(".background-texture-tab")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this.backgroundTextureCategory = button.dataset.textureCategory;
+          this._syncBackgroundTextureGallery();
+        });
+      });
+    textureOverlay.querySelectorAll(".background-texture-card")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this.pendingBackgroundTexturePath = button.dataset.texturePath;
+          this._syncBackgroundTextureGallery();
+        });
+      });
+    textureOverlay.querySelector(".background-texture-apply")
+      .addEventListener("click", () => this._applyBackgroundTexture());
 
     this.shadowRoot
       .getElementById("background-file")
@@ -7641,7 +7921,7 @@ class ThemeStudioPanel extends HTMLElement {
     for (const mode of ["light", "dark"]) {
       if (
         portable[mode].background === "image"
-        || portable[mode].backgroundImage
+        || portable[mode].backgroundImage.startsWith("/local/")
       ) {
         portable[mode].background = "color";
         portable[mode].backgroundImage = "";
@@ -10303,6 +10583,8 @@ class ThemeStudioPanel extends HTMLElement {
       .getElementById("file-name")
       .textContent = selectedBackground
         ? `Ausgewählt: ${selectedBackground.name}`
+        : this.profile.background === "texture"
+          ? "Dashboard-Textur ausgewählt"
         : this.profile.backgroundImage
           ? "Hintergrundbild ausgewählt"
           : "";
@@ -10326,6 +10608,7 @@ class ThemeStudioPanel extends HTMLElement {
     this._syncColorPresets();
     this._syncBackgroundSelection();
     this._syncImageOption();
+    this._syncTextureOption();
     this._renderBackgroundLibrary();
     this._syncEffectControls();
   }
@@ -11020,15 +11303,95 @@ class ThemeStudioPanel extends HTMLElement {
       });
   }
 
+  _openBackgroundTextureGallery(returnFocus) {
+    this.backgroundTextureReturnFocus = returnFocus || null;
+    this.pendingBackgroundTexturePath = this.profile.background === "texture"
+      ? this.profile.backgroundImage : "";
+    const category = CARD_TEXTURE_LIBRARY.find((entry) =>
+      entry.items.some(([, filename]) =>
+        this.pendingBackgroundTexturePath.endsWith(`/${filename}`)
+      )
+    );
+    if (category) this.backgroundTextureCategory = category.id;
+    this._syncBackgroundTextureGallery();
+    const overlay = this.shadowRoot.getElementById("background-texture-overlay");
+    overlay.hidden = false;
+    overlay.querySelector(
+      `.background-texture-tab[data-texture-category="${this.backgroundTextureCategory}"]`
+    )?.focus();
+  }
+
+  _closeBackgroundTextureGallery() {
+    const overlay = this.shadowRoot.getElementById("background-texture-overlay");
+    if (overlay) overlay.hidden = true;
+    this.backgroundTextureReturnFocus?.focus?.();
+    this.backgroundTextureReturnFocus = null;
+  }
+
+  _syncBackgroundTextureGallery() {
+    const overlay = this.shadowRoot.getElementById("background-texture-overlay");
+    if (!overlay) return;
+    overlay.querySelectorAll(".background-texture-tab").forEach((button) => {
+      const active = button.dataset.textureCategory ===
+        this.backgroundTextureCategory;
+      button.classList.toggle("selected", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+    overlay.querySelectorAll(".background-texture-card").forEach((button) => {
+      const visible = button.dataset.textureCategory ===
+        this.backgroundTextureCategory;
+      button.hidden = !visible;
+      button.classList.toggle(
+        "selected",
+        button.dataset.texturePath === this.pendingBackgroundTexturePath
+      );
+      if (visible) {
+        const image = button.querySelector("img[data-texture-src]");
+        if (image && !image.src) image.src = image.dataset.textureSrc;
+      }
+    });
+    const selectedButton = overlay.querySelector(
+      `.background-texture-card[data-texture-path="${this.pendingBackgroundTexturePath}"]`
+    );
+    overlay.querySelector(".background-texture-selection").textContent =
+      selectedButton?.querySelector("span")?.textContent
+        || "Noch keine Textur ausgewählt";
+    overlay.querySelector(".background-texture-apply").disabled =
+      !this.pendingBackgroundTexturePath;
+  }
+
+  _applyBackgroundTexture() {
+    if (!this.pendingBackgroundTexturePath) return;
+    this._recordHistory();
+    this.profile.background = "texture";
+    this.profile.backgroundImage = this.pendingBackgroundTexturePath;
+    this._syncControls();
+    this._updatePreview();
+    this._finishSettingsChange();
+    this._closeBackgroundTextureGallery();
+  }
+
   _syncImageOption() {
     const option =
       this.shadowRoot.getElementById("image-option");
 
     option.style.backgroundImage =
-      this.profile.backgroundImage
+      this.profile.background !== "texture" && this.profile.backgroundImage
         ? `linear-gradient(
             rgba(0, 0, 0, 0.25),
             rgba(0, 0, 0, 0.25)
+          ),
+          url("${this.profile.backgroundImage}")`
+        : "";
+  }
+
+  _syncTextureOption() {
+    const option = this.shadowRoot.getElementById("texture-option");
+    option.style.backgroundImage =
+      this.profile.background === "texture" && this.profile.backgroundImage
+        ? `linear-gradient(
+            rgba(0, 0, 0, 0.2),
+            rgba(0, 0, 0, 0.2)
           ),
           url("${this.profile.backgroundImage}")`
         : "";
@@ -11084,7 +11447,7 @@ class ThemeStudioPanel extends HTMLElement {
 
   _backgroundImage() {
     if (
-      this.profile.background === "image"
+      ["image", "texture"].includes(this.profile.background)
       && this.profile.backgroundImage
     ) {
       return `url("${this.profile.backgroundImage}")`;

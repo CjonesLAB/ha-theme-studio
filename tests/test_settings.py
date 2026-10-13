@@ -20,6 +20,7 @@ from custom_components.theme_studio.websocket import (
     recovery_state_from_settings,
     sanitize_gallery_settings,
     build_mode_values,
+    build_background,
     build_card_designs_css,
     build_expert_rules_css,
     build_theme_file,
@@ -291,6 +292,38 @@ def test_card_design_accepts_bundled_texture_library_paths() -> None:
     css = build_card_designs_css(normalize_effects(effects)["cardDesigns"])
 
     assert 'url("/theme_studio_files/textures/carbon-01-classic.webp")' in css
+
+
+def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
+    """A bundled texture changes the dashboard background, not card styling."""
+
+    profile = deepcopy(DEFAULT_DARK_PROFILE)
+    profile["background"] = "texture"
+    profile["backgroundImage"] = (
+        "/theme_studio_files/textures/wood-01-walnut.webp"
+    )
+
+    normalized = normalize_profile(profile, DEFAULT_DARK_PROFILE)
+    background = build_background(normalized)
+
+    assert normalized["background"] == "texture"
+    assert 'url("/theme_studio_files/textures/wood-01-walnut.webp")' in background
+
+    portable, notices = portable_import_settings({
+        **default_settings(),
+        "dark": profile,
+    })
+    assert portable["dark"]["background"] == "texture"
+    assert portable["dark"]["backgroundImage"] == profile["backgroundImage"]
+    assert not any("Dunkelmodus" in notice for notice in notices)
+
+    gallery = sanitize_gallery_settings({
+        "light": deepcopy(DEFAULT_LIGHT_PROFILE),
+        "dark": profile,
+        "effects": deepcopy(DEFAULT_EFFECT_SETTINGS),
+    })
+    assert gallery["dark"]["background"] == "texture"
+    assert gallery["dark"]["backgroundImage"] == profile["backgroundImage"]
 
 
 def test_card_designs_reject_duplicate_targets_and_remote_images() -> None:

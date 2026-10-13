@@ -348,7 +348,7 @@ PROFILE_SCHEMA = vol.Schema(
             vol.Range(min=0, max=80),
         ),
         vol.Required("background"): vol.In(
-            ("color", "waves", "aurora", "image")
+            ("color", "waves", "aurora", "texture", "image")
         ),
         vol.Required(
             "backgroundImage"
@@ -963,7 +963,10 @@ def portable_import_settings(
 
     for mode, label in (("light", "Hellmodus"), ("dark", "Dunkelmodus")):
         profile = portable[mode]
-        if profile["background"] == "image" or profile["backgroundImage"]:
+        if (
+            profile["background"] == "image"
+            or str(profile["backgroundImage"]).startswith("/local/")
+        ):
             profile["background"] = "color"
             profile["backgroundImage"] = ""
             notices.append(
@@ -1396,7 +1399,7 @@ def build_background(
     )
 
     if (
-        profile["background"] == "image"
+        profile["background"] in ("image", "texture")
         and profile["backgroundImage"]
     ):
         image_url = json.dumps(
@@ -2877,8 +2880,10 @@ def sanitize_gallery_settings(
 
         if profile.get("background") == "image":
             profile["background"] = "color"
-
-        profile["backgroundImage"] = ""
+            profile["backgroundImage"] = ""
+        elif str(profile.get("backgroundImage", "")).startswith("/local/"):
+            profile["background"] = "color"
+            profile["backgroundImage"] = ""
 
     return sanitized
 

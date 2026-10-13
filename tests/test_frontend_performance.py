@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.11";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.11";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.12";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.12";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -530,7 +530,7 @@ def test_native_card_design_uses_material_background_choices() -> None:
     assert 'data-value="carbon"><strong>Carbon</strong>' not in effects_source
     assert 'data-value="metal"><strong>Metall</strong>' not in effects_source
     assert 'data-value="texture"><strong>Texturgalerie</strong>' in effects_source
-    assert "const CARD_TEXTURE_LIBRARY = [" in effects_source
+    assert "export const CARD_TEXTURE_LIBRARY = [" in effects_source
     assert 'id: "carbon", label: "Carbon"' in effects_source
     assert 'id: "metal", label: "Metall"' in effects_source
     assert 'id: "wood", label: "Holz"' in effects_source
@@ -540,6 +540,23 @@ def test_native_card_design_uses_material_background_choices() -> None:
     assert "_openNativeCardTextureGallery" in effects_source
     assert "_syncNativeCardTextureGallery" in effects_source
     assert 'loading="lazy" decoding="async"' in effects_source
+    assert 'class="tsd-texture-apply" disabled>Anwenden</button>' in effects_source
+    assert "state.pendingTexturePath = button.dataset.texturePath" in effects_source
+    assert 'state.draft.backgroundImage = state.pendingTexturePath' in effects_source
+
+
+def test_dashboard_background_reuses_texture_gallery_without_changing_cards() -> None:
+    """Bundled textures can be selected independently as dashboard backgrounds."""
+
+    panel_source = _panel_source()
+
+    assert 'data-background="texture"' in panel_source
+    assert "_backgroundTextureGalleryMarkup" in panel_source
+    assert "_openBackgroundTextureGallery" in panel_source
+    assert "_applyBackgroundTexture" in panel_source
+    assert 'this.profile.background = "texture"' in panel_source
+    assert 'class="background-texture-apply" disabled>Anwenden</button>' in panel_source
+    assert "Karten bleiben unverändert" in panel_source
 
 
 def test_bundled_card_textures_are_complete_and_lightweight() -> None:
