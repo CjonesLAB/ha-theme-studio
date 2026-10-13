@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.3";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.3";' in effects_source
+    assert 'import "./theme-studio-effects.js?v=0.10.0-beta.4";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.4";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -483,11 +483,25 @@ def test_native_card_design_reuses_home_assistant_preview() -> None:
     assert 'class="tsd-preview"' not in effects_source
     assert 'class="tsd-preview-wrap"' not in effects_source
     assert "_findNativeCardDesignPreview(state)" in effects_source
+    assert "_visitComposedElements" in effects_source
+    assert 'name.includes("dialog-edit-card")' in effects_source
+    assert "assignedElements?.({ flatten: true })" in effects_source
     assert 'element.localName === "ha-card"' in effects_source
     assert "this._syncNativeCardDesignPreview(state);" in effects_source
     assert 'class="tsd-save"' in effects_source
     assert "nativeCardDesignSaveHandler" not in effects_source
     assert 'key !== "theme_studio_id"' in effects_source
+
+
+def test_native_card_design_image_uses_native_file_label() -> None:
+    """The user click must directly activate the browser's file picker."""
+
+    effects_source = _effects_source()
+
+    assert '<label class="tsd-upload-button">Eigenes Bild auswählen' in effects_source
+    assert 'class="tsd-file-input" type="file"' in effects_source
+    assert 'addEventListener("click", () => fileInput.click())' not in effects_source
+    assert 'fileInput.addEventListener("change"' in effects_source
 
 
 def test_liquid_glass_excludes_overlay_dialogs() -> None:
