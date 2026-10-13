@@ -1398,10 +1398,18 @@ def build_background(
         ")"
     )
 
-    if (
-        profile["background"] in ("image", "texture")
-        and profile["backgroundImage"]
-    ):
+    if profile["background"] == "texture" and profile["backgroundImage"]:
+        image_url = json.dumps(
+            profile["backgroundImage"]
+        )
+
+        return (
+            f"{overlay}, "
+            f"url({image_url}) "
+            "left top / 640px 400px repeat fixed"
+        )
+
+    if profile["background"] == "image" and profile["backgroundImage"]:
         image_url = json.dumps(
             profile["backgroundImage"]
         )

@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.12";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.12";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.13";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.13";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -557,6 +557,8 @@ def test_dashboard_background_reuses_texture_gallery_without_changing_cards() ->
     assert 'this.profile.background = "texture"' in panel_source
     assert 'class="background-texture-apply" disabled>Anwenden</button>' in panel_source
     assert "Karten bleiben unverändert" in panel_source
+    assert 'textureBackground ? "320px 200px" : "cover"' in panel_source
+    assert 'textureBackground ? "repeat" : "no-repeat"' in panel_source
 
 
 def test_bundled_card_textures_are_complete_and_lightweight() -> None:

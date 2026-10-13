@@ -1,10 +1,10 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.12";
+} from "./theme-studio-locales.js?v=0.10.0-beta.13";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.12";
+} from "./theme-studio-effects.js?v=0.10.0-beta.13";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -3418,8 +3418,9 @@ class ThemeStudioPanel extends HTMLElement {
           color: var(--preview-top-text);
           background-color: var(--preview-background);
           background-image: var(--preview-image);
-          background-position: center;
-          background-size: cover;
+          background-position: var(--preview-background-position, center);
+          background-size: var(--preview-background-size, cover);
+          background-repeat: var(--preview-background-repeat, no-repeat);
         }
 
         .preview-dashboard[data-preview-context="background"] {
@@ -11757,6 +11758,20 @@ class ThemeStudioPanel extends HTMLElement {
     preview.style.setProperty(
       "--preview-image",
       this._backgroundImage()
+    );
+
+    const textureBackground = this.profile.background === "texture";
+    preview.style.setProperty(
+      "--preview-background-position",
+      textureBackground ? "left top" : "center"
+    );
+    preview.style.setProperty(
+      "--preview-background-size",
+      textureBackground ? "320px 200px" : "cover"
+    );
+    preview.style.setProperty(
+      "--preview-background-repeat",
+      textureBackground ? "repeat" : "no-repeat"
     );
 
     preview.style.setProperty(

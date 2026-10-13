@@ -308,6 +308,7 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
 
     assert normalized["background"] == "texture"
     assert 'url("/theme_studio_files/textures/wood-01-walnut.webp")' in background
+    assert "left top / 640px 400px repeat fixed" in background
 
     portable, notices = portable_import_settings({
         **default_settings(),
