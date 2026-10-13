@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.1";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.2";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -4353,11 +4353,15 @@ class ThemeStudioEffects {
       found.add(element);
       if (!this.nativeCardDesignEditors.has(element)) {
         this._decorateNativeCardDesignEditor(element);
+      } else {
+        const state = this.nativeCardDesignEditors.get(element);
+        if (state?.active) this._syncNativeCardDesignPreview(state);
       }
     });
 
     for (const [editor, state] of this.nativeCardDesignEditors) {
       if (!found.has(editor) || !editor.isConnected) {
+        this._restoreNativeCardDesignPreview(state);
         state.panel?.remove();
         state.tab?.remove();
         this.nativeCardDesignEditors.delete(editor);
@@ -4446,8 +4450,8 @@ class ThemeStudioEffects {
     panel.innerHTML = `
       <style>
         [data-theme-studio-card-design-panel]{box-sizing:border-box;padding:20px 24px 24px;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit);overflow:auto;max-height:min(68vh,760px)}
-        .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.9fr);gap:22px}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(4,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=dots]{background-image:radial-gradient(circle,var(--primary-color) 1px,transparent 1.2px)}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=grid]{background-image:linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-preview-wrap{position:sticky;top:0;align-self:start;padding:18px;border-radius:16px;background:var(--secondary-background-color);min-height:260px}.tsd-preview-label{font-size:12px;color:var(--secondary-text-color);margin-bottom:10px}.tsd-preview{position:relative;overflow:hidden;isolation:isolate;min-height:110px;padding:20px;border-radius:22px;background:var(--ha-card-background,var(--card-background-color));box-shadow:var(--ha-card-box-shadow);border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,var(--divider-color))}.tsd-preview>*{position:relative;z-index:1}.tsd-preview .title{font-size:18px;font-weight:700}.tsd-preview .value{margin-top:5px;color:var(--secondary-text-color)}.tsd-preview .only{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--secondary-text-color)}.tsd-status{min-height:20px;margin-top:10px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
-        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-grid{grid-template-columns:1fr}.tsd-preview-wrap{position:relative;grid-row:1}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}}
+        .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:block}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(3,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=dots]{background-image:radial-gradient(circle,var(--primary-color) 1px,transparent 1.2px)}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=grid]{background-image:linear-gradient(color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--primary-color) 28%,transparent) 1px,transparent 1px)}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-status{min-height:20px;margin-top:12px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
+        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}}
       </style>
       <div class="tsd-head"><div><h2>Theme Studio Design</h2><p>Diese Einstellungen gelten nur für diese Karte.</p></div><label class="tsd-toggle"><input class="tsd-enabled" type="checkbox"> Eigene Gestaltung für diese Karte</label></div>
       <div class="tsd-help">Nicht gesetzte Werte folgen dem globalen Design.</div>
@@ -4471,14 +4475,13 @@ class ThemeStudioEffects {
           <section class="tsd-section"><h3>Farben</h3><div class="tsd-color-row"><label class="tsd-color">Hintergrund <input class="tsd-bg-color" type="color" value="#26343d"></label><label class="tsd-color">Textfarbe <input class="tsd-text-color" type="color" value="#ffffff"></label><label class="tsd-color">Iconfarbe <input class="tsd-icon-color" type="color" value="#26b2b3"></label></div></section>
           <button type="button" class="tsd-reset">Kartendesign zurücksetzen</button>
         </fieldset>
-        <aside class="tsd-preview-wrap"><div class="tsd-preview-label">Vorschau · nur diese Karte</div><div class="tsd-preview"><div class="title">Kartenname</div><div class="value">Beispielwert</div><div class="only">Nur diese Karte</div></div><div class="tsd-status"></div></aside>
-      </div>`;
+      </div><div class="tsd-status"></div>`;
 
     const state = {
       editor, root, tab, panel, tabGroup,
       active: false, saving: false, settings: null,
       configOwner: null, config: {}, draft: this._defaultNativeCardDesign(),
-      nativeNodes: [],
+      nativeNodes: [], previewCard: null, previewOriginalCssText: "",
     };
     this.nativeCardDesignEditors.set(editor, state);
 
@@ -4641,13 +4644,55 @@ class ThemeStudioEffects {
     if (draft.iconColor) state.panel.querySelector(".tsd-icon-color").value = draft.iconColor;
     state.panel.querySelector(".tsd-file").textContent = draft.backgroundImage
       ? draft.backgroundImage.split("/").at(-1).split("?")[0] : "Kein Bild gewählt";
-    this._styleNativeCardDesignPreview(state.panel.querySelector(".tsd-preview"), draft);
+    this._syncNativeCardDesignPreview(state);
+  }
+
+  _findNativeCardDesignPreview(state) {
+    let preview = null;
+    this._visitElements(document, (element) => {
+      if (
+        !preview
+        && element.localName === "ha-card"
+        && this._isInsideOverlay(element)
+        && !state.panel.contains(element)
+      ) {
+        preview = element;
+      }
+    });
+    return preview;
+  }
+
+  _restoreNativeCardDesignPreview(state) {
+    if (state.previewCard?.isConnected) {
+      state.previewCard.style.cssText = state.previewOriginalCssText || "";
+    }
+    state.previewCard = null;
+    state.previewOriginalCssText = "";
+  }
+
+  _syncNativeCardDesignPreview(state) {
+    const preview = this._findNativeCardDesignPreview(state);
+    if (!preview) return;
+    if (state.previewCard !== preview) {
+      this._restoreNativeCardDesignPreview(state);
+      state.previewCard = preview;
+      state.previewOriginalCssText = preview.style.cssText;
+    }
+    preview.style.cssText = state.previewOriginalCssText;
+    if (!state.draft.enabled) return;
+    this._styleNativeCardDesignPreview(preview, state.draft);
   }
 
   _styleNativeCardDesignPreview(preview, draft) {
-    preview.style.cssText = "";
     const background = draft.backgroundColor || "var(--ha-card-background,var(--card-background-color))";
-    preview.style.color = draft.textColor || "var(--primary-text-color)";
+    if (draft.textColor) {
+      preview.style.setProperty("--primary-text-color", draft.textColor, "important");
+      preview.style.setProperty("--secondary-text-color", draft.textColor, "important");
+    }
+    if (draft.iconColor) {
+      preview.style.setProperty("--state-icon-color", draft.iconColor, "important");
+      preview.style.setProperty("--paper-item-icon-color", draft.iconColor, "important");
+    }
     if (draft.style === "glass") {
       preview.style.backdropFilter = "blur(18px) saturate(145%)";
       preview.style.border = "1px solid rgba(255,255,255,.65)";
@@ -4678,7 +4723,6 @@ class ThemeStudioEffects {
       preview.style.backgroundSize = "cover";
       preview.style.backgroundPosition = "center";
     }
-    preview.style.opacity = draft.enabled ? "1" : ".65";
   }
 
   async _uploadNativeCardDesignImage(state, input) {
