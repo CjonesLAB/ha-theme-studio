@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.28";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.29";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -3281,21 +3281,17 @@ class ThemeStudioEffects {
     }
 
     const intensity = this.cardIntensity / 100;
-    const width = 1 + intensity * 2.5;
-    const glow = 7 + intensity * 24;
+    const width = Math.min(2, 1 + intensity);
 
     card.style.transition = [
-      "outline-color 450ms ease",
       "box-shadow 450ms ease",
       "color 450ms ease",
     ].join(", ");
 
-    card.style.outline =
-      `${width}px solid ${color}`;
-    card.style.outlineOffset = "1px";
+    card.style.outline = "none";
+    card.style.outlineOffset = "0";
     card.style.boxShadow =
-      `0 0 ${glow}px color-mix(`
-      + `in srgb, ${color} 68%, transparent)`;
+      `inset 0 0 0 ${width}px ${color}`;
 
     card.style.setProperty(
       "--primary-color",
@@ -5380,7 +5376,7 @@ class ThemeStudioEffects {
     const background = draft.backgroundColor || "var(--ha-card-background,var(--card-background-color))";
     const set = (property, value) => preview.style.setProperty(property, value, "important");
     set("clip-path", "none");
-    set("border-radius", "12px");
+    set("border-radius", "var(--ha-card-border-radius, 12px)");
     set("border-style", "solid");
     set("border-width", "0");
     set("border-color", "transparent");
@@ -6778,10 +6774,7 @@ class ThemeStudioEffects {
       this.cardIntensity / 100;
 
     const outlineWidth =
-      1 + intensity * 3;
-
-    const glowSize =
-      8 + intensity * 28;
+      Math.min(2, 1 + intensity);
 
     const duration =
       700 + intensity * 900;
@@ -6792,33 +6785,25 @@ class ThemeStudioEffects {
     const animation = card.animate(
       [
         {
-          outlineColor: color,
-          outlineStyle: "solid",
           outlineWidth: "0px",
           outlineOffset: "0px",
           boxShadow: baseBoxShadow,
         },
         {
-          outlineColor: color,
-          outlineStyle: "solid",
-          outlineWidth: `${outlineWidth}px`,
-          outlineOffset: "2px",
+          outlineWidth: "0px",
+          outlineOffset: "0px",
           boxShadow:
-            `0 0 ${glowSize}px ${color}`,
+            `inset 0 0 0 ${outlineWidth}px ${color}`,
           offset: 0.28,
         },
         {
-          outlineColor: color,
-          outlineStyle: "solid",
-          outlineWidth: `${outlineWidth * 0.65}px`,
-          outlineOffset: "1px",
+          outlineWidth: "0px",
+          outlineOffset: "0px",
           boxShadow:
-            `0 0 ${glowSize * 0.6}px ${color}`,
+            `inset 0 0 0 ${outlineWidth * 0.65}px ${color}`,
           offset: 0.68,
         },
         {
-          outlineColor: color,
-          outlineStyle: "solid",
           outlineWidth: "0px",
           outlineOffset: "0px",
           boxShadow: baseBoxShadow,

@@ -1827,7 +1827,7 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
             "position: relative !important;",
             "isolation: isolate !important;",
             "clip-path: none !important;",
-            "border-radius: 12px !important;",
+            "border-radius: var(--ha-card-border-radius, 12px) !important;",
             "border-style: solid !important;",
             "border-width: 0 !important;",
             "border-color: transparent !important;",

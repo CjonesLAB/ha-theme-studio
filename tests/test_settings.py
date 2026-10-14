@@ -213,7 +213,7 @@ def test_card_designs_are_scoped_and_enable_generated_css() -> None:
     assert "--primary-text-color: #ffffff" in css
     assert "--theme-studio-local-card-design: 1 !important" in css
     assert "clip-path: none !important" in css
-    assert "border-radius: 12px !important" in css
+    assert "border-radius: var(--ha-card-border-radius, 12px) !important" in css
     assert "filter: none !important" in css
     assert "background-image: none !important" in css
     assert 'theme-studio-expert-css-enabled: "1"' in theme
@@ -309,11 +309,11 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
         "/theme_studio_files/background-textures/"
-        "wood-01-walnut.webp?v=0.10.0-beta.28"
+        "wood-01-walnut.webp?v=0.10.0-beta.29"
     )
     assert (
         'url("/theme_studio_files/background-textures/'
-        'wood-01-walnut.webp?v=0.10.0-beta.28")'
+        'wood-01-walnut.webp?v=0.10.0-beta.29")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
@@ -575,11 +575,11 @@ def test_global_card_texture_is_normalized_and_exported_as_theme_variable() -> N
     assert normalized["background"] == "color"
     assert normalized["backgroundImage"] == ""
     assert normalized["cardBackgroundImage"] == (
-        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.0-beta.28"
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.0-beta.29"
     )
     assert values["theme-studio-card-background-image"] == (
         'url("/theme_studio_files/textures/'
-        'carbon-01-classic.webp?v=0.10.0-beta.28")'
+        'carbon-01-classic.webp?v=0.10.0-beta.29")'
     )
     assert values["theme-studio-card-texture-opacity"] == "0.92"
     assert values["theme-studio-card-texture-darkening"] == "0.35"
