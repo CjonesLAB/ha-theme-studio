@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.26";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.27";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -4934,6 +4934,7 @@ class ThemeStudioEffects {
       nativeNodes: [], previewCard: null, previewOriginalCssText: "",
       textureCategory: "carbon", pendingTexturePath: "", textureOverlay,
       dirty: false, saveReminderTimer: null, saveSuccessTimer: null,
+      closeTimer: null,
     };
     this.nativeCardDesignEditors.set(editor, state);
 
@@ -5171,13 +5172,38 @@ class ThemeStudioEffects {
   _clearNativeCardDesignSaveFeedback(state) {
     window.clearTimeout(state?.saveReminderTimer);
     window.clearTimeout(state?.saveSuccessTimer);
+    window.clearTimeout(state?.closeTimer);
     if (state) {
       state.saveReminderTimer = null;
       state.saveSuccessTimer = null;
+      state.closeTimer = null;
     }
     const button = state?.panel?.querySelector(".tsd-save");
     button?.classList.remove("save-reminder", "save-success");
     if (button) button.title = "";
+  }
+
+  _findNativeCardEditorDialog(state) {
+    let current = state?.editor;
+    for (let depth = 0; current && depth < 18; depth += 1) {
+      const name = String(current.localName || "");
+      if (name === "hui-dialog-edit-card" || name.includes("dialog-edit-card")) {
+        return current;
+      }
+      current = current.parentElement || current.getRootNode?.()?.host || null;
+    }
+    return null;
+  }
+
+  _scheduleNativeCardDesignEditorClose(state) {
+    window.clearTimeout(state.closeTimer);
+    state.closeTimer = window.setTimeout(() => {
+      state.closeTimer = null;
+      const dialog = this._findNativeCardEditorDialog(state);
+      if (typeof dialog?.closeDialog === "function") {
+        dialog.closeDialog();
+      }
+    }, 720);
   }
 
   _renderNativeCardDesignPanel(state) {
@@ -5252,14 +5278,10 @@ class ThemeStudioEffects {
 
   _findNativeCardDesignPreview(state) {
     let current = state.editor;
-    let dialog = null;
+    let dialog = this._findNativeCardEditorDialog(state);
     let fallbackDialog = null;
-    for (let depth = 0; current && depth < 18; depth += 1) {
+    for (let depth = 0; !dialog && current && depth < 18; depth += 1) {
       const name = String(current.localName || "");
-      if (name === "hui-dialog-edit-card" || name.includes("dialog-edit-card")) {
-        dialog = current;
-        break;
-      }
       if (
         !fallbackDialog
         && (name === "ha-dialog" || current.getAttribute?.("aria-modal") === "true")
@@ -5473,6 +5495,7 @@ class ThemeStudioEffects {
     this._startStartupSync();
     this._setNativeCardDesignStatus(state, "Kartendesign gespeichert und angewendet.", "success");
     this._showNativeCardDesignSaveSuccess(state);
+    this._scheduleNativeCardDesignEditorClose(state);
   }
 
   async _loadDashboardEditorSettings() {

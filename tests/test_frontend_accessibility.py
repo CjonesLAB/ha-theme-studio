@@ -194,6 +194,41 @@ def test_native_card_design_save_button_reports_pending_and_success() -> None:
     assert "this._showNativeCardDesignSaveSuccess(state);" in effects_source
 
 
+def test_successful_card_design_save_closes_the_native_editor_safely() -> None:
+    """Theme Studio closes through Home Assistant without pressing its save button."""
+
+    effects_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "theme-studio-effects.js"
+    ).read_text(encoding="utf-8")
+    close_helper = effects_source.split(
+        "_scheduleNativeCardDesignEditorClose(state) {",
+        maxsplit=1,
+    )[1].split(
+        "_renderNativeCardDesignPanel(state) {",
+        maxsplit=1,
+    )[0]
+    save_method = effects_source.split(
+        "async _saveNativeCardDesignState(state) {",
+        maxsplit=1,
+    )[1].split(
+        "async _loadDashboardEditorSettings() {",
+        maxsplit=1,
+    )[0]
+
+    assert "typeof dialog?.closeDialog" in close_helper
+    assert "dialog.closeDialog();" in close_helper
+    assert "click()" not in close_helper
+    assert "}, 720);" in close_helper
+    assert "this._scheduleNativeCardDesignEditorClose(state);" in save_method
+    assert save_method.index("await this._getHass().callWS") < save_method.index(
+        "this._scheduleNativeCardDesignEditorClose(state);"
+    )
+
+
 def test_visual_expert_rule_actions_have_accessible_names() -> None:
     """Icon-only expert-rule controls remain understandable without sight."""
 
