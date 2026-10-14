@@ -157,6 +157,43 @@ def test_profile_save_success_pulses_once() -> None:
     assert "this._showProfileSaveSuccess();" in PANEL_SOURCE
 
 
+def test_native_card_design_choices_have_hover_and_keyboard_feedback() -> None:
+    """Card design choices visibly react to pointer and keyboard focus."""
+
+    effects_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "theme-studio-effects.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".tsd-choice:hover,.tsd-choice:focus-visible" in effects_source
+    assert "transform:translateY(-2px)" in effects_source
+    assert "box-shadow:0 0 0 3px" in effects_source
+    assert "@media(prefers-reduced-motion:reduce)" in effects_source
+
+
+def test_native_card_design_save_button_reports_pending_and_success() -> None:
+    """Card design saving mirrors the main profile save feedback."""
+
+    effects_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "theme-studio-effects.js"
+    ).read_text(encoding="utf-8")
+
+    assert ".tsd-save.save-reminder" in effects_source
+    assert "var(--warning-color,#f9a825)" in effects_source
+    assert ".tsd-save.save-success" in effects_source
+    assert "box-shadow:0 0 0 5px #43a047" in effects_source
+    assert "const firstUnsavedChange = !state.dirty;" in effects_source
+    assert "if (firstUnsavedChange) this._showNativeCardDesignSaveReminder(state);" in effects_source
+    assert "this._showNativeCardDesignSaveSuccess(state);" in effects_source
+
+
 def test_visual_expert_rule_actions_have_accessible_names() -> None:
     """Icon-only expert-rule controls remain understandable without sight."""
 

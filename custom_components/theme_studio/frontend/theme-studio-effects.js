@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.25";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.26";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -4682,6 +4682,7 @@ class ThemeStudioEffects {
 
     for (const [editor, state] of this.nativeCardDesignEditors) {
       if (!found.has(editor) || !editor.isConnected) {
+        this._clearNativeCardDesignSaveFeedback(state);
         this._restoreNativeCardDesignPreview(state);
         state.panel?.remove();
         state.tab?.remove();
@@ -4897,8 +4898,10 @@ class ThemeStudioEffects {
         [data-theme-studio-card-design-panel]{box-sizing:border-box;padding:20px 24px 24px;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit);overflow:auto;max-height:min(68vh,760px)}
         .tsd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.tsd-head h2{font-size:22px;margin:0 0 5px}.tsd-head p,.tsd-help{margin:0;color:var(--secondary-text-color);font-size:14px}.tsd-toggle{display:flex;align-items:center;gap:12px;font-weight:700;white-space:nowrap}.tsd-grid{display:block}.tsd-controls{display:grid;gap:20px}.tsd-section{display:grid;gap:12px}.tsd-section h3{font-size:16px;margin:0}.tsd-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tsd-patterns{grid-template-columns:repeat(3,minmax(0,1fr))}.tsd-choice{min-height:64px;padding:11px;border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-choice strong,.tsd-choice small{display:block}.tsd-choice small{margin-top:4px;color:var(--secondary-text-color)}.tsd-choice.selected{border:2px solid var(--primary-color);padding:10px;box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 20%,transparent)}.tsd-pattern{min-height:70px;text-align:center;background-color:var(--card-background-color);background-size:14px 14px}.tsd-pattern[data-value=waves]{background-image:radial-gradient(ellipse at 10% 20%,color-mix(in srgb,var(--primary-color) 50%,transparent),transparent 55%),radial-gradient(ellipse at 90% 80%,rgba(70,120,255,.35),transparent 55%)}.tsd-pattern[data-value=carbon]{background-color:#20242a;background-image:linear-gradient(45deg,rgba(255,255,255,.08) 25%,transparent 25%,transparent 75%,rgba(255,255,255,.08) 75%),linear-gradient(45deg,rgba(0,0,0,.35) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.35) 75%);background-position:0 0,7px 7px;background-size:14px 14px}.tsd-pattern[data-value=metal]{background-color:#66717a;background-image:linear-gradient(110deg,rgba(255,255,255,.28),transparent 28%,rgba(255,255,255,.08) 48%,rgba(0,0,0,.24) 72%,rgba(255,255,255,.18)),repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 1px,rgba(0,0,0,.08) 1px 2px);background-size:cover,100% 3px}.tsd-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px}.tsd-row input[type=range]{grid-column:1/-1;width:100%}.tsd-color-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tsd-color{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid var(--divider-color);border-radius:12px}.tsd-color input{width:44px;height:34px;border:0;background:none}.tsd-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tsd-upload button,.tsd-save,.tsd-reset{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700}.tsd-actions{display:flex;gap:10px;flex-wrap:wrap}.tsd-save{background:var(--primary-color);color:var(--text-primary-color,#fff);border-color:var(--primary-color)}.tsd-file{color:var(--secondary-text-color);font-size:13px;overflow:hidden;text-overflow:ellipsis}.tsd-status{min-height:20px;margin-top:12px;color:var(--secondary-text-color);font-size:13px}.tsd-status.error{color:var(--error-color,#db4437)}.tsd-status.success{color:var(--success-color,#2eaa50)}fieldset{display:contents}fieldset[disabled]{opacity:.45;pointer-events:none}
         .tsd-upload-button{padding:10px 14px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700;cursor:pointer}.tsd-file-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.tsd-actions{position:sticky;bottom:0;z-index:3;padding:14px 0 4px;background:linear-gradient(transparent 0,var(--primary-background-color) 18px);display:grid}.tsd-save{width:100%;padding:13px 16px}.tsd-save-help{margin:0;color:var(--secondary-text-color);font-size:12px;line-height:1.45}
+        .tsd-choice{transition:transform 160ms ease,border-color 160ms ease,box-shadow 160ms ease,background-color 160ms ease}.tsd-choice:hover,.tsd-choice:focus-visible{border-color:var(--primary-color);background-color:color-mix(in srgb,var(--primary-color) 12%,var(--card-background-color));box-shadow:0 0 0 3px color-mix(in srgb,var(--primary-color) 26%,transparent);transform:translateY(-2px);outline:none}.tsd-choice.selected:hover,.tsd-choice.selected:focus-visible{box-shadow:0 0 0 4px color-mix(in srgb,var(--primary-color) 34%,transparent)}
+        .tsd-save.save-reminder{animation:tsd-save-reminder 680ms ease-in-out 3}.tsd-save.save-success{animation:tsd-save-success 680ms ease-in-out 1}@keyframes tsd-save-reminder{0%,100%{transform:scale(1);box-shadow:0 0 0 0 transparent}50%{transform:scale(1.035);box-shadow:0 0 0 5px var(--warning-color,#f9a825)}}@keyframes tsd-save-success{0%,100%{transform:scale(1);box-shadow:0 0 0 0 transparent}50%{transform:scale(1.035);box-shadow:0 0 0 5px #43a047}}
         .tsd-texture-open{background-image:linear-gradient(120deg,#111820,#34495a,#3c2418)}.tsd-texture-overlay[hidden]{display:none}.tsd-texture-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:22px;background:rgba(5,9,13,.78);backdrop-filter:blur(8px)}.tsd-texture-dialog{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;width:min(920px,calc(100vw - 32px));max-height:min(780px,calc(100vh - 32px));overflow:hidden;border:1px solid var(--divider-color);border-radius:20px;background:var(--primary-background-color);box-shadow:0 24px 80px rgba(0,0,0,.55)}.tsd-texture-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px 12px}.tsd-texture-head h3{margin:0;font-size:21px}.tsd-texture-close{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--divider-color);border-radius:50%;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-size:24px;cursor:pointer}.tsd-texture-tabs{display:flex;gap:8px;padding:0 20px 14px;overflow-x:auto}.tsd-texture-tab{flex:1 0 auto;padding:10px 16px;border:1px solid var(--divider-color);border-radius:999px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;font-weight:700;cursor:pointer}.tsd-texture-tab.selected{border-color:var(--primary-color);background:color-mix(in srgb,var(--primary-color) 22%,var(--card-background-color))}.tsd-texture-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:4px 20px 20px;overflow:auto}.tsd-texture-card{position:relative;display:grid;grid-template-rows:auto auto;gap:0;padding:0;overflow:hidden;border:2px solid transparent;border-radius:13px;background:var(--card-background-color);color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer}.tsd-texture-card[hidden]{display:none}.tsd-texture-card img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:#182027}.tsd-texture-card span{padding:9px 10px;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tsd-texture-card.selected{border-color:var(--primary-color);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary-color) 28%,transparent)}.tsd-texture-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;border-top:1px solid var(--divider-color);background:var(--primary-background-color)}.tsd-texture-selection{min-width:0;color:var(--secondary-text-color);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tsd-texture-apply{min-width:150px;padding:11px 18px;border:1px solid var(--primary-color);border-radius:10px;background:var(--primary-color);color:var(--text-primary-color,#fff);font:inherit;font-weight:700;cursor:pointer}.tsd-texture-apply:disabled{opacity:.45;cursor:default}
-        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}.tsd-texture-overlay{padding:8px}.tsd-texture-dialog{width:calc(100vw - 16px);max-height:calc(100vh - 16px);border-radius:16px}.tsd-texture-head{padding:14px 14px 10px}.tsd-texture-tabs{padding:0 14px 12px}.tsd-texture-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:3px 14px 16px}}
+        @media(max-width:760px){[data-theme-studio-card-design-panel]{padding:16px;max-height:65vh}.tsd-head{display:grid}.tsd-toggle{white-space:normal}.tsd-choices{grid-template-columns:1fr}.tsd-patterns{grid-template-columns:1fr 1fr}.tsd-color-row{grid-template-columns:1fr}.tsd-texture-overlay{padding:8px}.tsd-texture-dialog{width:calc(100vw - 16px);max-height:calc(100vh - 16px);border-radius:16px}.tsd-texture-head{padding:14px 14px 10px}.tsd-texture-tabs{padding:0 14px 12px}.tsd-texture-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:3px 14px 16px}}@media(prefers-reduced-motion:reduce){.tsd-choice{transition:none}.tsd-choice:hover,.tsd-choice:focus-visible{transform:none}.tsd-save.save-reminder,.tsd-save.save-success{animation:none}.tsd-save.save-reminder{outline:3px solid var(--warning-color,#f9a825)}.tsd-save.save-success{outline:3px solid #43a047}}
       </style>
       <div class="tsd-head"><div><h2>Theme Studio Design</h2><p>Diese Einstellungen gelten nur für diese Karte.</p></div><label class="tsd-toggle"><input class="tsd-enabled" type="checkbox"> Eigene Gestaltung für diese Karte</label></div>
       <div class="tsd-help">Der gewählte Kartenstil ersetzt das globale Kartendesign vollständig. Farben ohne eigene Auswahl bleiben global.</div>
@@ -4930,6 +4933,7 @@ class ThemeStudioEffects {
       configOwner: null, config: {}, draft: this._defaultNativeCardDesign(),
       nativeNodes: [], previewCard: null, previewOriginalCssText: "",
       textureCategory: "carbon", pendingTexturePath: "", textureOverlay,
+      dirty: false, saveReminderTimer: null, saveSuccessTimer: null,
     };
     this.nativeCardDesignEditors.set(editor, state);
 
@@ -5007,6 +5011,8 @@ class ThemeStudioEffects {
         ? JSON.parse(JSON.stringify(existing))
         : this._defaultNativeCardDesign(target);
       if (state.draft.style === "inherit") state.draft.style = "standard";
+      state.dirty = false;
+      this._clearNativeCardDesignSaveFeedback(state);
       this._renderNativeCardDesignPanel(state);
     } catch (error) {
       this._setNativeCardDesignStatus(state, `Design konnte nicht geladen werden: ${error.message || error}`, "error");
@@ -5122,10 +5128,56 @@ class ThemeStudioEffects {
         return;
       }
     }
+    const firstUnsavedChange = !state.dirty;
+    state.dirty = true;
     this._renderNativeCardDesignPanel(state);
+    if (firstUnsavedChange) this._showNativeCardDesignSaveReminder(state);
     this._setNativeCardDesignStatus(
       state, "Noch nicht gespeichert. Home Assistant bleibt unverändert.", ""
     );
+  }
+
+  _showNativeCardDesignSaveReminder(state) {
+    const button = state.panel?.querySelector(".tsd-save");
+    if (!button) return;
+    button.classList.remove("save-success", "save-reminder");
+    void button.offsetWidth;
+    button.classList.add("save-reminder");
+    button.title = "Änderungen am Kartendesign speichern und anwenden";
+    window.clearTimeout(state.saveReminderTimer);
+    state.saveReminderTimer = window.setTimeout(() => {
+      button.classList.remove("save-reminder");
+      state.saveReminderTimer = null;
+    }, 2200);
+  }
+
+  _showNativeCardDesignSaveSuccess(state) {
+    const button = state.panel?.querySelector(".tsd-save");
+    if (!button) return;
+    window.clearTimeout(state.saveReminderTimer);
+    state.saveReminderTimer = null;
+    button.classList.remove("save-reminder", "save-success");
+    void button.offsetWidth;
+    button.classList.add("save-success");
+    button.title = "Kartendesign wurde gespeichert und angewendet";
+    window.clearTimeout(state.saveSuccessTimer);
+    state.saveSuccessTimer = window.setTimeout(() => {
+      button.classList.remove("save-success");
+      button.title = "";
+      state.saveSuccessTimer = null;
+    }, 750);
+  }
+
+  _clearNativeCardDesignSaveFeedback(state) {
+    window.clearTimeout(state?.saveReminderTimer);
+    window.clearTimeout(state?.saveSuccessTimer);
+    if (state) {
+      state.saveReminderTimer = null;
+      state.saveSuccessTimer = null;
+    }
+    const button = state?.panel?.querySelector(".tsd-save");
+    button?.classList.remove("save-reminder", "save-success");
+    if (button) button.title = "";
   }
 
   _renderNativeCardDesignPanel(state) {
@@ -5415,10 +5467,12 @@ class ThemeStudioEffects {
       ...(state.activeProfileId ? { active_profile_id: state.activeProfileId } : {}),
     });
     state.settings = JSON.parse(JSON.stringify(result.settings));
+    state.dirty = false;
     this.glassLastScan = 0;
     this._readThemeSettings();
     this._startStartupSync();
     this._setNativeCardDesignStatus(state, "Kartendesign gespeichert und angewendet.", "success");
+    this._showNativeCardDesignSaveSuccess(state);
   }
 
   async _loadDashboardEditorSettings() {
