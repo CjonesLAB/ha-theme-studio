@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.27";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.28";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -4676,6 +4676,7 @@ class ThemeStudioEffects {
         this._decorateNativeCardDesignEditor(element);
       } else {
         const state = this.nativeCardDesignEditors.get(element);
+        this._ensureNativeCardEditorOpaqueSurface(state);
         if (state?.active) this._syncNativeCardDesignPreview(state);
       }
     });
@@ -4683,6 +4684,7 @@ class ThemeStudioEffects {
     for (const [editor, state] of this.nativeCardDesignEditors) {
       if (!found.has(editor) || !editor.isConnected) {
         this._clearNativeCardDesignSaveFeedback(state);
+        state.dialogSurfaceStyle?.remove();
         this._restoreNativeCardDesignPreview(state);
         state.panel?.remove();
         state.tab?.remove();
@@ -4934,9 +4936,10 @@ class ThemeStudioEffects {
       nativeNodes: [], previewCard: null, previewOriginalCssText: "",
       textureCategory: "carbon", pendingTexturePath: "", textureOverlay,
       dirty: false, saveReminderTimer: null, saveSuccessTimer: null,
-      closeTimer: null,
+      closeTimer: null, dialogSurfaceStyle: null,
     };
     this.nativeCardDesignEditors.set(editor, state);
+    this._ensureNativeCardEditorOpaqueSurface(state);
 
     tabGroup.appendChild(tab);
     root.appendChild(panel);
@@ -5193,6 +5196,32 @@ class ThemeStudioEffects {
       current = current.parentElement || current.getRootNode?.()?.host || null;
     }
     return null;
+  }
+
+  _ensureNativeCardEditorOpaqueSurface(state) {
+    if (!state) return;
+    const dialog = this._findNativeCardEditorDialog(state);
+    const haDialog = dialog?.shadowRoot?.querySelector("ha-dialog");
+    const root = haDialog?.shadowRoot;
+    if (!root) return;
+    let style = root.querySelector(
+      "style[data-theme-studio-card-editor-opaque]"
+    );
+    if (!style) {
+      style = document.createElement("style");
+      style.setAttribute("data-theme-studio-card-editor-opaque", "");
+      style.textContent = `
+        wa-dialog::part(dialog) {
+          background: var(
+            --theme-studio-overlay-background,
+            var(--card-background-color, #182326)
+          ) !important;
+          backdrop-filter: none !important;
+        }
+      `;
+      root.appendChild(style);
+    }
+    state.dialogSurfaceStyle = style;
   }
 
   _scheduleNativeCardDesignEditorClose(state) {

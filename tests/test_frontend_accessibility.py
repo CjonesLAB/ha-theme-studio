@@ -229,6 +229,32 @@ def test_successful_card_design_save_closes_the_native_editor_safely() -> None:
     )
 
 
+def test_card_editor_overlay_surface_is_opaque_without_styling_pickers() -> None:
+    """Only the visible card editor surface receives an opaque background."""
+
+    effects_source = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "theme_studio"
+        / "frontend"
+        / "theme-studio-effects.js"
+    ).read_text(encoding="utf-8")
+    opaque_helper = effects_source.split(
+        "_ensureNativeCardEditorOpaqueSurface(state) {",
+        maxsplit=1,
+    )[1].split(
+        "_scheduleNativeCardDesignEditorClose(state) {",
+        maxsplit=1,
+    )[0]
+
+    assert 'dialog?.shadowRoot?.querySelector("ha-dialog")' in opaque_helper
+    assert 'style[data-theme-studio-card-editor-opaque]' in opaque_helper
+    assert "wa-dialog::part(dialog)" in opaque_helper
+    assert "--theme-studio-overlay-background" in opaque_helper
+    assert "backdrop-filter: none !important" in opaque_helper
+    assert "--ha-dialog-surface-background" not in opaque_helper
+
+
 def test_visual_expert_rule_actions_have_accessible_names() -> None:
     """Icon-only expert-rule controls remain understandable without sight."""
 
