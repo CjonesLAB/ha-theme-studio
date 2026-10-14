@@ -10,7 +10,7 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.10.0-beta.20"
+RELEASE_VERSION = "0.10.0-beta.22"
 DOCUMENTED_RELEASE_VERSION = "0.9.0"
 
 
@@ -45,6 +45,9 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     setup = (integration / "__init__.py").read_text(encoding="utf-8")
     panel = (integration / "frontend/theme-studio-panel.js").read_text(encoding="utf-8")
     effects = (integration / "frontend/theme-studio-effects.js").read_text(encoding="utf-8")
+    clock_card = (integration / "frontend/theme-studio-clock-card.js").read_text(
+        encoding="utf-8"
+    )
 
     assert manifest["version"] == RELEASE_VERSION
     assert re.search(rf'^VERSION = "{re.escape(RELEASE_VERSION)}"$', constants, re.MULTILINE)
@@ -52,10 +55,13 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert f'theme-studio-locales.js?v={RELEASE_VERSION}' in panel
     assert f'theme-studio-effects.js?v={RELEASE_VERSION}' in panel
     assert f'THEME_STUDIO_EFFECTS_VERSION = "{RELEASE_VERSION}"' in effects
+    assert f'THEME_STUDIO_CLOCK_CARD_VERSION = "{RELEASE_VERSION}"' in clock_card
     assert "EFFECTS_MODULE_URL = (" in setup
+    assert "CLOCK_CARD_MODULE_URL = (" in setup
     assert "def _register_effects_module(hass: HomeAssistant)" in setup
     assert "frontend.remove_extra_js_url(hass, url)" in setup
     assert "frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)" in setup
+    assert "frontend.add_extra_js_url(hass, CLOCK_CARD_MODULE_URL)" in setup
     assert "DATA_EFFECTS_MODULE_REGISTERED" in setup
     assert "await async_refresh_theme_registry(hass)" in setup
 

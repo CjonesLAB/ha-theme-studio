@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.20";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.20";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.22";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.22";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -691,3 +691,26 @@ def test_global_card_texture_keeps_local_card_designs_and_overlays_separate() ->
     assert 'var(--theme-studio-card-texture-opacity, 1)' in effects_source
     assert 'var(--theme-studio-card-texture-darkening, 0)' in effects_source
     assert '"Karten abdunkeln"' in panel_source
+
+
+def test_clock_is_a_native_dashboard_card_without_fixed_overlay() -> None:
+    """The clock participates in Lovelace layout and needs no third-party card."""
+
+    root = Path(__file__).parents[1]
+    source = (
+        root
+        / "custom_components/theme_studio/frontend/theme-studio-clock-card.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'customElements.define("theme-studio-clock-card"' in source
+    assert 'customElements.define("theme-studio-clock-card-editor"' in source
+    assert 'type: "theme-studio-clock-card"' in source
+    assert 'name: "Theme Studio Uhr"' in source
+    assert "static getConfigElement()" in source
+    assert "static getStubConfig()" in source
+    assert "getGridOptions()" in source
+    assert 'clock_type: "analog"' in source
+    assert 'clock_type === "analog"' in source
+    assert 'value="digital"' in source
+    assert "position: fixed" not in source
+    assert "window.clearInterval(this._timer);" in source

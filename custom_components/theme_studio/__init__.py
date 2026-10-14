@@ -28,6 +28,9 @@ STATIC_URL = "/theme_studio_files"
 EFFECTS_MODULE_URL = (
     f"{STATIC_URL}/theme-studio-effects.js?v={FRONTEND_REVISION}"
 )
+CLOCK_CARD_MODULE_URL = (
+    f"{STATIC_URL}/theme-studio-clock-card.js?v={FRONTEND_REVISION}"
+)
 
 DATA_WEBSOCKET_REGISTERED = "websocket_registered"
 DATA_STATIC_PATH_REGISTERED = "static_path_registered"
@@ -35,16 +38,22 @@ DATA_EFFECTS_MODULE_REGISTERED = "effects_module_registered"
 
 
 def _register_effects_module(hass: HomeAssistant) -> None:
-    """Register only the current dashboard effects module URL."""
+    """Register only the current Theme Studio frontend module URLs."""
 
     manager = hass.data.get(frontend.DATA_EXTRA_MODULE_URL)
 
     if manager is not None:
         for url in manager.urls:
-            if url.startswith(f"{STATIC_URL}/theme-studio-effects.js"):
+            if url.startswith(
+                (
+                    f"{STATIC_URL}/theme-studio-effects.js",
+                    f"{STATIC_URL}/theme-studio-clock-card.js",
+                )
+            ):
                 frontend.remove_extra_js_url(hass, url)
 
     frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)
+    frontend.add_extra_js_url(hass, CLOCK_CARD_MODULE_URL)
 
 
 async def async_setup_entry(
