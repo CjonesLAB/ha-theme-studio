@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.23";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.24";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -1612,7 +1612,7 @@ class ThemeStudioEffects {
       // Keep Home Assistant's dialog layout and scrim native. Only the dialog
       // surface receives the opaque profile color so transparent dashboard
       // cards do not make weather and more-info overlays unreadable.
-      if (this._isOverlayElement(element)) {
+      if (this._shouldStyleOverlaySurface(element)) {
         currentOverlays.add(element);
         this._styleOverlaySurface(element);
       }
@@ -1896,7 +1896,7 @@ class ThemeStudioEffects {
     const currentOverlays = new Set();
 
     this._visitElements(document, (element) => {
-      if (this._isOverlayElement(element)) {
+      if (this._shouldStyleOverlaySurface(element)) {
         currentOverlays.add(element);
         this._styleOverlaySurface(element);
       }
@@ -2043,6 +2043,25 @@ class ThemeStudioEffects {
       || element?.getAttribute?.("role") === "dialog"
       || element?.getAttribute?.("aria-modal") === "true"
     );
+  }
+
+  _shouldStyleOverlaySurface(element) {
+    const name = String(element?.localName || "");
+    const classes = String(element?.className || "")
+      .split(/\s+/);
+    const parts = String(element?.getAttribute?.("part") || "")
+      .split(/\s+/);
+
+    // Modern Home Assistant pickers use a native <dialog> as a full-screen
+    // positioning layer. It must remain transparent; only the ha-dialog host
+    // or the actual exposed dialog surface receives the profile background.
+    return name === "ha-dialog"
+      || name === "ha-adaptive-dialog"
+      || name === "ha-more-info-dialog"
+      || name.startsWith("hui-dialog-")
+      || name.startsWith("more-info-")
+      || classes.includes("mdc-dialog__surface")
+      || parts.includes("dialog");
   }
 
   _isInsideOverlay(element) {
