@@ -160,6 +160,47 @@ def test_expert_css_is_disabled_for_existing_profiles() -> None:
     assert normalized["expertCss"] == ""
 
 
+def test_dashboard_clock_defaults_are_inert_and_backward_compatible() -> None:
+    """Existing profiles gain a disabled dashboard clock."""
+
+    normalized = normalize_effects({"effect": "none"})
+
+    assert normalized["clockEnabled"] is False
+    assert normalized["clockType"] == "analog"
+    assert normalized["clockPosition"] == "top-right"
+    assert normalized["clockVisibility"] == "all"
+
+
+def test_dashboard_clock_settings_are_exported_as_theme_variables() -> None:
+    """Analog and digital clocks reach the lightweight frontend runtime."""
+
+    settings = default_settings()
+    settings["effects"].update(
+        {
+            "clockEnabled": True,
+            "clockType": "digital",
+            "clockStyle": "tech",
+            "clockPosition": "bottom-right",
+            "clockSize": 190,
+            "clockOpacity": 82,
+            "clockShowSeconds": False,
+            "clockShowNumerals": False,
+            "clockVisibility": "desktop",
+        }
+    )
+
+    theme = build_theme_file(normalize_settings(settings))
+
+    assert 'theme-studio-clock-enabled: "1"' in theme
+    assert 'theme-studio-clock-type: "digital"' in theme
+    assert 'theme-studio-clock-style: "tech"' in theme
+    assert 'theme-studio-clock-position: "bottom-right"' in theme
+    assert 'theme-studio-clock-size: "190"' in theme
+    assert 'theme-studio-clock-opacity: "82"' in theme
+    assert 'theme-studio-clock-show-seconds: "0"' in theme
+    assert 'theme-studio-clock-visibility: "desktop"' in theme
+
+
 def test_expert_css_is_base64_encoded_in_theme_file() -> None:
     """Multiline CSS reaches the frontend without breaking generated YAML."""
 
@@ -309,11 +350,11 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
         "/theme_studio_files/background-textures/"
-        "wood-01-walnut.webp?v=0.10.0-beta.20"
+        "wood-01-walnut.webp?v=0.10.0-beta.21"
     )
     assert (
         'url("/theme_studio_files/background-textures/'
-        'wood-01-walnut.webp?v=0.10.0-beta.20")'
+        'wood-01-walnut.webp?v=0.10.0-beta.21")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
@@ -575,11 +616,11 @@ def test_global_card_texture_is_normalized_and_exported_as_theme_variable() -> N
     assert normalized["background"] == "color"
     assert normalized["backgroundImage"] == ""
     assert normalized["cardBackgroundImage"] == (
-        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.0-beta.20"
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.0-beta.21"
     )
     assert values["theme-studio-card-background-image"] == (
         'url("/theme_studio_files/textures/'
-        'carbon-01-classic.webp?v=0.10.0-beta.20")'
+        'carbon-01-classic.webp?v=0.10.0-beta.21")'
     )
     assert values["theme-studio-card-texture-opacity"] == "0.92"
     assert values["theme-studio-card-texture-darkening"] == "0.35"

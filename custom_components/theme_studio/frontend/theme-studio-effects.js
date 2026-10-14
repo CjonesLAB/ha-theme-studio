@@ -1,11 +1,20 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.20";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.21";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
 const DEFAULT_EFFECT = "none";
 const DEFAULT_MOTION = 35;
 const DEFAULT_GLOW = 35;
+const DEFAULT_CLOCK_ENABLED = false;
+const DEFAULT_CLOCK_TYPE = "analog";
+const DEFAULT_CLOCK_STYLE = "minimal";
+const DEFAULT_CLOCK_POSITION = "top-right";
+const DEFAULT_CLOCK_SIZE = 160;
+const DEFAULT_CLOCK_OPACITY = 90;
+const DEFAULT_CLOCK_SHOW_SECONDS = true;
+const DEFAULT_CLOCK_SHOW_NUMERALS = true;
+const DEFAULT_CLOCK_VISIBILITY = "all";
 const DEFAULT_CARD_EFFECTS = [];
 const DEFAULT_CARD_INTENSITY = 55;
 const DEFAULT_PULSE_ENTITIES = [];
@@ -146,6 +155,18 @@ class ThemeStudioEffects {
     this.effect = DEFAULT_EFFECT;
     this.motion = DEFAULT_MOTION;
     this.glow = DEFAULT_GLOW;
+    this.clockEnabled = DEFAULT_CLOCK_ENABLED;
+    this.clockType = DEFAULT_CLOCK_TYPE;
+    this.clockStyle = DEFAULT_CLOCK_STYLE;
+    this.clockPosition = DEFAULT_CLOCK_POSITION;
+    this.clockSize = DEFAULT_CLOCK_SIZE;
+    this.clockOpacity = DEFAULT_CLOCK_OPACITY;
+    this.clockShowSeconds = DEFAULT_CLOCK_SHOW_SECONDS;
+    this.clockShowNumerals = DEFAULT_CLOCK_SHOW_NUMERALS;
+    this.clockVisibility = DEFAULT_CLOCK_VISIBILITY;
+    this.clockHost = null;
+    this.clockIntervalId = null;
+    this.clockRenderKey = "";
     this.cardEffects = [...DEFAULT_CARD_EFFECTS];
     this.cardIntensity = DEFAULT_CARD_INTENSITY;
     this.pulseEntities = [...DEFAULT_PULSE_ENTITIES];
@@ -270,10 +291,14 @@ class ThemeStudioEffects {
     this.startupSyncTimeoutIds = new Set();
     this.overlaySyncFrame = 0;
     this.overlaySyncTimeoutIds = new Set();
-    this.overlayEventHandler = () => this._startOverlaySync();
+    this.overlayEventHandler = () => {
+      this._startOverlaySync();
+      window.requestAnimationFrame(() => this._syncClockWidget());
+    };
     this.resizeEventHandler = () => {
       this._resize();
       this._positionDashboardEditorHighlight();
+      this._syncClockWidget();
     };
     this.locationChangedEventHandler = () => {
       this.stateSnapshot.clear();
@@ -586,6 +611,7 @@ class ThemeStudioEffects {
     this._clearTechFrameCards();
     this._stopDashboardEditor(false);
     this._clearExpertCss();
+    this._removeClockWidget();
     this.techFrameResizeObserver?.disconnect();
     this._restoreConfigSurface();
     this.dashboardToolbarHost?.remove();
@@ -1038,6 +1064,7 @@ class ThemeStudioEffects {
     } finally {
       this.themeComputedStyles = null;
     }
+    this._syncClockWidget();
   }
 
   _readThemeSettingsFromComputedStyles() {
@@ -1063,6 +1090,61 @@ class ThemeStudioEffects {
         0,
         100
       );
+
+    const requestedClockEnabled = this._readNumberVariable(
+      "--theme-studio-clock-enabled",
+      DEFAULT_CLOCK_ENABLED ? 1 : 0,
+      0,
+      1
+    ) >= 0.5;
+    const requestedClockType =
+      this._readCssVariable("--theme-studio-clock-type") === "digital"
+        ? "digital"
+        : "analog";
+    const clockStyleValue = this._readCssVariable(
+      "--theme-studio-clock-style"
+    );
+    const requestedClockStyle = ["minimal", "classic", "tech"]
+      .includes(clockStyleValue) ? clockStyleValue : DEFAULT_CLOCK_STYLE;
+    const clockPositionValue = this._readCssVariable(
+      "--theme-studio-clock-position"
+    );
+    const requestedClockPosition = [
+      "top-left", "top-center", "top-right", "bottom-left", "bottom-right",
+    ].includes(clockPositionValue)
+      ? clockPositionValue
+      : DEFAULT_CLOCK_POSITION;
+    const requestedClockSize = this._readNumberVariable(
+      "--theme-studio-clock-size",
+      DEFAULT_CLOCK_SIZE,
+      90,
+      280
+    );
+    const requestedClockOpacity = this._readNumberVariable(
+      "--theme-studio-clock-opacity",
+      DEFAULT_CLOCK_OPACITY,
+      20,
+      100
+    );
+    const requestedClockShowSeconds = this._readNumberVariable(
+      "--theme-studio-clock-show-seconds",
+      DEFAULT_CLOCK_SHOW_SECONDS ? 1 : 0,
+      0,
+      1
+    ) >= 0.5;
+    const requestedClockShowNumerals = this._readNumberVariable(
+      "--theme-studio-clock-show-numerals",
+      DEFAULT_CLOCK_SHOW_NUMERALS ? 1 : 0,
+      0,
+      1
+    ) >= 0.5;
+    const clockVisibilityValue = this._readCssVariable(
+      "--theme-studio-clock-visibility"
+    );
+    const requestedClockVisibility = ["all", "desktop", "mobile"]
+      .includes(clockVisibilityValue)
+      ? clockVisibilityValue
+      : DEFAULT_CLOCK_VISIBILITY;
 
     const requestedCardEffects =
       this._readCardEffectListVariable(
@@ -1251,6 +1333,10 @@ class ThemeStudioEffects {
       ? []
       : requestedCardEffects;
 
+    const nextClockEnabled = requestedClockEnabled
+      && !effectsExcludedForConfig
+      && this._isDashboardPath();
+
     const nextLiquidGlass = effectsExcludedForConfig
       ? false
       : requestedLiquidGlass && this.liquidGlassSupported;
@@ -1274,6 +1360,15 @@ class ThemeStudioEffects {
       nextEffect !== this.effect
       || requestedMotion !== this.motion
       || requestedGlow !== this.glow
+      || nextClockEnabled !== this.clockEnabled
+      || requestedClockType !== this.clockType
+      || requestedClockStyle !== this.clockStyle
+      || requestedClockPosition !== this.clockPosition
+      || requestedClockSize !== this.clockSize
+      || requestedClockOpacity !== this.clockOpacity
+      || requestedClockShowSeconds !== this.clockShowSeconds
+      || requestedClockShowNumerals !== this.clockShowNumerals
+      || requestedClockVisibility !== this.clockVisibility
       || nextCardEffects.join(",") !==
         this.cardEffects.join(",")
       || requestedCardIntensity !==
@@ -1327,6 +1422,15 @@ class ThemeStudioEffects {
     this.effect = nextEffect;
     this.motion = requestedMotion;
     this.glow = requestedGlow;
+    this.clockEnabled = nextClockEnabled;
+    this.clockType = requestedClockType;
+    this.clockStyle = requestedClockStyle;
+    this.clockPosition = requestedClockPosition;
+    this.clockSize = requestedClockSize;
+    this.clockOpacity = requestedClockOpacity;
+    this.clockShowSeconds = requestedClockShowSeconds;
+    this.clockShowNumerals = requestedClockShowNumerals;
+    this.clockVisibility = requestedClockVisibility;
     this.cardEffects = nextCardEffects;
     this.cardIntensity = requestedCardIntensity;
     this.pulseEntities = requestedPulseEntities;
@@ -1370,8 +1474,274 @@ class ThemeStudioEffects {
     this.stateSnapshot.clear();
 
     this._applyEffect();
+    this._syncClockWidget();
     this._syncConfigSurface();
     this._syncLiquidGlassCards(true);
+  }
+
+  _clockHasOpenDialog() {
+    return this._visitElementsUntil(document, (element) => {
+      const name = String(element.localName || "");
+      if (!name.includes("dialog") && name !== "ha-more-info-dialog") {
+        return false;
+      }
+      const rect = element.getBoundingClientRect?.();
+      const style = window.getComputedStyle?.(element);
+      return Boolean(
+        rect
+        && rect.width > 0
+        && rect.height > 0
+        && style?.visibility !== "hidden"
+        && style?.display !== "none"
+      );
+    });
+  }
+
+  _clockVisibleForViewport() {
+    const mobile = window.matchMedia("(max-width: 760px)").matches;
+    return this.clockVisibility === "all"
+      || (this.clockVisibility === "mobile" && mobile)
+      || (this.clockVisibility === "desktop" && !mobile);
+  }
+
+  _removeClockWidget() {
+    if (this.clockIntervalId !== null) {
+      window.clearInterval(this.clockIntervalId);
+      this.clockIntervalId = null;
+    }
+    this.clockHost?.remove();
+    this.clockHost = null;
+    this.clockRenderKey = "";
+  }
+
+  _syncClockWidget() {
+    const visible = this.clockEnabled
+      && this._isDashboardPath()
+      && this._clockVisibleForViewport()
+      && !document.hidden
+      && !this._clockHasOpenDialog();
+
+    if (!visible) {
+      this._removeClockWidget();
+      return;
+    }
+
+    const showSeconds = this.clockShowSeconds
+      && !this.reduceMotionQuery.matches;
+    const renderKey = [
+      this.clockType,
+      this.clockStyle,
+      this.clockPosition,
+      this.clockSize,
+      this.clockOpacity,
+      showSeconds,
+      this.clockShowNumerals,
+    ].join(":");
+
+    if (!this.clockHost || this.clockRenderKey !== renderKey) {
+      this._removeClockWidget();
+      this._createClockWidget(showSeconds);
+      this.clockRenderKey = renderKey;
+    }
+
+    this._updateClockTime(showSeconds);
+  }
+
+  _createClockWidget(showSeconds) {
+    const host = document.createElement("div");
+    host.id = "theme-studio-clock-widget";
+    host.setAttribute("role", "img");
+    host.setAttribute("aria-live", "off");
+    host.setAttribute("data-clock-type", this.clockType);
+    host.setAttribute("data-clock-style", this.clockStyle);
+    const root = host.attachShadow({ mode: "open" });
+    const numerals = this.clockShowNumerals
+      ? Array.from({ length: 12 }, (_, index) => {
+        const value = index + 1;
+        const angle = value * Math.PI / 6;
+        const left = 50 + Math.sin(angle) * 37;
+        const top = 50 - Math.cos(angle) * 37;
+        return `<span class="numeral" style="left:${left}%;top:${top}%">${value}</span>`;
+      }).join("")
+      : "";
+    const ticks = Array.from({ length: 12 }, (_, index) =>
+      `<i class="tick" style="transform:translateX(-50%) rotate(${index * 30}deg)"></i>`
+    ).join("");
+
+    root.innerHTML = `
+      <style>
+        :host {
+          position: fixed;
+          z-index: 3;
+          display: block;
+          width: var(--clock-width);
+          height: var(--clock-height);
+          pointer-events: none;
+          user-select: none;
+          opacity: var(--clock-opacity);
+          color: var(--primary-text-color, #fff);
+          font-family: var(--paper-font-body1_-_font-family, system-ui, sans-serif);
+          filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .24));
+          contain: layout style paint;
+        }
+        .clock {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
+          border: 1px solid color-mix(in srgb, var(--primary-text-color, #fff) 26%, transparent);
+          background: color-mix(in srgb, var(--ha-card-background, var(--card-background-color, #1c252d)) 84%, transparent);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+        :host([data-clock-type="analog"]) .clock { border-radius: 50%; }
+        :host([data-clock-type="digital"]) .clock {
+          display: grid;
+          place-items: center;
+          border-radius: calc(var(--clock-height) * .22);
+        }
+        :host([data-clock-style="minimal"]) .clock {
+          border-color: color-mix(in srgb, var(--primary-text-color, #fff) 18%, transparent);
+          background: color-mix(in srgb, var(--ha-card-background, #1c252d) 56%, transparent);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+        }
+        :host([data-clock-style="classic"]) .clock {
+          border-color: color-mix(in srgb, var(--primary-text-color, #fff) 46%, transparent);
+          box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--ha-card-background, #1c252d) 80%, transparent);
+        }
+        :host([data-clock-style="tech"]) .clock {
+          border: 2px solid var(--primary-color, #26b2b3);
+          border-radius: 0;
+          clip-path: polygon(14% 0, 86% 0, 100% 16%, 100% 84%, 86% 100%, 14% 100%, 0 84%, 0 16%);
+          box-shadow: inset 0 0 24px color-mix(in srgb, var(--primary-color, #26b2b3) 18%, transparent);
+        }
+        .tick {
+          position: absolute;
+          top: 5%;
+          left: 50%;
+          width: 2px;
+          height: 7%;
+          border-radius: 2px;
+          background: currentColor;
+          transform-origin: 50% 643%;
+          opacity: .62;
+        }
+        .numeral {
+          position: absolute;
+          transform: translate(-50%, -50%);
+          font-size: calc(var(--clock-height) * .085);
+          font-weight: 650;
+          opacity: .78;
+        }
+        .center {
+          position: absolute;
+          z-index: 4;
+          top: 50%;
+          left: 50%;
+          width: 6%;
+          height: 6%;
+          border-radius: 50%;
+          background: var(--primary-color, #26b2b3);
+          transform: translate(-50%, -50%);
+        }
+        .hand {
+          position: absolute;
+          z-index: 2;
+          bottom: 50%;
+          left: 50%;
+          border-radius: 999px;
+          background: currentColor;
+          transform-origin: 50% 100%;
+        }
+        .hour { width: 3.4%; height: 25%; margin-left: -1.7%; }
+        .minute { width: 2.4%; height: 34%; margin-left: -1.2%; }
+        .second { width: 1.3%; height: 38%; margin-left: -.65%; background: var(--primary-color, #26b2b3); }
+        .digital {
+          letter-spacing: .055em;
+          font-size: calc(var(--clock-height) * .46);
+          font-weight: 620;
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+        }
+        .digital .seconds {
+          color: var(--primary-color, #26b2b3);
+          font-size: .56em;
+          vertical-align: .42em;
+        }
+        @media (max-width: 760px) {
+          :host { max-width: calc(100vw - 24px); }
+        }
+      </style>
+      <div class="clock" aria-hidden="true">
+        ${this.clockType === "analog" ? `
+          ${ticks}${numerals}
+          <span class="hand hour"></span>
+          <span class="hand minute"></span>
+          ${showSeconds ? '<span class="hand second"></span>' : ""}
+          <span class="center"></span>
+        ` : '<span class="digital"><span class="hours"></span><span class="colon">:</span><span class="minutes"></span><span class="seconds"></span></span>'}
+      </div>
+    `;
+
+    const analog = this.clockType === "analog";
+    const width = analog ? this.clockSize : Math.round(this.clockSize * 1.65);
+    const height = analog ? this.clockSize : Math.round(this.clockSize * 0.62);
+    host.style.setProperty("--clock-width", `${width}px`);
+    host.style.setProperty("--clock-height", `${height}px`);
+    host.style.setProperty("--clock-opacity", String(this.clockOpacity / 100));
+    const mobile = window.matchMedia("(max-width: 760px)").matches;
+    const side = mobile ? 12 : 24;
+    const vertical = mobile ? 72 : 84;
+    if (this.clockPosition.startsWith("top")) {
+      host.style.top = `calc(env(safe-area-inset-top, 0px) + ${vertical}px)`;
+    } else {
+      host.style.bottom = `calc(env(safe-area-inset-bottom, 0px) + ${side}px)`;
+    }
+    if (this.clockPosition.endsWith("left")) host.style.left = `${side}px`;
+    if (this.clockPosition.endsWith("right")) host.style.right = `${side}px`;
+    if (this.clockPosition === "top-center") {
+      host.style.left = "50%";
+      host.style.transform = "translateX(-50%)";
+    }
+
+    document.body.appendChild(host);
+    this.clockHost = host;
+    this._updateClockTime(showSeconds);
+    this.clockIntervalId = window.setInterval(
+      () => this._updateClockTime(showSeconds),
+      showSeconds ? 1000 : 30000
+    );
+  }
+
+  _updateClockTime(showSeconds) {
+    const root = this.clockHost?.shadowRoot;
+    if (!root) return;
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    this.clockHost.setAttribute(
+      "aria-label",
+      `Uhrzeit ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+    );
+
+    if (this.clockType === "digital") {
+      root.querySelector(".hours").textContent = String(hours).padStart(2, "0");
+      root.querySelector(".minutes").textContent = String(minutes).padStart(2, "0");
+      const secondsElement = root.querySelector(".seconds");
+      secondsElement.textContent = showSeconds
+        ? `:${String(seconds).padStart(2, "0")}`
+        : "";
+      return;
+    }
+
+    const hourAngle = (hours % 12) * 30 + minutes * 0.5;
+    const minuteAngle = minutes * 6 + (showSeconds ? seconds * 0.1 : 0);
+    root.querySelector(".hour").style.transform = `rotate(${hourAngle}deg)`;
+    root.querySelector(".minute").style.transform = `rotate(${minuteAngle}deg)`;
+    const secondHand = root.querySelector(".second");
+    if (secondHand) secondHand.style.transform = `rotate(${seconds * 6}deg)`;
   }
 
   _isConfigPath() {

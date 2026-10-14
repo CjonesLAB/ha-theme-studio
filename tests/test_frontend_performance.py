@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.20";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.20";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.21";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.21";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -672,6 +672,26 @@ def test_config_area_excludes_all_special_effects() -> None:
     assert '"--ha-card-background": this.overlayBackground' in effects_source
     assert '"--ha-card-box-shadow": "none"' in effects_source
     assert "this._restoreConfigSurface();" in effects_source
+
+
+def test_dashboard_clock_is_isolated_and_releases_its_timer() -> None:
+    """The optional clock stays non-interactive and cleans up completely."""
+
+    panel_source = _panel_source()
+    effects_source = _effects_source()
+
+    assert "Dashboard-Uhr" in panel_source
+    assert 'data-clock-type="analog"' in panel_source
+    assert 'data-clock-type="digital"' in panel_source
+    assert 'id="clock-position"' in panel_source
+    assert 'id="clock-visibility"' in panel_source
+    assert 'host.id = "theme-studio-clock-widget"' in effects_source
+    assert 'pointer-events: none;' in effects_source
+    assert "this._isDashboardPath()" in effects_source
+    assert "this._clockHasOpenDialog()" in effects_source
+    assert "this.reduceMotionQuery.matches" in effects_source
+    assert "window.clearInterval(this.clockIntervalId);" in effects_source
+    assert "this._removeClockWidget();" in effects_source
 
 
 def test_global_card_texture_keeps_local_card_designs_and_overlays_separate() -> None:

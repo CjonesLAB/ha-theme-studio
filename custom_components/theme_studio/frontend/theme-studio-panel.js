@@ -1,12 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0-beta.20";
+} from "./theme-studio-locales.js?v=0.10.0-beta.21";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0-beta.20";
+} from "./theme-studio-effects.js?v=0.10.0-beta.21";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.20";
+const BUNDLED_TEXTURE_VERSION = "0.10.0-beta.21";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -614,6 +614,15 @@ class ThemeStudioPanel extends HTMLElement {
         effect: "none",
         motion: 35,
         glow: 35,
+        clockEnabled: false,
+        clockType: "analog",
+        clockStyle: "minimal",
+        clockPosition: "top-right",
+        clockSize: 160,
+        clockOpacity: 90,
+        clockShowSeconds: true,
+        clockShowNumerals: true,
+        clockVisibility: "all",
         cardEffects: [],
         cardIntensity: 55,
         pulseEntities: [],
@@ -2877,6 +2886,82 @@ class ThemeStudioPanel extends HTMLElement {
           color: rgba(255, 255, 255, 0.7);
           font-size: 9px;
           line-height: 1.3;
+        }
+
+        .clock-settings {
+          margin: 4px 0 18px;
+          padding: 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 12px;
+          background: color-mix(
+            in srgb,
+            var(--secondary-background-color) 78%,
+            transparent
+          );
+        }
+
+        .clock-setting-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin: 12px 0;
+        }
+
+        .clock-setting-grid label {
+          display: grid;
+          gap: 5px;
+          color: var(--secondary-text-color);
+          font-size: 10px;
+        }
+
+        .clock-setting-grid select {
+          width: 100%;
+          min-height: 38px;
+          padding: 0 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          color: var(--primary-text-color);
+          background: var(--card-background-color);
+          font: inherit;
+        }
+
+        .clock-toggle-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .clock-toggle-grid label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 38px;
+          padding: 0 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 9px;
+          font-size: 10px;
+        }
+
+        .clock-toggle-grid input {
+          width: 17px;
+          height: 17px;
+          margin: 0;
+          accent-color: var(--primary-color);
+        }
+
+        .clock-hint {
+          margin: 8px 0 0;
+          color: var(--secondary-text-color);
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        @media (max-width: 520px) {
+          .clock-setting-grid,
+          .clock-toggle-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         .effect-none {
@@ -5735,6 +5820,104 @@ class ThemeStudioPanel extends HTMLElement {
                   Die Systemoption „Bewegung reduzieren“ ist aktiv.
                   Bewegungseffekte bleiben ausgeschaltet.
                 </p>
+
+                <div class="effect-subheading">
+                  Dashboard-Uhr
+                </div>
+
+                <div class="effect-options">
+                  <button
+                    class="effect-option clock-type-option effect-none"
+                    data-clock-type="none"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="effect-option-title">Aus</span>
+                    <span class="effect-option-description">
+                      Keine Uhr auf dem Dashboard
+                    </span>
+                  </button>
+                  <button
+                    class="effect-option clock-type-option effect-liquid-glass"
+                    data-clock-type="analog"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="effect-option-title">Analog</span>
+                    <span class="effect-option-description">
+                      Klassische Uhr mit Zeigern
+                    </span>
+                  </button>
+                  <button
+                    class="effect-option clock-type-option effect-tech-frame"
+                    data-clock-type="digital"
+                    type="button"
+                    aria-pressed="false"
+                  >
+                    <span class="effect-option-title">Digital</span>
+                    <span class="effect-option-description">
+                      Klare digitale Zeitanzeige
+                    </span>
+                  </button>
+                </div>
+
+                <div id="clock-controls" class="clock-settings" hidden>
+                  <div class="effect-subheading">Darstellung</div>
+                  <div class="effect-options">
+                    <button class="effect-option clock-style-option effect-none" data-clock-style="minimal" type="button" aria-pressed="false">
+                      <span class="effect-option-title">Minimal</span>
+                      <span class="effect-option-description">Leicht und zurückhaltend</span>
+                    </button>
+                    <button class="effect-option clock-style-option effect-liquid-glass" data-clock-style="classic" type="button" aria-pressed="false">
+                      <span class="effect-option-title">Klassisch</span>
+                      <span class="effect-option-description">Ruhige Kartenoberfläche</span>
+                    </button>
+                    <button class="effect-option clock-style-option effect-tech-frame" data-clock-style="tech" type="button" aria-pressed="false">
+                      <span class="effect-option-title">Tech</span>
+                      <span class="effect-option-description">Kanten und Leuchtakzent</span>
+                    </button>
+                  </div>
+
+                  <div class="clock-setting-grid">
+                    <label>
+                      Position
+                      <select id="clock-position">
+                        <option value="top-left">Oben links</option>
+                        <option value="top-center">Oben mittig</option>
+                        <option value="top-right">Oben rechts</option>
+                        <option value="bottom-left">Unten links</option>
+                        <option value="bottom-right">Unten rechts</option>
+                      </select>
+                    </label>
+                    <label>
+                      Sichtbarkeit
+                      <select id="clock-visibility">
+                        <option value="all">Alle Geräte</option>
+                        <option value="desktop">Nur Desktop</option>
+                        <option value="mobile">Nur Mobil</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  ${this._rangeField("clock-size", "Größe", 90, 280)}
+                  ${this._rangeField("clock-opacity", "Deckkraft", 20, 100)}
+
+                  <div class="clock-toggle-grid">
+                    <label>
+                      <input id="clock-show-seconds" type="checkbox">
+                      Sekunden anzeigen
+                    </label>
+                    <label id="clock-numerals-control">
+                      <input id="clock-show-numerals" type="checkbox">
+                      Ziffern anzeigen
+                    </label>
+                  </div>
+                  <p class="clock-hint">
+                    Die Uhr nutzt keine zusätzliche Home-Assistant-Karte,
+                    blockiert keine Bedienung und bleibt in Einstellungen
+                    sowie Dialogfenstern ausgeblendet.
+                  </p>
+                </div>
                 </div>
 
                 <div class="effect-context-group effect-context-cards">
@@ -7504,6 +7687,59 @@ class ThemeStudioPanel extends HTMLElement {
       "glow",
       "%"
     );
+
+    this.shadowRoot
+      .querySelectorAll(".clock-type-option")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this._recordHistory();
+          const type = button.dataset.clockType;
+          this.settings.effects.clockEnabled = type !== "none";
+          if (type !== "none") {
+            this.settings.effects.clockType = type;
+          }
+          this._syncEffectControls();
+          this._finishSettingsChange();
+        });
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".clock-style-option")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this._recordHistory();
+          this.settings.effects.clockStyle = button.dataset.clockStyle;
+          this._syncEffectControls();
+          this._finishSettingsChange();
+        });
+      });
+
+    for (const [elementId, settingName] of [
+      ["clock-position", "clockPosition"],
+      ["clock-visibility", "clockVisibility"],
+    ]) {
+      this.shadowRoot.getElementById(elementId)
+        .addEventListener("change", (event) => {
+          this._recordHistory();
+          this.settings.effects[settingName] = event.target.value;
+          this._finishSettingsChange();
+        });
+    }
+
+    for (const [elementId, settingName] of [
+      ["clock-show-seconds", "clockShowSeconds"],
+      ["clock-show-numerals", "clockShowNumerals"],
+    ]) {
+      this.shadowRoot.getElementById(elementId)
+        .addEventListener("change", (event) => {
+          this._recordHistory();
+          this.settings.effects[settingName] = event.target.checked;
+          this._finishSettingsChange();
+        });
+    }
+
+    this._bindEffectRange("clock-size", "clockSize", "px");
+    this._bindEffectRange("clock-opacity", "clockOpacity", "%");
 
     this.shadowRoot
       .querySelectorAll(".card-effect-option")
@@ -10796,9 +11032,45 @@ class ThemeStudioPanel extends HTMLElement {
         button.setAttribute("aria-pressed", String(active));
       });
 
+    this.shadowRoot
+      .querySelectorAll(".clock-type-option")
+      .forEach((button) => {
+        const type = button.dataset.clockType;
+        const active = type === "none"
+          ? !this.settings.effects.clockEnabled
+          : this.settings.effects.clockEnabled
+            && this.settings.effects.clockType === type;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".clock-style-option")
+      .forEach((button) => {
+        const active = button.dataset.clockStyle ===
+          this.settings.effects.clockStyle;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+
+    this.shadowRoot.getElementById("clock-controls").hidden =
+      !this.settings.effects.clockEnabled;
+    this.shadowRoot.getElementById("clock-position").value =
+      this.settings.effects.clockPosition;
+    this.shadowRoot.getElementById("clock-visibility").value =
+      this.settings.effects.clockVisibility;
+    this.shadowRoot.getElementById("clock-show-seconds").checked =
+      this.settings.effects.clockShowSeconds;
+    this.shadowRoot.getElementById("clock-show-numerals").checked =
+      this.settings.effects.clockShowNumerals;
+    this.shadowRoot.getElementById("clock-numerals-control").hidden =
+      this.settings.effects.clockType === "digital";
+
     const ranges = {
       "effect-motion": "motion",
       "effect-glow": "glow",
+      "clock-size": "clockSize",
+      "clock-opacity": "clockOpacity",
     };
 
     Object.entries(ranges).forEach(
@@ -10810,9 +11082,10 @@ class ThemeStudioPanel extends HTMLElement {
           .getElementById(elementId)
           .value = value;
 
+        const suffix = elementId === "clock-size" ? " px" : " %";
         this.shadowRoot
           .getElementById(`${elementId}-value`)
-          .textContent = `${value} %`;
+          .textContent = `${value}${suffix}`;
       }
     );
 
