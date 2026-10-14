@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.24";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.25";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -1550,7 +1550,6 @@ class ThemeStudioEffects {
 
     const currentCards = new Set();
     const currentHeadings = new Set();
-    const currentOverlays = new Set();
     const currentScrims = new Set();
     const currentExpertStyles = new Set();
     const currentExpertCards = new Set();
@@ -1607,14 +1606,6 @@ class ThemeStudioEffects {
             }
           }
         }
-      }
-
-      // Keep Home Assistant's dialog layout and scrim native. Only the dialog
-      // surface receives the opaque profile color so transparent dashboard
-      // cards do not make weather and more-info overlays unreadable.
-      if (this._shouldStyleOverlaySurface(element)) {
-        currentOverlays.add(element);
-        this._styleOverlaySurface(element);
       }
 
       if (element.localName !== "ha-card") {
@@ -1722,13 +1713,9 @@ class ThemeStudioEffects {
 
     this.glassHeadings = currentHeadings;
 
-    for (const overlay of this.overlaySurfaces) {
-      if (!currentOverlays.has(overlay) || !overlay.isConnected) {
-        this._restoreOverlaySurface(overlay);
-      }
-    }
-
-    this.overlaySurfaces = currentOverlays;
+    // Home Assistant owns all dialogs, menus and native picker surfaces.
+    // Theme Studio only excludes cards inside them from dashboard effects.
+    this._clearOverlaySurfaces();
 
     for (const scrim of this.overlayScrims) {
       if (!currentScrims.has(scrim) || !scrim.isConnected) {
@@ -1893,14 +1880,11 @@ class ThemeStudioEffects {
   }
 
   _syncOpaqueOverlaySurfaces() {
-    const currentOverlays = new Set();
+    // Remove styles left by an older frontend revision before inspecting
+    // dialog cards. Picker containers themselves remain fully native.
+    this._clearOverlaySurfaces();
 
     this._visitElements(document, (element) => {
-      if (this._shouldStyleOverlaySurface(element)) {
-        currentOverlays.add(element);
-        this._styleOverlaySurface(element);
-      }
-
       if (
         element.localName === "ha-card"
         && this._isInsideOverlay(element)
@@ -1911,13 +1895,6 @@ class ThemeStudioEffects {
       }
     });
 
-    for (const overlay of this.overlaySurfaces) {
-      if (!currentOverlays.has(overlay) || !overlay.isConnected) {
-        this._restoreOverlaySurface(overlay);
-      }
-    }
-
-    this.overlaySurfaces = currentOverlays;
     this._clearOverlayScrims();
   }
 

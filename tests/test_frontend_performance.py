@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.24";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.24";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.25";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.25";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -656,39 +656,36 @@ def test_liquid_glass_excludes_overlay_dialogs() -> None:
     assert "return;" in overlay_card_block
     assert "if (this.liquidGlass)" not in overlay_card_block
     assert "this._styleOverlayScrim(element);" not in effects_source
-    assert "this._styleOverlaySurface(element);" in effects_source
+    assert "this._styleOverlaySurface(element);" not in effects_source
     assert "this._styleTechFrameOverlaySurface(element);" not in effects_source
-    assert '"background-color",\n        this.overlayBackground' in effects_source
+    assert "this._clearOverlaySurfaces();" in effects_source
 
 
 def test_native_dialog_container_never_receives_full_screen_background() -> None:
-    """Modern picker dialogs keep their full-screen positioning layer transparent."""
+    """All Home Assistant picker and dialog surfaces remain fully native."""
 
     effects_source = _effects_source()
-    styled_surface = effects_source.split(
-        "_shouldStyleOverlaySurface(element) {",
+    liquid_sync = effects_source.split(
+        "_syncLiquidGlassCards(force = false) {",
         maxsplit=1,
     )[1].split(
-        "_isInsideOverlay(element) {",
+        "_isOverlayScrim(element) {",
         maxsplit=1,
     )[0]
-    visual_surface = effects_source.split(
-        "_isOverlayVisualSurface(element) {",
+    opaque_sync = effects_source.split(
+        "_syncOpaqueOverlaySurfaces() {",
         maxsplit=1,
     )[1].split(
-        "_styleTechFrameOverlaySurface(element) {",
+        "_isHeadingCard(card) {",
         maxsplit=1,
     )[0]
 
-    assert 'name === "dialog"' not in styled_surface
-    assert 'name === "ha-dialog"' in styled_surface
-    assert 'name === "ha-adaptive-dialog"' in styled_surface
-    assert effects_source.count(
-        "if (this._shouldStyleOverlaySurface(element)) {"
-    ) == 2
-    assert 'classes.includes("mdc-dialog__surface")' in visual_surface
-    assert 'parts.includes("dialog")' in visual_surface
-    assert 'element?.localName === "dialog"' not in visual_surface
+    assert "this._styleOverlaySurface(element);" not in liquid_sync
+    assert "this._styleOverlaySurface(element);" not in opaque_sync
+    assert "this._shouldStyleOverlaySurface(element)" not in liquid_sync
+    assert "this._shouldStyleOverlaySurface(element)" not in opaque_sync
+    assert "this._clearOverlaySurfaces();" in liquid_sync
+    assert "this._clearOverlaySurfaces();" in opaque_sync
 
 
 def test_config_area_excludes_all_special_effects() -> None:
