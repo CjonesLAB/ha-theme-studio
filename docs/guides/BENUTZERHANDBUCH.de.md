@@ -1,14 +1,14 @@
-# Theme Studio 0.9.0 - Benutzerhandbuch
+# Theme Studio 0.10.0 - Benutzerhandbuch
 
 [English](USER_GUIDE.en.md) | **Deutsch** | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [PDF herunterladen](../downloads/theme-studio-benutzerhandbuch-de.pdf) | [Aktuelle Version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Fehler melden](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.9.0**.
+Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.10.0**.
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
-![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/theme-studio-overview-v090.png)
+![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/v010/theme-studio-overview.webp)
 
 ## Inhalt
 
@@ -25,6 +25,10 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 11. Benutzerbezogene Einstellungen, Daten und Datenschutz
 12. Aktualisierung
 13. Fehlerbehebung und bewährte Vorgehensweise
+
+### Neu in 0.10.0
+
+Version 0.10.0 ergänzt 40 mitgelieferte Texturen aus den Bereichen Carbon, Metall, Holz und Abstrakt. Sie lassen sich für den Dashboard-Hintergrund, global für alle Karten oder als individuelles Kartendesign direkt im normalen Home-Assistant-Karteneditor einsetzen. Globale Regler für Abdunklung und Deckkraft sichern die Lesbarkeit. Die neue Theme-Studio-Uhr wird als echte analoge oder digitale Karte über die normale Kartenauswahl hinzugefügt. Rahmen von Karteneffekten liegen nun innerhalb der Karte und sind auf 2 px begrenzt.
 
 ## 1. Voraussetzungen und Kompatibilität
 

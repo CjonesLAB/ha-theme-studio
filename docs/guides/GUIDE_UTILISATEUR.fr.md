@@ -1,14 +1,14 @@
-# Theme Studio 0.9.0 - Guide utilisateur
+# Theme Studio 0.10.0 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.9.0**.
+Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.10.0**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
-![Theme Studio avec profils, réglages et aperçu](../images/theme-studio-overview-v090.png)
+![Theme Studio avec profils, réglages et aperçu](../images/v010/theme-studio-overview.webp)
 
 ## Sommaire
 
@@ -25,6 +25,10 @@ Ce guide présente Theme Studio, de l’installation à la conception visuelle m
 11. Réglages par utilisateur, données et confidentialité
 12. Mise à jour
 13. Dépannage et méthode recommandée
+
+### Nouveautés de la version 0.10.0
+
+La version 0.10.0 ajoute 40 textures Carbon, Métal, Bois et Abstrait. Elles peuvent habiller le tableau de bord, toutes les cartes ou une carte précise depuis l’éditeur natif de Home Assistant. Des réglages globaux d’assombrissement et d’opacité préservent la lisibilité. La nouvelle horloge Theme Studio s’ajoute depuis le sélecteur de cartes, en version analogique ou numérique. Les cadres d’effet restent désormais à l’intérieur des cartes et sont limités à 2 px.
 
 ## 1. Prérequis et compatibilité
 

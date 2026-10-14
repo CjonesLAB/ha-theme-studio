@@ -10,8 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.10.0-beta.31"
-DOCUMENTED_RELEASE_VERSION = "0.9.0"
+RELEASE_VERSION = "0.10.0"
+DOCUMENTED_RELEASE_VERSION = "0.10.0"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
@@ -76,4 +76,4 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
         assert DOCUMENTED_RELEASE_VERSION in content
         assert warning_label in content
         assert "    extra_module_url:" not in content
-        assert "fine-settings-cards-tech-frame-v063.png" in content
+        assert "v010/theme-studio-overview.webp" in content

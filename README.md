@@ -2,11 +2,11 @@
 
 [English](README.md) | [Deutsch](docs/README.de.md) | [Français](docs/README.fr.md) | [Español](docs/README.es.md)
 
-Theme Studio is a custom Home Assistant integration for creating, previewing, and directly applying your own interface designs.
+Theme Studio is a visual design workspace for Home Assistant. Create complete interface designs, preview every change, and apply them without writing CSS.
 
-![Theme Studio 0.9.0 overview](docs/images/theme-studio-overview-v090.png)
+![Theme Studio 0.10.0 overview](docs/images/v010/theme-studio-overview.webp)
 
-> Current version: **0.9.0**
+> Current version: **0.10.0**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 >
@@ -24,6 +24,53 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 | Español | [Abrir la guía](docs/guides/GUIA_USUARIO.es.md) | [Descargar](docs/downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Features
+
+### 0.10.0 milestone: surfaces, cards, and clocks
+
+Version 0.10.0 expands Theme Studio from color styling into a complete material design workflow:
+
+- choose from **40 bundled high-resolution textures** across Carbon, Metal, Wood, and Abstract collections
+- use a texture as the dashboard background, as the global background for all cards, or only on selected cards
+- adjust global card opacity and texture darkening so text and icons remain readable
+- open **Theme Studio Design** directly inside the native Home Assistant card editor and give one card its own style, surface, image, colors, and opacity
+- keep global styling as the default while individual card designs remain isolated overrides
+- add the new **Theme Studio Clock** from Home Assistant's normal card picker, with analog and digital layouts
+- use refined card effects with slim frames drawn inside the card boundary
+- get clear hover, apply, save, and confirmation feedback throughout the editor
+
+| Carbon dashboard | Wood dashboard |
+| --- | --- |
+| ![Carbon dashboard with clear cards and inset effects](docs/images/v010/dashboard-carbon.png) | ![Wood dashboard with matching card textures](docs/images/v010/dashboard-wood.png) |
+
+![Tech Frame dashboard with abstract background](docs/images/v010/dashboard-tech-frame.png)
+
+### Design one card without changing the rest
+
+Per-card styling lives inside Home Assistant's regular card editor. A local design can use Standard, Liquid Glass, or Tech Frame styling and can select a color, bundled texture, or custom image. **Save & apply** updates the card and closes the editor, while cards without an override continue to use the global design.
+
+<p align="center">
+  <img src="docs/images/v010/card-design-editor.webp" alt="Theme Studio controls inside the Home Assistant card editor" width="760">
+</p>
+
+### A material library made for dashboards
+
+The texture gallery presents every surface with a large preview and an explicit **Apply** action. The same collection is available for dashboard backgrounds and card backgrounds.
+
+| Carbon | Metal |
+| --- | --- |
+| ![Carbon texture collection](docs/images/v010/texture-gallery-carbon.webp) | ![Metal texture collection](docs/images/v010/texture-gallery-metal.webp) |
+
+| Wood | Abstract |
+| --- | --- |
+| ![Wood texture collection](docs/images/v010/texture-gallery-wood.webp) | ![Abstract texture collection](docs/images/v010/texture-gallery-abstract.webp) |
+
+### A clock that behaves like a card
+
+The Theme Studio Clock appears in Home Assistant's card picker, so it can be added, moved, resized, and edited like any other dashboard card. Analog and digital display modes are included.
+
+<p align="center">
+  <img src="docs/images/v010/clock-card-picker.webp" alt="Theme Studio Clock in the Home Assistant card picker" width="760">
+</p>
 
 Each profile is one independent **Light** or **Dark** design. Enter its name and mode under **Create new design**, then edit it directly. **Apply design** activates its palette and fixed mode. There is no mode switch or automatic counterpart generation inside a design.
 
@@ -61,7 +108,10 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - configurable primary, background, card, text, icon, and border colors
 - separate header and sidebar design for each color mode
 - custom navigation background, text, icon, and selected-item colors
-- configurable card radius, opacity, border width, and shadow
+- configurable card radius, opacity, texture darkening, border width, and shadow
+- global card textures with optional per-card visual overrides
+- bundled high-resolution Carbon, Metal, Wood, and Abstract surface collections
+- analog and digital Theme Studio Clock card
 - gradients and a library for multiple custom background images
 - select, rename, and safely delete background images
 - **Space Command** dashboard background effect
@@ -84,13 +134,11 @@ Theme Studio settings, profiles, the active design, and the recovery point are p
 
 ### Fine-tuning
 
-| Colors and cards | Navigation |
+| Global card materials | Background and image library |
 | --- | --- |
-| ![Card settings with Standard, Liquid Glass, and Tech Frame](docs/images/fine-settings-cards-tech-frame-v063.png) | ![Customize header, sidebar, and active navigation](docs/images/fine-settings-navigation-v044.png) |
+| ![Global card style, texture, opacity, and darkening controls](docs/images/v010/fine-settings-cards.webp) | ![Dashboard texture and image library controls](docs/images/v010/fine-settings-background.webp) |
 
-| Background and image library | Dashboard effects and entity selection |
-| --- | --- |
-| ![Background selection, upload, and image library](docs/images/fine-settings-background-library-v090.png) | ![Dashboard and card effects with searchable multiple selection](docs/images/dashboard-effects-entity-selection-v090.png) |
+Theme Studio still includes detailed navigation styling, profile management, the Community Gallery, custom background libraries, and entity-based Status Pulse, Energy Flow, Climate Aura, and Alert Focus effects.
 
 ## Publish your own design
 

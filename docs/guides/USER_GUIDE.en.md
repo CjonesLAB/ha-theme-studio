@@ -1,14 +1,14 @@
-# Theme Studio 0.9.0 - User Guide
+# Theme Studio 0.10.0 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.9.0**.
+This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.10.0**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
-![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/theme-studio-overview-v090.png)
+![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/v010/theme-studio-overview.webp)
 
 ## Contents
 
@@ -25,6 +25,10 @@ This guide explains Theme Studio from installation through mobile-first visual d
 11. Per-user settings, data, and privacy
 12. Updating
 13. Troubleshooting and recommended workflow
+
+### New in 0.10.0
+
+Version 0.10.0 adds 40 bundled Carbon, Metal, Wood, and Abstract textures. They can be used for the dashboard, globally for cards, or as an individual card design inside Home Assistant's native card editor. Global card texture darkening and opacity controls improve readability. The new Theme Studio Clock can be added from the normal card picker in analog or digital form. Card effect frames now stay inside card boundaries and are limited to 2 px.
 
 ## 1. Requirements and compatibility
 

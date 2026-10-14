@@ -1,14 +1,14 @@
-# Theme Studio 0.9.0 - Guía de usuario
+# Theme Studio 0.10.0 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.9.0**.
+Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.10.0**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
-![Theme Studio con perfiles, ajustes y vista previa](../images/theme-studio-overview-v090.png)
+![Theme Studio con perfiles, ajustes y vista previa](../images/v010/theme-studio-overview.webp)
 
 ## Contenido
 
@@ -25,6 +25,10 @@ Esta guía explica Theme Studio, desde la instalación hasta el diseño visual m
 11. Ajustes por usuario, datos y privacidad
 12. Actualización
 13. Solución de problemas y método recomendado
+
+### Novedades de la versión 0.10.0
+
+La versión 0.10.0 añade 40 texturas de Carbono, Metal, Madera y Abstractas. Se pueden usar como fondo del panel, de forma global en las tarjetas o como diseño individual desde el editor nativo de Home Assistant. Los controles globales de oscurecimiento y opacidad mantienen la legibilidad. El nuevo Reloj de Theme Studio se añade desde el selector normal de tarjetas en formato analógico o digital. Los marcos de efectos quedan dentro de las tarjetas y están limitados a 2 px.
 
 ## 1. Requisitos y compatibilidad
 
