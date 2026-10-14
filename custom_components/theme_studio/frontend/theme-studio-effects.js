@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.22";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.23";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -2123,9 +2123,11 @@ class ThemeStudioEffects {
   _isOverlayVisualSurface(element) {
     const classes = String(element?.className || "")
       .split(/\s+/);
+    const parts = String(element?.getAttribute?.("part") || "")
+      .split(/\s+/);
 
     return classes.includes("mdc-dialog__surface")
-      || element?.localName === "dialog";
+      || parts.includes("dialog");
   }
 
   _styleTechFrameOverlaySurface(element) {

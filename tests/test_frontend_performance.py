@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.22";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.22";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.23";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.23";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -659,6 +659,23 @@ def test_liquid_glass_excludes_overlay_dialogs() -> None:
     assert "this._styleOverlaySurface(element);" in effects_source
     assert "this._styleTechFrameOverlaySurface(element);" not in effects_source
     assert '"background-color",\n        this.overlayBackground' in effects_source
+
+
+def test_native_dialog_container_never_receives_full_screen_background() -> None:
+    """Modern picker dialogs keep their full-screen positioning layer transparent."""
+
+    effects_source = _effects_source()
+    visual_surface = effects_source.split(
+        "_isOverlayVisualSurface(element) {",
+        maxsplit=1,
+    )[1].split(
+        "_styleTechFrameOverlaySurface(element) {",
+        maxsplit=1,
+    )[0]
+
+    assert 'classes.includes("mdc-dialog__surface")' in visual_surface
+    assert 'parts.includes("dialog")' in visual_surface
+    assert 'element?.localName === "dialog"' not in visual_surface
 
 
 def test_config_area_excludes_all_special_effects() -> None:
