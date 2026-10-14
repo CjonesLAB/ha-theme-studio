@@ -130,15 +130,6 @@ DEFAULT_EFFECT_SETTINGS: dict[str, Any] = {
     "effect": "none",
     "motion": 35,
     "glow": 35,
-    "clockEnabled": False,
-    "clockType": "analog",
-    "clockStyle": "minimal",
-    "clockPosition": "top-right",
-    "clockSize": 160,
-    "clockOpacity": 90,
-    "clockShowSeconds": True,
-    "clockShowNumerals": True,
-    "clockVisibility": "all",
     "cardEffects": [],
     "cardIntensity": 55,
     "pulseEntities": [],
@@ -393,33 +384,6 @@ EFFECT_SCHEMA = vol.Schema(
         vol.Required("glow"): vol.All(
             vol.Coerce(int),
             vol.Range(min=0, max=100),
-        ),
-        vol.Required("clockEnabled"): bool,
-        vol.Required("clockType"): vol.In(("analog", "digital")),
-        vol.Required("clockStyle"): vol.In(
-            ("minimal", "classic", "tech")
-        ),
-        vol.Required("clockPosition"): vol.In(
-            (
-                "top-left",
-                "top-center",
-                "top-right",
-                "bottom-left",
-                "bottom-right",
-            )
-        ),
-        vol.Required("clockSize"): vol.All(
-            vol.Coerce(int),
-            vol.Range(min=90, max=280),
-        ),
-        vol.Required("clockOpacity"): vol.All(
-            vol.Coerce(int),
-            vol.Range(min=20, max=100),
-        ),
-        vol.Required("clockShowSeconds"): bool,
-        vol.Required("clockShowNumerals"): bool,
-        vol.Required("clockVisibility"): vol.In(
-            ("all", "desktop", "mobile")
         ),
         vol.Required("cardEffects"): vol.All(
             [
@@ -2012,21 +1976,6 @@ def build_theme_file(
         "theme-studio-effect": effects["effect"],
         "theme-studio-motion": str(effects["motion"]),
         "theme-studio-glow": str(effects["glow"]),
-        "theme-studio-clock-enabled": (
-            "1" if effects["clockEnabled"] else "0"
-        ),
-        "theme-studio-clock-type": effects["clockType"],
-        "theme-studio-clock-style": effects["clockStyle"],
-        "theme-studio-clock-position": effects["clockPosition"],
-        "theme-studio-clock-size": str(effects["clockSize"]),
-        "theme-studio-clock-opacity": str(effects["clockOpacity"]),
-        "theme-studio-clock-show-seconds": (
-            "1" if effects["clockShowSeconds"] else "0"
-        ),
-        "theme-studio-clock-show-numerals": (
-            "1" if effects["clockShowNumerals"] else "0"
-        ),
-        "theme-studio-clock-visibility": effects["clockVisibility"],
         "theme-studio-card-effects": ",".join(
             effects["cardEffects"]
         ),
