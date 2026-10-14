@@ -49,6 +49,8 @@ def test_gallery_item_validates_preview_and_effects() -> None:
                     "opacity": 999,
                     "radius": -5,
                     "background_type": "unknown",
+                    "background_image": "https://example.invalid/tracker.webp",
+                    "card_background_image": "data:image/webp;base64,AAAA",
                 }
             },
             "effects": {
@@ -76,6 +78,8 @@ def test_gallery_item_validates_preview_and_effects() -> None:
     assert light["opacity"] == 100
     assert light["radius"] == 0
     assert light["background_type"] == "color"
+    assert light["background_image"] == ""
+    assert light["card_background_image"] == ""
     effects = normalized["preview"]["effects"]
     assert effects == {
         "background": "none",
@@ -126,6 +130,41 @@ def test_gallery_preview_uses_profile_bounds() -> None:
     ):
         assert 30 <= values["opacity"] <= 100
         assert 0 <= values["radius"] <= 36
+
+
+def test_gallery_preview_keeps_safe_version_010_textures() -> None:
+    """Bundled 0.10.x textures reach the frontend after strict validation."""
+
+    normalized = gallery._normalize_gallery_item(
+        {
+            "id": PUBLIC_ID,
+            "title": "Carbon",
+            "category": "Dunkel",
+            "preview": {
+                "mode": "dark",
+                "modes": {
+                    "dark": {
+                        "background_type": "texture",
+                        "background_image": (
+                            "/assets/theme-textures/background/"
+                            "carbon-01-classic.webp"
+                        ),
+                        "card_background_image": (
+                            "/assets/theme-textures/card/wood-01-walnut.webp"
+                        ),
+                        "card_texture_darkening": 19,
+                    }
+                },
+            },
+        }
+    )
+
+    assert normalized is not None
+    mode = normalized["preview"]["modes"]["dark"]
+    assert mode["background_type"] == "texture"
+    assert mode["background_image"].endswith("carbon-01-classic.webp")
+    assert mode["card_background_image"].endswith("wood-01-walnut.webp")
+    assert mode["card_texture_darkening"] == 19
 
 
 async def test_gallery_list_is_validated_and_cached(monkeypatch: Any) -> None:

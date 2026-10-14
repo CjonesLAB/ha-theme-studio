@@ -10,8 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.10.0"
-DOCUMENTED_RELEASE_VERSION = "0.10.0"
+RELEASE_VERSION = "0.10.1"
+DOCUMENTED_RELEASE_VERSION = "0.10.1"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])

@@ -33,6 +33,10 @@ PUBLIC_ID_PATTERN = re.compile(
     r"[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
 COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
+TEXTURE_PATH_PATTERN = re.compile(
+    r"^/assets/theme-textures/(background|card)/"
+    r"((?:carbon|metal|wood|abstract)-[a-z0-9-]+\.webp)$"
+)
 
 
 class GalleryError(Exception):
@@ -135,6 +139,19 @@ def _integer(
     return min(maximum, max(minimum, round(value)))
 
 
+def _texture_path(value: Any, target: str) -> str:
+    """Return one validated gallery texture preview path."""
+
+    if not isinstance(value, str) or target not in {"background", "card"}:
+        return ""
+
+    match = TEXTURE_PATH_PATTERN.fullmatch(value)
+    if match is None or match.group(1) != target:
+        return ""
+
+    return value
+
+
 def _preview_mode(value: Any, light: bool) -> dict[str, Any]:
     """Return a preview mode using the same bounds as imported profiles."""
 
@@ -155,7 +172,13 @@ def _preview_mode(value: Any, light: bool) -> dict[str, Any]:
     }
     background_type = raw.get("background_type")
 
-    if not isinstance(background_type, str) or background_type not in {"color", "waves", "aurora", "image"}:
+    if not isinstance(background_type, str) or background_type not in {
+        "color",
+        "waves",
+        "aurora",
+        "texture",
+        "image",
+    }:
         background_type = "color"
 
     return {
@@ -168,6 +191,20 @@ def _preview_mode(value: Any, light: bool) -> dict[str, Any]:
         "radius": _integer(raw.get("radius"), 0, 36, 18),
         "darkening": _integer(raw.get("darkening"), 0, 80, 10 if light else 30),
         "background_type": background_type,
+        "background_image": _texture_path(
+            raw.get("background_image"),
+            "background",
+        ),
+        "card_background_image": _texture_path(
+            raw.get("card_background_image"),
+            "card",
+        ),
+        "card_texture_darkening": _integer(
+            raw.get("card_texture_darkening"),
+            0,
+            80,
+            0,
+        ),
     }
 
 

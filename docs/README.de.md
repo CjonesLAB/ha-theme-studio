@@ -6,7 +6,7 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ![Übersicht von Theme Studio 0.10.0](images/v010/theme-studio-overview.webp)
 
-> Aktuelle Version: **0.10.0**
+> Aktuelle Version: **0.10.1**
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 >

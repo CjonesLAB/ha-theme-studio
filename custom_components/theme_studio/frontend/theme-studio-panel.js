@@ -1,12 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.0";
+} from "./theme-studio-locales.js?v=0.10.1";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.0";
+} from "./theme-studio-effects.js?v=0.10.1";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.0";
+const BUNDLED_TEXTURE_VERSION = "0.10.1";
 
 const CSS_LIBRARY_EXAMPLES = [
   {
@@ -2156,7 +2156,15 @@ class ThemeStudioPanel extends HTMLElement {
             solid
             var(--community-border);
           border-radius: var(--community-radius);
-          background: var(--community-card);
+          background-color: var(--community-card);
+          background-image:
+            linear-gradient(
+              rgba(0, 0, 0, var(--community-card-darkening)),
+              rgba(0, 0, 0, var(--community-card-darkening))
+            ),
+            var(--community-card-image);
+          background-position: center;
+          background-size: cover;
           box-shadow:
             0 2px var(--community-shadow-blur)
             rgba(0, 0, 0, 0.34);
@@ -8119,6 +8127,14 @@ class ThemeStudioPanel extends HTMLElement {
 
 
   _communityPreviewBackground(mode) {
+    const texturePath = this._communityTexturePath(
+      mode.background_image,
+      "background"
+    );
+    if (mode.background_type === "texture" && texturePath) {
+      return `url("${texturePath}"), ${mode.background}`;
+    }
+
     if (mode.background_type === "waves") {
       return `
         radial-gradient(
@@ -8147,6 +8163,29 @@ class ThemeStudioPanel extends HTMLElement {
     }
 
     return mode.background;
+  }
+
+  _communityTexturePath(value, target) {
+    if (target !== "background" && target !== "card") return "";
+
+    const path = String(value || "").split("?", 1)[0];
+    const galleryPrefix = `/assets/theme-textures/${target}/`;
+    const nativePrefix = target === "background"
+      ? "/theme_studio_files/background-textures/"
+      : "/theme_studio_files/textures/";
+    let filename = "";
+
+    if (path.startsWith(galleryPrefix)) {
+      filename = path.slice(galleryPrefix.length);
+    } else if (path.startsWith(nativePrefix)) {
+      filename = path.slice(nativePrefix.length);
+    }
+
+    if (!/^(carbon|metal|wood|abstract)-[a-z0-9-]+\.webp$/.test(filename)) {
+      return "";
+    }
+
+    return `${nativePrefix}${filename}?v=${BUNDLED_TEXTURE_VERSION}`;
   }
 
   _galleryDesignMode(design) {
@@ -8184,6 +8223,14 @@ class ThemeStudioPanel extends HTMLElement {
       Math.max(0.2, (Number(effects.intensity) || 55) / 100)
     );
     const downloads = Number(design.downloads) || 0;
+    const cardTexturePath = this._communityTexturePath(
+      mode.card_background_image,
+      "card"
+    );
+    const cardTextureDarkening = Math.min(
+      0.8,
+      Math.max(0, (Number(mode.card_texture_darkening) || 0) / 100)
+    );
 
     return `
       <article class="community-card">
@@ -8195,6 +8242,8 @@ class ThemeStudioPanel extends HTMLElement {
             --community-background:${this._escapeHtml(mode.background)};
             --community-dashboard-background:${this._escapeHtml(this._communityPreviewBackground(mode))};
             --community-card:${this._escapeHtml(this._rgba(mode.card, opacity))};
+            --community-card-image:${cardTexturePath ? `url(${cardTexturePath})` : "none"};
+            --community-card-darkening:${cardTextureDarkening};
             --community-primary:${this._escapeHtml(mode.primary)};
             --community-text:${this._escapeHtml(mode.text)};
             --community-icon:${this._escapeHtml(mode.icon)};

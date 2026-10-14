@@ -6,7 +6,7 @@ Theme Studio is a visual design workspace for Home Assistant. Create complete in
 
 ![Theme Studio 0.10.0 overview](docs/images/v010/theme-studio-overview.webp)
 
-> Current version: **0.10.0**
+> Current version: **0.10.1**
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 >
@@ -24,6 +24,12 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 | Español | [Abrir la guía](docs/guides/GUIA_USUARIO.es.md) | [Descargar](docs/downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Features
+
+### 0.10.1: complete texture previews
+
+Theme Studio's built-in Community Gallery now displays the dashboard and card
+textures included in shared 0.10.x designs. Preview paths are strictly validated
+and mapped to Theme Studio's bundled local assets, so no external image is loaded.
 
 ### 0.10.0 milestone: surfaces, cards, and clocks
 

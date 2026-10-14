@@ -172,11 +172,20 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.1";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.1";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
+
+
+def test_community_card_texture_does_not_break_inline_style() -> None:
+    """Keep gallery card texture URLs from terminating the style attribute."""
+
+    panel_source = _panel_source()
+
+    assert '--community-card-image:${cardTexturePath ? `url(${cardTexturePath})`' in panel_source
+    assert '--community-card-image:${cardTexturePath ? `url("${cardTexturePath}")`' not in panel_source
 
 
 def test_effect_module_caches_style_reads_and_releases_global_listeners() -> None:
