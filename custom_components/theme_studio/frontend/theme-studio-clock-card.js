@@ -1,4 +1,4 @@
-const THEME_STUDIO_CLOCK_CARD_VERSION = "0.10.0-beta.30";
+const THEME_STUDIO_CLOCK_CARD_VERSION = "0.10.0-beta.31";
 
 const DEFAULT_CONFIG = Object.freeze({
   clock_type: "analog",

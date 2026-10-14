@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.30";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.31";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -3289,17 +3289,21 @@ class ThemeStudioEffects {
 
     const intensity = this.cardIntensity / 100;
     const width = Math.min(2, 1 + intensity);
+    const inset = 2 + width;
 
     card.style.transition = [
       "box-shadow 450ms ease",
       "color 450ms ease",
     ].join(", ");
 
-    card.style.setProperty("outline", "none", "important");
-    card.style.setProperty("outline-offset", "0", "important");
     card.style.setProperty(
-      "box-shadow",
-      `inset 0 0 0 ${width}px ${color}`,
+      "outline",
+      `${width}px solid ${color}`,
+      "important"
+    );
+    card.style.setProperty(
+      "outline-offset",
+      `-${inset}px`,
       "important"
     );
 
@@ -6820,10 +6824,10 @@ class ThemeStudioEffects {
     overlay.setAttribute("aria-hidden", "true");
     Object.assign(overlay.style, {
       position: "absolute",
-      inset: "0",
+      inset: "3px",
       boxSizing: "border-box",
       border: `${outlineWidth}px solid ${color}`,
-      borderRadius: "inherit",
+      borderRadius: "max(0px, calc(var(--ha-card-border-radius, 12px) - 3px))",
       pointerEvents: "none",
       zIndex: "3",
       opacity: "0",

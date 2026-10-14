@@ -172,8 +172,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.30";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.30";' in effects_source
+    assert 'from "./theme-studio-effects.js?v=0.10.0-beta.31";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.31";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -516,11 +516,20 @@ def test_card_effect_frames_stay_inside_cards_and_never_exceed_two_pixels() -> N
     effects_source = _effects_source()
 
     assert "const width = Math.min(2, 1 + intensity);" in effects_source
+    assert "const inset = 2 + width;" in effects_source
     assert "const outlineWidth =\n      Math.min(2, 1 + intensity);" in effects_source
-    assert 'card.style.setProperty("outline", "none", "important");' in effects_source
-    assert 'card.style.setProperty("outline-offset", "0", "important");' in effects_source
-    assert "`inset 0 0 0 ${width}px ${color}`" in effects_source
-    assert 'overlay.setAttribute("data-theme-studio-card-pulse", "")' in effects_source
+    assert '`${width}px solid ${color}`' in effects_source
+    assert '`-${inset}px`' in effects_source
+    assert (
+        'overlay.setAttribute("data-theme-studio-card-pulse", "");'
+        in effects_source
+    )
+    assert (
+        'Object.assign(overlay.style, {\n'
+        '      position: "absolute",\n'
+        '      inset: "3px",'
+        in effects_source
+    )
     assert 'border: `${outlineWidth}px solid ${color}`' in effects_source
     assert "this._clearCardPulseOverlays();" in effects_source
 
