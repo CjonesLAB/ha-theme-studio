@@ -1,5 +1,5 @@
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.29";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.0-beta.30";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -222,6 +222,7 @@ class ThemeStudioEffects {
     this.effectsExcludedForConfig = false;
     this.stateSnapshot = new Map();
     this.cardAnimations = new WeakMap();
+    this.cardPulseOverlays = new Set();
     this.energyCards = new Set();
     this.climateCards = new Set();
     this.alertCards = new Set();
@@ -579,6 +580,7 @@ class ThemeStudioEffects {
     this._stopStartupSync();
     this._stopPolling();
     this._stopAnimation();
+    this._clearCardPulseOverlays();
     this._clearEnergyCards();
     this._clearClimateCards();
     this._clearAlertCards();
@@ -3266,8 +3268,13 @@ class ThemeStudioEffects {
     if (!this.originalCardStyles.has(card)) {
       this.originalCardStyles.set(card, {
         outline: card.style.outline,
+        outlinePriority: card.style.getPropertyPriority("outline"),
         outlineOffset: card.style.outlineOffset,
+        outlineOffsetPriority:
+          card.style.getPropertyPriority("outline-offset"),
         boxShadow: card.style.boxShadow,
+        boxShadowPriority:
+          card.style.getPropertyPriority("box-shadow"),
         transition: card.style.transition,
         primaryColor:
           card.style.getPropertyValue("--primary-color"),
@@ -3288,10 +3295,13 @@ class ThemeStudioEffects {
       "color 450ms ease",
     ].join(", ");
 
-    card.style.outline = "none";
-    card.style.outlineOffset = "0";
-    card.style.boxShadow =
-      `inset 0 0 0 ${width}px ${color}`;
+    card.style.setProperty("outline", "none", "important");
+    card.style.setProperty("outline-offset", "0", "important");
+    card.style.setProperty(
+      "box-shadow",
+      `inset 0 0 0 ${width}px ${color}`,
+      "important"
+    );
 
     card.style.setProperty(
       "--primary-color",
@@ -3359,9 +3369,24 @@ class ThemeStudioEffects {
       return;
     }
 
-    card.style.outline = original.outline;
-    card.style.outlineOffset = original.outlineOffset;
-    card.style.boxShadow = original.boxShadow;
+    this._restoreInlineStyle(
+      card,
+      "outline",
+      original.outline,
+      original.outlinePriority
+    );
+    this._restoreInlineStyle(
+      card,
+      "outline-offset",
+      original.outlineOffset,
+      original.outlineOffsetPriority
+    );
+    this._restoreInlineStyle(
+      card,
+      "box-shadow",
+      original.boxShadow,
+      original.boxShadowPriority
+    );
     card.style.transition = original.transition;
 
     this._restoreCustomProperty(
@@ -3382,6 +3407,15 @@ class ThemeStudioEffects {
 
     delete card.dataset.themeStudioEnergy;
     this.originalCardStyles.delete(card);
+  }
+
+  _restoreInlineStyle(element, name, value, priority = "") {
+    if (value) {
+      element.style.setProperty(name, value, priority);
+      return;
+    }
+
+    element.style.removeProperty(name);
   }
 
   _restoreCustomProperty(element, name, value) {
@@ -6765,10 +6799,12 @@ class ThemeStudioEffects {
   }
 
   _animateCard(card, color) {
-    const oldAnimation =
+    const oldPulse =
       this.cardAnimations.get(card);
 
-    oldAnimation?.cancel();
+    if (oldPulse) {
+      this._removeCardPulse(card, oldPulse);
+    }
 
     const intensity =
       this.cardIntensity / 100;
@@ -6779,35 +6815,36 @@ class ThemeStudioEffects {
     const duration =
       700 + intensity * 900;
 
-    const baseBoxShadow =
-      window.getComputedStyle(card).boxShadow;
+    const overlay = document.createElement("span");
+    overlay.setAttribute("data-theme-studio-card-pulse", "");
+    overlay.setAttribute("aria-hidden", "true");
+    Object.assign(overlay.style, {
+      position: "absolute",
+      inset: "0",
+      boxSizing: "border-box",
+      border: `${outlineWidth}px solid ${color}`,
+      borderRadius: "inherit",
+      pointerEvents: "none",
+      zIndex: "3",
+      opacity: "0",
+    });
 
-    const animation = card.animate(
+    const originalPosition = card.style.getPropertyValue("position");
+    const originalPositionPriority =
+      card.style.getPropertyPriority("position");
+    const positionChanged =
+      window.getComputedStyle(card).position === "static";
+    if (positionChanged) {
+      card.style.setProperty("position", "relative", "important");
+    }
+    card.appendChild(overlay);
+
+    const animation = overlay.animate(
       [
-        {
-          outlineWidth: "0px",
-          outlineOffset: "0px",
-          boxShadow: baseBoxShadow,
-        },
-        {
-          outlineWidth: "0px",
-          outlineOffset: "0px",
-          boxShadow:
-            `inset 0 0 0 ${outlineWidth}px ${color}`,
-          offset: 0.28,
-        },
-        {
-          outlineWidth: "0px",
-          outlineOffset: "0px",
-          boxShadow:
-            `inset 0 0 0 ${outlineWidth * 0.65}px ${color}`,
-          offset: 0.68,
-        },
-        {
-          outlineWidth: "0px",
-          outlineOffset: "0px",
-          boxShadow: baseBoxShadow,
-        },
+        { opacity: 0 },
+        { opacity: 1, offset: 0.28 },
+        { opacity: 0.65, offset: 0.68 },
+        { opacity: 0 },
       ],
       {
         duration,
@@ -6815,21 +6852,56 @@ class ThemeStudioEffects {
       }
     );
 
-    this.cardAnimations.set(card, animation);
+    const pulse = {
+      card,
+      animation,
+      overlay,
+      positionChanged,
+      originalPosition,
+      originalPositionPriority,
+    };
+    this.cardAnimations.set(card, pulse);
+    this.cardPulseOverlays.add(pulse);
 
     animation.addEventListener(
       "finish",
       () => {
         if (
-          this.cardAnimations.get(card) === animation
+          this.cardAnimations.get(card) === pulse
         ) {
-          this.cardAnimations.delete(card);
+          this._removeCardPulse(card, pulse, false);
         }
       },
       {
         once: true,
       }
     );
+  }
+
+  _removeCardPulse(card, pulse, cancel = true) {
+    if (cancel) {
+      pulse.animation?.cancel();
+    }
+    pulse.overlay?.remove();
+    if (pulse.positionChanged) {
+      this._restoreInlineStyle(
+        card,
+        "position",
+        pulse.originalPosition,
+        pulse.originalPositionPriority
+      );
+    }
+    this.cardPulseOverlays.delete(pulse);
+    if (this.cardAnimations.get(card) === pulse) {
+      this.cardAnimations.delete(card);
+    }
+  }
+
+  _clearCardPulseOverlays() {
+    for (const pulse of Array.from(this.cardPulseOverlays)) {
+      this._removeCardPulse(pulse.card, pulse);
+    }
+    this.cardAnimations = new WeakMap();
   }
 
   _resize() {
@@ -7124,6 +7196,7 @@ function startThemeStudioEffects() {
       current._stopDynamicSync?.();
       current._stopPolling?.();
       current._stopAnimation?.();
+      current._clearCardPulseOverlays?.();
       current._clearEnergyCards?.();
       current._clearClimateCards?.();
       current._clearAlertCards?.();
