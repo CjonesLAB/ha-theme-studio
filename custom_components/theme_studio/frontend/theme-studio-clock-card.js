@@ -13,6 +13,30 @@ const DEFAULT_CONFIG = Object.freeze({
 const CLOCK_TYPES = new Set(["analog", "digital"]);
 const CLOCK_STYLES = new Set(["theme", "clean", "classic", "tech"]);
 
+function normalizedClockTypes(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([profileId, clockType]) => (
+        /^[a-f0-9]{32}$/.test(profileId) && CLOCK_TYPES.has(clockType)
+      ))
+      .slice(0, 64)
+  );
+}
+
+function activeThemeStudioProfileId(element) {
+  if (!element?.isConnected || typeof window.getComputedStyle !== "function") return "";
+  return window.getComputedStyle(element)
+    .getPropertyValue("--theme-studio-active-profile")
+    .trim()
+    .replace(/^['"]|['"]$/g, "");
+}
+
+function effectiveClockType(config, element) {
+  const profileId = activeThemeStudioProfileId(element);
+  return config.clock_types[profileId] || config.clock_type;
+}
+
 function normalizedConfig(config = {}) {
   return {
     ...DEFAULT_CONFIG,
@@ -20,6 +44,7 @@ function normalizedConfig(config = {}) {
     clock_type: CLOCK_TYPES.has(config.clock_type)
       ? config.clock_type
       : DEFAULT_CONFIG.clock_type,
+    clock_types: normalizedClockTypes(config.clock_types),
     clock_style: CLOCK_STYLES.has(config.clock_style)
       ? config.clock_style
       : DEFAULT_CONFIG.clock_style,
@@ -86,7 +111,7 @@ class ThemeStudioClockCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    this._updateTime();
+    this._render();
   }
 
   setConfig(config) {
@@ -108,11 +133,11 @@ class ThemeStudioClockCard extends HTMLElement {
   }
 
   getCardSize() {
-    return this._config.clock_type === "analog" ? 4 : 2;
+    return effectiveClockType(this._config, this) === "analog" ? 4 : 2;
   }
 
   getGridOptions() {
-    return this._config.clock_type === "analog"
+    return effectiveClockType(this._config, this) === "analog"
       ? { columns: 4, rows: 4, min_columns: 2, min_rows: 3 }
       : { columns: 4, rows: 2, min_columns: 2, min_rows: 1 };
   }
@@ -135,8 +160,9 @@ class ThemeStudioClockCard extends HTMLElement {
   }
 
   _render() {
+    const clockType = effectiveClockType(this._config, this);
     const renderKey = [
-      this._config.clock_type,
+      clockType,
       this._config.clock_style,
       this._config.show_seconds,
       this._config.show_numerals,
@@ -148,7 +174,7 @@ class ThemeStudioClockCard extends HTMLElement {
       return;
     }
     this._renderKey = renderKey;
-    const analog = this._config.clock_type === "analog";
+    const analog = clockType === "analog";
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -321,7 +347,7 @@ class ThemeStudioClockCard extends HTMLElement {
     }).format(now);
     this.setAttribute("aria-label", `Uhrzeit ${spokenTime}`);
 
-    if (this._config.clock_type === "analog") {
+    if (effectiveClockType(this._config, this) === "analog") {
       const hourAngle = (hours % 12) * 30 + minutes * 0.5;
       const minuteAngle = minutes * 6 + (this._config.show_seconds ? seconds * 0.1 : 0);
       const secondHand = this.shadowRoot.querySelector(".second-hand");
@@ -382,7 +408,8 @@ class ThemeStudioClockCardEditor extends HTMLElement {
   }
 
   _render() {
-    const analog = this._config.clock_type === "analog";
+    const clockType = effectiveClockType(this._config, this);
+    const analog = clockType === "analog";
     this.shadowRoot.innerHTML = `
       <style>
         :host { display: block; color: var(--primary-text-color); }
@@ -441,14 +468,14 @@ class ThemeStudioClockCardEditor extends HTMLElement {
             ? '<label class="toggle"><input type="checkbox" data-key="show_numerals">Ziffern anzeigen</label>'
             : '<label class="toggle"><input type="checkbox" data-key="show_date">Datum anzeigen</label><label class="toggle"><input type="checkbox" data-key="use_24_hour">24-Stunden-Anzeige</label>'}
         </div>
-        <p class="hint">Die Größe und Position stellst du anschließend wie bei jeder anderen Home-Assistant-Karte im Layout ein.</p>
+        <p class="hint">Der Uhrtyp wird für jedes Theme-Studio-Design getrennt gespeichert. Größe und Position stellst du wie bei jeder anderen Home-Assistant-Karte im Layout ein.</p>
       </div>
     `;
 
     for (const element of this.shadowRoot.querySelectorAll("[data-key]")) {
       const key = element.dataset.key;
       if (element.type === "checkbox") element.checked = Boolean(this._config[key]);
-      else element.value = this._config[key];
+      else element.value = key === "clock_type" ? clockType : this._config[key];
       element.addEventListener("change", (event) => this._change(event));
     }
   }
@@ -458,7 +485,17 @@ class ThemeStudioClockCardEditor extends HTMLElement {
     const value = event.target.type === "checkbox"
       ? event.target.checked
       : event.target.value;
-    this._config = { ...this._config, [key]: value };
+    if (key === "clock_type") {
+      const profileId = activeThemeStudioProfileId(this);
+      this._config = profileId
+        ? {
+          ...this._config,
+          clock_types: { ...this._config.clock_types, [profileId]: value },
+        }
+        : { ...this._config, clock_type: value };
+    } else {
+      this._config = { ...this._config, [key]: value };
+    }
     this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config: { ...this._config } },
       bubbles: true,

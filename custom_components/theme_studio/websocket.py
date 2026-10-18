@@ -1957,8 +1957,12 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
 def build_theme_file(
     settings: dict[str, Any],
     theme_name: str = THEME_NAME,
+    active_profile_id: str = "",
 ) -> str:
     """Build a theme with light, dark and effect settings."""
+
+    if not re.fullmatch(r"[a-f0-9]{32}", active_profile_id):
+        active_profile_id = ""
 
     effects = settings["effects"]
 
@@ -1973,6 +1977,7 @@ def build_theme_file(
     )
 
     effect_values = {
+        "theme-studio-active-profile": active_profile_id,
         "theme-studio-effect": effects["effect"],
         "theme-studio-motion": str(effects["motion"]),
         "theme-studio-glow": str(effects["glow"]),
@@ -2080,6 +2085,7 @@ def build_theme_registry(
             build_theme_file(
                 state["settings"],
                 theme_name_for_user(user_id),
+                state["active_profile_id"],
             ).rstrip()
         )
 

@@ -180,6 +180,24 @@ def test_expert_css_is_base64_encoded_in_theme_file() -> None:
     assert css not in theme
 
 
+def test_active_profile_is_exposed_to_theme_aware_cards() -> None:
+    """Cards can keep visual choices separate for every active design."""
+
+    profile_id = "a" * 32
+    theme = build_theme_file(
+        normalize_settings(default_settings()),
+        active_profile_id=profile_id,
+    )
+
+    assert f'theme-studio-active-profile: "{profile_id}"' in theme
+
+    theme_without_valid_profile = build_theme_file(
+        normalize_settings(default_settings()),
+        active_profile_id='invalid"\nvalue',
+    )
+    assert 'theme-studio-active-profile: ""' in theme_without_valid_profile
+
+
 def _card_design(**changes: object) -> dict[str, object]:
     design: dict[str, object] = {
         "id": "abcdef012345",
