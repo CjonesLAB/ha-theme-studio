@@ -1,3 +1,11 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="custom_components/theme_studio/brand/dark_logo.png">
+    <source media="(prefers-color-scheme: light)" srcset="custom_components/theme_studio/brand/logo.png">
+    <img src="custom_components/theme_studio/brand/logo.png" alt="Theme Studio" width="760">
+  </picture>
+</p>
+
 # Theme Studio for Home Assistant
 
 [English](README.md) | [Deutsch](docs/README.de.md) | [Français](docs/README.fr.md) | [Español](docs/README.es.md)
