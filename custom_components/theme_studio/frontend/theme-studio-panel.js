@@ -706,6 +706,14 @@ class ThemeStudioPanel extends HTMLElement {
     this._renderCommunityGallery();
   }
 
+  _announceClockType(settings) {
+    const mode = settings?.mode === "light" ? "light" : "dark";
+    const clockType = settings?.[mode]?.clockType || "";
+    window.dispatchEvent(new CustomEvent("theme-studio-clock-type-changed", {
+      detail: { clockType },
+    }));
+  }
+
   _setHomeAssistantDefaultAppearance() {
     this.appearanceMode = "auto";
     this._appearanceSignature = null;
@@ -10351,6 +10359,7 @@ class ThemeStudioPanel extends HTMLElement {
         result.settings.mode || this.activeMode,
         this.activeThemeName
       );
+      this._announceClockType(result.settings);
       this._syncUnsavedStatus();
       this._syncRecoveryButton();
       this._renderProfileOptions(false);
@@ -10433,8 +10442,10 @@ class ThemeStudioPanel extends HTMLElement {
       if (result.theme_studio_active) {
         this.activeThemeName = result.theme || this.activeThemeName;
         this._setAppearance(this.settings.mode, this.activeThemeName);
+        this._announceClockType(result.settings);
       } else {
         this._setHomeAssistantDefaultAppearance();
+        this._announceClockType(null);
       }
       this.appliedSettings = this._cloneSettings(result.settings);
       this.persistedActiveProfileId = result.active_profile_id || "";

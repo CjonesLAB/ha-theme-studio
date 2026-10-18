@@ -776,6 +776,8 @@ def test_clock_is_a_native_dashboard_card_without_fixed_overlay() -> None:
     assert 'getPropertyValue("--theme-studio-active-profile")' in source
     assert "config.clock_types[profileId] || config.clock_type" in source
     assert 'type: "theme_studio/set_clock_type"' in source
+    assert 'type: "theme_studio/get_settings"' in source
+    assert "_syncClockTypeFromActiveDesign" in source
     assert 'getPropertyValue("--theme-studio-clock-type")' in source
     assert '"theme-studio-clock-type-changed"' in source
     assert "position: fixed" not in source
@@ -795,3 +797,17 @@ def test_card_state_effect_uses_complete_tech_frame_outline() -> None:
     assert '"--theme-studio-tech-frame-border-color",\n        color,' in source
     assert 'card.style.setProperty("outline", "none", "important")' in source
     assert "techFrameBorderColorPriority" in source
+
+
+def test_panel_announces_clock_type_when_design_changes() -> None:
+    """Applying another profile immediately updates mounted clock cards."""
+
+    root = Path(__file__).parents[1]
+    source = (
+        root
+        / "custom_components/theme_studio/frontend/theme-studio-panel.js"
+    ).read_text(encoding="utf-8")
+
+    assert "_announceClockType(settings)" in source
+    assert 'new CustomEvent("theme-studio-clock-type-changed"' in source
+    assert "this._announceClockType(result.settings);" in source

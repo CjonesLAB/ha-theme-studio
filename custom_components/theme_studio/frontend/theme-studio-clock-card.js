@@ -107,18 +107,13 @@ class ThemeStudioClockCard extends HTMLElement {
     this._timer = null;
     this._renderKey = "";
     this._themeClockTypeOverride = "";
-    this._clockTypeOverrideTimer = null;
+    this._clockTypeSyncStarted = false;
     this._clockTypeChangeHandler = (event) => {
-      if (!CLOCK_TYPES.has(event.detail?.clockType)) return;
-      this._themeClockTypeOverride = event.detail.clockType;
+      const clockType = event.detail?.clockType;
+      if (clockType !== "" && !CLOCK_TYPES.has(clockType)) return;
+      this._themeClockTypeOverride = clockType;
       this._renderKey = "";
       this._render();
-      window.clearTimeout(this._clockTypeOverrideTimer);
-      this._clockTypeOverrideTimer = window.setTimeout(() => {
-        this._themeClockTypeOverride = "";
-        this._renderKey = "";
-        this._render();
-      }, 800);
     };
   }
 
@@ -139,6 +134,7 @@ class ThemeStudioClockCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    if (this.isConnected) this._syncClockTypeFromActiveDesign();
     this._render();
   }
 
@@ -152,10 +148,12 @@ class ThemeStudioClockCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this._clockTypeSyncStarted = false;
     window.addEventListener(
       "theme-studio-clock-type-changed",
       this._clockTypeChangeHandler
     );
+    this._syncClockTypeFromActiveDesign();
     this._render();
     this._restartTimer();
   }
@@ -165,8 +163,27 @@ class ThemeStudioClockCard extends HTMLElement {
       "theme-studio-clock-type-changed",
       this._clockTypeChangeHandler
     );
-    window.clearTimeout(this._clockTypeOverrideTimer);
     this._stopTimer();
+  }
+
+  async _syncClockTypeFromActiveDesign() {
+    if (this._clockTypeSyncStarted || !this._hass?.callWS) return;
+    this._clockTypeSyncStarted = true;
+
+    try {
+      const settings = await this._hass.callWS({
+        type: "theme_studio/get_settings",
+      });
+      if (!settings?.active_profile_id) return;
+      const mode = settings.mode === "light" ? "light" : "dark";
+      const clockType = settings?.[mode]?.clockType || "";
+      if (clockType !== "" && !CLOCK_TYPES.has(clockType)) return;
+      this._themeClockTypeOverride = clockType;
+      this._renderKey = "";
+      this._render();
+    } catch (_error) {
+      // The regular card configuration remains a safe fallback.
+    }
   }
 
   getCardSize() {
