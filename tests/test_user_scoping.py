@@ -135,6 +135,67 @@ async def test_regular_user_save_does_not_change_another_user(
     assert users["user-b"]["settings"]["dark"]["primaryColor"] == "#222222"
 
 
+async def test_clock_type_is_saved_in_active_design(
+    monkeypatch: Any,
+) -> None:
+    """Changing the clock face updates only the active saved design."""
+
+    active_id = "a" * 32
+    other_id = "b" * 32
+    active_settings = websocket.default_settings()
+    other_settings = websocket.default_settings()
+    profiles = [
+        {
+            "id": active_id,
+            "name": "Analog",
+            "created_at": "2026-10-18T10:00:00+00:00",
+            "updated_at": "2026-10-18T10:00:00+00:00",
+            "settings": active_settings,
+        },
+        {
+            "id": other_id,
+            "name": "Unverändert",
+            "created_at": "2026-10-18T10:00:00+00:00",
+            "updated_at": "2026-10-18T10:00:00+00:00",
+            "settings": other_settings,
+        },
+    ]
+    state = {
+        "settings": active_settings,
+        "profiles": profiles,
+        "active_profile_id": active_id,
+        "theme_studio_active": True,
+        "recovery": None,
+    }
+    user_store = MemoryStore({"users": {"user-a": state}})
+    connection = ResultConnection("user-a")
+    generator = AsyncMock(
+        return_value=websocket.theme_name_for_user("user-a")
+    )
+
+    monkeypatch.setattr(websocket, "get_user_store", lambda _hass: user_store)
+    monkeypatch.setattr(websocket, "get_storage_lock", lambda _hass: asyncio.Lock())
+    monkeypatch.setattr(websocket, "async_generate_and_apply_theme", generator)
+
+    await unwrap(websocket.websocket_set_clock_type)(
+        object(),
+        connection,  # type: ignore[arg-type]
+        {"id": 1, "clock_type": "digital"},
+    )
+
+    assert connection.error is None
+    assert connection.result is not None
+    assert connection.result["clock_type"] == "digital"
+    assert user_store.value is not None
+    saved = user_store.value["users"]["user-a"]
+    assert saved["settings"]["light"]["clockType"] == "digital"
+    assert saved["settings"]["dark"]["clockType"] == "digital"
+    saved_profiles = {item["id"]: item for item in saved["profiles"]}
+    assert saved_profiles[active_id]["settings"]["dark"]["clockType"] == "digital"
+    assert saved_profiles[other_id]["settings"]["dark"]["clockType"] == ""
+    generator.assert_awaited_once()
+
+
 async def test_first_user_access_migrates_legacy_data(
     monkeypatch: Any,
 ) -> None:

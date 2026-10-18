@@ -198,6 +198,19 @@ def test_active_profile_is_exposed_to_theme_aware_cards() -> None:
     assert 'theme-studio-active-profile: ""' in theme_without_valid_profile
 
 
+def test_clock_type_is_stored_in_each_design_palette() -> None:
+    """The generated theme exposes the clock face selected for one design."""
+
+    settings = default_settings()
+    settings["dark"]["clockType"] = "digital"
+    normalized = normalize_settings(settings)
+    values = build_mode_values(normalized["dark"], "dark")
+
+    assert normalized["light"]["clockType"] == ""
+    assert normalized["dark"]["clockType"] == "digital"
+    assert values["theme-studio-clock-type"] == "digital"
+
+
 def _card_design(**changes: object) -> dict[str, object]:
     design: dict[str, object] = {
         "id": "abcdef012345",

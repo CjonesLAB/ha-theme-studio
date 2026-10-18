@@ -32,7 +32,21 @@ function activeThemeStudioProfileId(element) {
     .replace(/^['"]|['"]$/g, "");
 }
 
+function themeClockType(element) {
+  if (!element?.isConnected || typeof window.getComputedStyle !== "function") return "";
+  const value = window.getComputedStyle(element)
+    .getPropertyValue("--theme-studio-clock-type")
+    .trim()
+    .replace(/^['"]|['"]$/g, "");
+  return CLOCK_TYPES.has(value) ? value : "";
+}
+
 function effectiveClockType(config, element) {
+  if (CLOCK_TYPES.has(element?._themeClockTypeOverride)) {
+    return element._themeClockTypeOverride;
+  }
+  const themedType = themeClockType(element);
+  if (themedType) return themedType;
   const profileId = activeThemeStudioProfileId(element);
   return config.clock_types[profileId] || config.clock_type;
 }
@@ -92,6 +106,20 @@ class ThemeStudioClockCard extends HTMLElement {
     this._hass = null;
     this._timer = null;
     this._renderKey = "";
+    this._themeClockTypeOverride = "";
+    this._clockTypeOverrideTimer = null;
+    this._clockTypeChangeHandler = (event) => {
+      if (!CLOCK_TYPES.has(event.detail?.clockType)) return;
+      this._themeClockTypeOverride = event.detail.clockType;
+      this._renderKey = "";
+      this._render();
+      window.clearTimeout(this._clockTypeOverrideTimer);
+      this._clockTypeOverrideTimer = window.setTimeout(() => {
+        this._themeClockTypeOverride = "";
+        this._renderKey = "";
+        this._render();
+      }, 800);
+    };
   }
 
   static getConfigElement() {
@@ -124,11 +152,20 @@ class ThemeStudioClockCard extends HTMLElement {
   }
 
   connectedCallback() {
+    window.addEventListener(
+      "theme-studio-clock-type-changed",
+      this._clockTypeChangeHandler
+    );
     this._render();
     this._restartTimer();
   }
 
   disconnectedCallback() {
+    window.removeEventListener(
+      "theme-studio-clock-type-changed",
+      this._clockTypeChangeHandler
+    );
+    window.clearTimeout(this._clockTypeOverrideTimer);
     this._stopTimer();
   }
 
@@ -392,6 +429,7 @@ class ThemeStudioClockCardEditor extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = normalizedConfig();
+    this._themeClockTypeOverride = "";
   }
 
   set hass(hass) {
@@ -440,6 +478,8 @@ class ThemeStudioClockCardEditor extends HTMLElement {
         }
         .toggle input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary-color); }
         .hint { margin: 0; color: var(--secondary-text-color); font-size: 12px; line-height: 1.45; }
+        .hint[data-state="success"] { color: #45d483; }
+        .hint[data-state="error"] { color: #ff6b78; }
         @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
       </style>
       <div class="form">
@@ -468,7 +508,7 @@ class ThemeStudioClockCardEditor extends HTMLElement {
             ? '<label class="toggle"><input type="checkbox" data-key="show_numerals">Ziffern anzeigen</label>'
             : '<label class="toggle"><input type="checkbox" data-key="show_date">Datum anzeigen</label><label class="toggle"><input type="checkbox" data-key="use_24_hour">24-Stunden-Anzeige</label>'}
         </div>
-        <p class="hint">Der Uhrtyp wird für jedes Theme-Studio-Design getrennt gespeichert. Größe und Position stellst du wie bei jeder anderen Home-Assistant-Karte im Layout ein.</p>
+        <p id="clock-type-status" class="hint">Der Uhrtyp wird sofort im aktiven Theme-Studio-Design gespeichert. Größe und Position stellst du wie bei jeder anderen Home-Assistant-Karte im Layout ein.</p>
       </div>
     `;
 
@@ -486,13 +526,8 @@ class ThemeStudioClockCardEditor extends HTMLElement {
       ? event.target.checked
       : event.target.value;
     if (key === "clock_type") {
-      const profileId = activeThemeStudioProfileId(this);
-      this._config = profileId
-        ? {
-          ...this._config,
-          clock_types: { ...this._config.clock_types, [profileId]: value },
-        }
-        : { ...this._config, clock_type: value };
+      this._saveThemeClockType(value);
+      return;
     } else {
       this._config = { ...this._config, [key]: value };
     }
@@ -501,7 +536,50 @@ class ThemeStudioClockCardEditor extends HTMLElement {
       bubbles: true,
       composed: true,
     }));
-    if (key === "clock_type") this._render();
+  }
+
+  async _saveThemeClockType(clockType) {
+    const previousOverride = this._themeClockTypeOverride;
+    this._themeClockTypeOverride = clockType;
+    this._render();
+    const status = this.shadowRoot.getElementById("clock-type-status");
+    if (status) {
+      status.dataset.state = "";
+      status.textContent = "Uhrtyp wird im aktiven Design gespeichert …";
+    }
+
+    try {
+      if (!this._hass?.callWS) throw new Error("Home Assistant ist nicht verbunden.");
+      const result = await this._hass.callWS({
+        type: "theme_studio/set_clock_type",
+        clock_type: clockType,
+      });
+      this.dispatchEvent(new CustomEvent("settheme", {
+        detail: {
+          theme: result.theme,
+          dark: this._hass?.selectedTheme?.dark,
+        },
+        bubbles: true,
+        composed: true,
+      }));
+      window.dispatchEvent(new CustomEvent("theme-studio-clock-type-changed", {
+        detail: { clockType },
+      }));
+      const nextStatus = this.shadowRoot.getElementById("clock-type-status");
+      if (nextStatus) {
+        nextStatus.dataset.state = "success";
+        nextStatus.textContent = "Uhrtyp wurde für dieses Design gespeichert.";
+      }
+    } catch (error) {
+      this._themeClockTypeOverride = previousOverride;
+      this._render();
+      const nextStatus = this.shadowRoot.getElementById("clock-type-status");
+      if (nextStatus) {
+        nextStatus.dataset.state = "error";
+        nextStatus.textContent = error?.message
+          || "Der Uhrtyp konnte nicht gespeichert werden.";
+      }
+    }
   }
 }
 

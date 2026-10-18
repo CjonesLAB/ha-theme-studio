@@ -63,6 +63,7 @@ MIME_EXTENSIONS = {
 }
 
 DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
+    "clockType": "",
     "primaryColor": "#2f6fa3",
     "backgroundColor": "#eef2f5",
     "cardColor": "#ffffff",
@@ -95,6 +96,7 @@ DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
 }
 
 DEFAULT_DARK_PROFILE: dict[str, Any] = {
+    "clockType": "",
     "primaryColor": "#26b2b3",
     "backgroundColor": "#101719",
     "cardColor": "#182326",
@@ -297,6 +299,7 @@ CARD_DESIGN_SCHEMA = vol.Schema(
 
 PROFILE_SCHEMA = vol.Schema(
     {
+        vol.Required("clockType"): vol.In(("", "analog", "digital")),
         vol.Required("primaryColor"): COLOR_VALIDATOR,
         vol.Required("backgroundColor"): COLOR_VALIDATOR,
         vol.Required("cardColor"): COLOR_VALIDATOR,
@@ -1596,6 +1599,7 @@ def build_mode_values(
         "theme-studio-liquid-glass": (
             "1" if profile["liquidGlass"] else "0"
         ),
+        "theme-studio-clock-type": profile["clockType"],
         "theme-studio-card-shape": profile["cardShape"],
         "theme-studio-card-background-image": (
             f'url({json.dumps(profile["cardBackgroundImage"])})'
@@ -2820,6 +2824,94 @@ async def websocket_save_profile(
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): "theme_studio/set_clock_type",
+        vol.Required("clock_type"): vol.In(("analog", "digital")),
+    }
+)
+@websocket_api.async_response
+@storage_locked
+async def websocket_set_clock_type(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Store the clock face in the active design and reapply its theme."""
+
+    user_id = connection.user.id
+    state, _ = await async_load_user_state(hass, user_id)
+    original_state = normalize_user_state(state)
+    profile_id = state["active_profile_id"]
+
+    if not profile_id:
+        connection.send_error(
+            msg["id"],
+            "profile_not_active",
+            "Bitte zuerst ein gespeichertes Theme-Studio-Design anwenden.",
+        )
+        return
+
+    profiles = split_profiles(state["profiles"])
+    profile = next(
+        (item for item in profiles if item["id"] == profile_id),
+        None,
+    )
+
+    if profile is None:
+        connection.send_error(
+            msg["id"],
+            "profile_not_found",
+            "Das aktive Theme-Studio-Design wurde nicht gefunden.",
+        )
+        return
+
+    clock_type = msg["clock_type"]
+    applied_settings = normalize_settings(state["settings"])
+    profile_settings = normalize_settings(profile["settings"])
+
+    for settings in (applied_settings, profile_settings):
+        settings["light"]["clockType"] = clock_type
+        settings["dark"]["clockType"] = clock_type
+
+    profile["settings"] = normalize_settings(profile_settings)
+    profile["updated_at"] = datetime.now(UTC).isoformat()
+    state["settings"] = normalize_settings(applied_settings)
+    state["profiles"] = profiles
+    state["theme_studio_active"] = True
+    await async_save_user_state(hass, user_id, state)
+
+    try:
+        theme_name = await async_generate_and_apply_theme(
+            hass,
+            connection,
+            msg,
+            state["settings"],
+            user_id=user_id,
+            user_state=state,
+        )
+        state["theme_registered"] = True
+        await async_save_user_state(hass, user_id, state)
+    except Exception as error:
+        await async_save_user_state(hass, user_id, original_state)
+        connection.send_error(
+            msg["id"],
+            "clock_type_save_failed",
+            f"Der Uhrtyp konnte nicht gespeichert werden: {error}",
+        )
+        return
+
+    connection.send_result(
+        msg["id"],
+        {
+            "success": True,
+            "clock_type": clock_type,
+            "active_profile_id": profile_id,
+            "theme": theme_name,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required(
             "type"
         ): "theme_studio/delete_profile",
@@ -3525,6 +3617,11 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_save_profile,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_set_clock_type,
     )
 
     websocket_api.async_register_command(

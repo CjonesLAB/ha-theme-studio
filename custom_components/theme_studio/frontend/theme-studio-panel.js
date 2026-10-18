@@ -549,6 +549,7 @@ class ThemeStudioPanel extends HTMLElement {
 
     this.settings = {
       light: {
+        clockType: "",
         primaryColor: "#2f6fa3",
         backgroundColor: "#eef2f5",
         cardColor: "#ffffff",
@@ -580,6 +581,7 @@ class ThemeStudioPanel extends HTMLElement {
         backgroundImage: "",
       },
       dark: {
+        clockType: "",
         primaryColor: "#26b2b3",
         backgroundColor: "#101719",
         cardColor: "#182326",

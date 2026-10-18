@@ -775,6 +775,23 @@ def test_clock_is_a_native_dashboard_card_without_fixed_overlay() -> None:
     assert 'value="digital"' in source
     assert 'getPropertyValue("--theme-studio-active-profile")' in source
     assert "config.clock_types[profileId] || config.clock_type" in source
-    assert "clock_types: { ...this._config.clock_types, [profileId]: value }" in source
+    assert 'type: "theme_studio/set_clock_type"' in source
+    assert 'getPropertyValue("--theme-studio-clock-type")' in source
+    assert '"theme-studio-clock-type-changed"' in source
     assert "position: fixed" not in source
     assert "window.clearInterval(this._timer);" in source
+
+
+def test_card_state_effect_uses_complete_tech_frame_outline() -> None:
+    """State colors replace the complete SVG frame instead of a clipped outline."""
+
+    root = Path(__file__).parents[1]
+    source = (
+        root
+        / "custom_components/theme_studio/frontend/theme-studio-effects.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'card.hasAttribute("data-theme-studio-tech-frame")' in source
+    assert '"--theme-studio-tech-frame-border-color",\n        color,' in source
+    assert 'card.style.setProperty("outline", "none", "important")' in source
+    assert "techFrameBorderColorPriority" in source

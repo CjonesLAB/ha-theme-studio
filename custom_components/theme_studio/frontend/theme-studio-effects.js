@@ -3284,6 +3284,14 @@ class ThemeStudioEffects {
           card.style.getPropertyValue(
             "--state-icon-active-color"
           ),
+        techFrameBorderColor:
+          card.style.getPropertyValue(
+            "--theme-studio-tech-frame-border-color"
+          ),
+        techFrameBorderColorPriority:
+          card.style.getPropertyPriority(
+            "--theme-studio-tech-frame-border-color"
+          ),
       });
     }
 
@@ -3296,16 +3304,26 @@ class ThemeStudioEffects {
       "color 450ms ease",
     ].join(", ");
 
-    card.style.setProperty(
-      "outline",
-      `${width}px solid ${color}`,
-      "important"
-    );
-    card.style.setProperty(
-      "outline-offset",
-      `-${inset}px`,
-      "important"
-    );
+    if (card.hasAttribute("data-theme-studio-tech-frame")) {
+      card.style.setProperty("outline", "none", "important");
+      card.style.setProperty("outline-offset", "0", "important");
+      card.style.setProperty(
+        "--theme-studio-tech-frame-border-color",
+        color,
+        "important"
+      );
+    } else {
+      card.style.setProperty(
+        "outline",
+        `${width}px solid ${color}`,
+        "important"
+      );
+      card.style.setProperty(
+        "outline-offset",
+        `-${inset}px`,
+        "important"
+      );
+    }
 
     card.style.setProperty(
       "--primary-color",
@@ -3407,6 +3425,12 @@ class ThemeStudioEffects {
       card,
       "--state-icon-active-color",
       original.activeIconColor
+    );
+    this._restoreInlineStyle(
+      card,
+      "--theme-studio-tech-frame-border-color",
+      original.techFrameBorderColor,
+      original.techFrameBorderColorPriority
     );
 
     delete card.dataset.themeStudioEnergy;
