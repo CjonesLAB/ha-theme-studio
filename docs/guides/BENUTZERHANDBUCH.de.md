@@ -22,7 +22,7 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 8. Legacy-CSS und alte Positionsregeln
 9. Anwenden, Rückgängig, Wiederherstellen und Zurücksetzen
 10. JSON-Import, Export und Veröffentlichung
-11. Benutzerbezogene Einstellungen, Daten und Datenschutz
+11. Administratorbezogene Einstellungen, Daten und Datenschutz
 12. Aktualisierung
 13. Fehlerbehebung und bewährte Vorgehensweise
 
@@ -32,7 +32,7 @@ Version 0.10.0 ergänzt 40 mitgelieferte Texturen aus den Bereichen Carbon, Meta
 
 ## 1. Voraussetzungen und Kompatibilität
 
-Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration. Für die Installation werden Administratorrechte benötigt. Für die normale Gestaltung genügt anschließend ein reguläres Benutzerkonto.
+Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration. Für die Installation und die tägliche Gestaltung werden Administratorrechte benötigt, weil beim Anwenden eines Designs die erzeugte Theme-Datei geschrieben und die Home-Assistant-Themes neu geladen werden.
 
 Theme Studio erzeugt ein echtes Home-Assistant-Theme. Farben und kompatible Theme-Variablen können daher auf vielen Seiten wirken. Karteneffekte und Experten-CSS benötigen jedoch die übliche **Lovelace-Kartenstruktur**.
 
@@ -58,7 +58,7 @@ Zusätzlich gilt:
 7. **Einstellungen -> Geräte & Dienste -> Integration hinzufügen** öffnen.
 8. Nach **Theme Studio** suchen und die Integration hinzufügen.
 
-Danach erscheint **Theme Studio** in der Seitenleiste. Das Modul für Dashboard-Effekte wird automatisch registriert. Ein Eintrag unter `frontend.extra_module_url` ist nicht erforderlich.
+Danach erscheint **Theme Studio** für Home-Assistant-Administratoren in der Seitenleiste. Das Modul für Dashboard-Effekte wird automatisch registriert. Ein Eintrag unter `frontend.extra_module_url` ist nicht erforderlich.
 
 ### 2.2 Manuelle Installation
 
@@ -78,10 +78,10 @@ Nach einer Installation oder Aktualisierung den Browser mit `Strg + F5` vollstä
 
 ## 3. Erster Start und Bedienoberfläche
 
-Theme Studio wird über den Eintrag in der Home-Assistant-Seitenleiste geöffnet. Oben befinden sich die wichtigsten Aktionen:
+Mit einem Home-Assistant-Administratorkonto anmelden und Theme Studio über den Eintrag in der Seitenleiste öffnen. Oben befinden sich die wichtigsten Aktionen:
 
 - **Rückgängig / Wiederholen:** noch nicht angewendete Bearbeitungsschritte korrigieren.
-- **Design anwenden:** aktuelle Werte speichern, Theme erzeugen und für den aktuellen Benutzer aktivieren.
+- **Design anwenden:** aktuelle Werte speichern, Theme erzeugen und für den aktuellen Administrator aktivieren.
 - **Letztes Design wiederherstellen:** zum automatisch gesicherten vorherigen Stand wechseln.
 - **Versionsanzeige:** zeigt die installierte Theme-Studio-Version.
 
@@ -166,7 +166,7 @@ Kopfzeile und Seitenleiste lassen sich mit eigenen Hintergrund-, Text-, Symbol- 
 Zur Verfügung stehen einfarbige Flächen, Farbverläufe und eigene Bilder. In der Bildbibliothek können bis zu 24 JPG-, PNG- oder WebP-Dateien verwaltet werden.
 
 - Nur Administratoren können gemeinsame Hintergrundbilder hinzufügen, umbenennen oder löschen.
-- Jeder Benutzer kann ein vorhandenes Bild für sein eigenes Design auswählen.
+- Jeder Administrator kann ein vorhandenes Bild für sein eigenes Design auswählen.
 - Bilder, die vom aktiven Design oder einem Profil verwendet werden, sind vor versehentlichem Löschen geschützt.
 - Mit **Hintergrund abdunkeln** bleibt Text vor hellen Bildern lesbar.
 
@@ -197,7 +197,7 @@ Version 0.9 kehrt für neue Designs vollständig zum No-Code-Prinzip zurück. De
 
 > **Kompatibilitätsprinzip:** Vorhandene CSS-Daten werden beim Laden oder Speichern nicht automatisch verändert oder gelöscht. Neue CSS-Regeln, Duplikate und Kartenpositionen werden in Version 0.9 jedoch nicht mehr angelegt.
 
-Vorhandene visuelle Regeln können aktiviert, deaktiviert, bearbeitet oder gelöscht werden. Vorhandenes freies CSS kann gewartet, deaktiviert oder geleert werden. Alles gilt weiterhin nur für das aktuelle Benutzerkonto.
+Vorhandene visuelle Regeln können aktiviert, deaktiviert, bearbeitet oder gelöscht werden. Vorhandenes freies CSS kann gewartet, deaktiviert oder geleert werden. Alles gilt weiterhin nur für das aktuelle Administratorkonto.
 
 ### 8.1 Alte Positionsanpassungen deaktivieren
 
@@ -222,10 +222,10 @@ Der Regel-Editor öffnet sich nur über **Bearbeiten** an einer bereits vorhande
 
 - **Rückgängig / Wiederholen** betrifft aktuelle Bearbeitungsschritte im geöffneten Editor.
 - **Profil aktualisieren** speichert Änderungen im ausgewählten Profil, ohne das Theme zu aktivieren.
-- **Design anwenden** speichert das ausgewählte Profil automatisch, erzeugt das Theme und aktiviert es für den aktuellen Benutzer. Auf dem Smartphone kehrt Theme Studio danach zur Vorschau und Bereichsauswahl zurück.
+- **Design anwenden** speichert das ausgewählte Profil automatisch, erzeugt das Theme und aktiviert es für den aktuellen Administrator. Auf dem Smartphone kehrt Theme Studio danach zur Vorschau und Bereichsauswahl zurück.
 - Vor jeder Anwendung wird der bisher aktive Zustand als Wiederherstellungspunkt gesichert.
 - **Letztes Design wiederherstellen** tauscht den aktiven Stand mit dem Wiederherstellungspunkt. Dadurch kann zwischen beiden Zuständen gewechselt werden.
-- **Home-Assistant-Standard wiederherstellen** deaktiviert Theme Studio für den aktuellen Benutzer und setzt die Darstellung auf Home Assistant **Auto** zurück. Profile und Hintergrundbilder bleiben erhalten.
+- **Home-Assistant-Standard wiederherstellen** deaktiviert Theme Studio für den aktuellen Administrator und setzt die Darstellung auf Home Assistant **Auto** zurück. Profile und Hintergrundbilder bleiben erhalten.
 
 Wenn die Vorschau richtig aussieht, das echte Dashboard aber unverändert bleibt, wurde meistens **Design anwenden** noch nicht gedrückt oder der Browser benötigt einen vollständigen Reload.
 
@@ -256,9 +256,9 @@ Diese Daten sind installations- oder benutzerspezifisch und könnten auf einem a
 
 Ein exportiertes Profil kann auf [ha-theme-studio.com](https://ha-theme-studio.com/) über **Design einreichen** hochgeladen werden. Die Anmeldung erfolgt mit GitHub. Jedes Design wird vor Aufnahme in die öffentliche Galerie geprüft.
 
-## 11. Benutzerbezogene Einstellungen, Daten und Datenschutz
+## 11. Administratorbezogene Einstellungen, Daten und Datenschutz
 
-Seit Version 0.7.0 besitzt jeder Home-Assistant-Benutzer eigene Einstellungen, Profile, aktives Design, Expertenregeln und Wiederherstellungspunkte. Die Bildbibliothek bleibt gemeinsam und wird von Administratoren verwaltet.
+Seit Version 0.7.0 besitzt jeder Home-Assistant-Administrator eigene Einstellungen, Profile, ein aktives Design, Expertenregeln und Wiederherstellungspunkte. Mehrere Administratoren überschreiben ihre gespeicherten Designs nicht gegenseitig. Die Bildbibliothek bleibt gemeinsam und wird von Administratoren verwaltet.
 
 Theme Studio speichert seine Daten lokal in Home Assistant, unter anderem in:
 
@@ -284,7 +284,7 @@ Nur die optionale Community-Galerie verbindet sich per HTTPS mit `ha-theme-studi
 
 Den vollständigen Ordner `/config/custom_components/theme_studio` durch den Ordner aus dem neuen Release ersetzen. Keine Einzeldateien mischen. Danach Home Assistant und die Oberfläche neu starten.
 
-Gespeicherte Profile und Benutzereinstellungen werden bei normalen Updates nicht überschrieben. Ein Backup bleibt trotzdem erforderlich.
+Gespeicherte Profile und Administratoreinstellungen werden bei normalen Updates nicht überschrieben. Ein Backup bleibt trotzdem erforderlich.
 
 ## 13. Fehlerbehebung und bewährte Vorgehensweise
 

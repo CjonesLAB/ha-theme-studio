@@ -22,7 +22,7 @@ Esta guía explica Theme Studio, desde la instalación hasta el diseño visual m
 8. CSS heredado y reglas de posición antiguas
 9. Aplicar, deshacer, restaurar y restablecer
 10. Importación, exportación y publicación JSON
-11. Ajustes por usuario, datos y privacidad
+11. Ajustes por administrador, datos y privacidad
 12. Actualización
 13. Solución de problemas y método recomendado
 
@@ -32,7 +32,7 @@ La versión 0.10.0 añade 40 texturas de Carbono, Metal, Madera y Abstractas. Se
 
 ## 1. Requisitos y compatibilidad
 
-Theme Studio es una integración personalizada para Home Assistant. La instalación requiere permisos de administrador. Después, una cuenta de usuario normal es suficiente para crear diseños.
+Theme Studio es una integración personalizada para Home Assistant. Se requieren permisos de administrador tanto para la instalación como para el uso diario, porque al aplicar un diseño se escribe el archivo de tema generado y se recargan los temas de Home Assistant.
 
 Theme Studio genera un tema real de Home Assistant, por lo que los colores y las variables compatibles pueden actuar en muchas páginas. Sin embargo, los efectos de tarjeta y el CSS experto necesitan la estructura estándar de tarjetas de **Lovelace**.
 
@@ -58,7 +58,7 @@ Ten en cuenta también:
 7. Abre **Ajustes -> Dispositivos y servicios -> Añadir integración**.
 8. Busca **Theme Studio** y añádelo.
 
-Theme Studio aparecerá en la barra lateral. El módulo de efectos se registra automáticamente; no hace falta añadir `frontend.extra_module_url`.
+Theme Studio aparecerá en la barra lateral para los administradores de Home Assistant. El módulo de efectos se registra automáticamente; no hace falta añadir `frontend.extra_module_url`.
 
 ### 2.2 Instalación manual
 
@@ -78,10 +78,10 @@ Después de instalar o actualizar, recarga completamente el navegador con `Ctrl 
 
 ## 3. Primer inicio e interfaz
 
-Abre Theme Studio desde la barra lateral. Las acciones principales aparecen arriba:
+Inicia sesión con una cuenta administradora de Home Assistant y abre Theme Studio desde la barra lateral. Las acciones principales aparecen arriba:
 
 - **Deshacer / Rehacer:** corregir cambios todavía no aplicados.
-- **Aplicar diseño:** guardar los valores, generar el tema y activarlo para el usuario actual.
+- **Aplicar diseño:** guardar los valores, generar el tema y activarlo para el administrador actual.
 - **Restaurar último diseño:** volver al estado anterior guardado automáticamente.
 - **Versión:** mostrar la versión instalada.
 
@@ -164,7 +164,7 @@ La cabecera y la barra lateral admiten colores propios para fondo, texto, iconos
 Elige un color, degradado o imagen. La biblioteca admite hasta 24 archivos JPG, PNG o WebP.
 
 - Solo los administradores pueden añadir, renombrar o eliminar imágenes compartidas.
-- Cada usuario puede elegir una imagen disponible para su diseño personal.
+- Cada administrador puede elegir una imagen disponible para su diseño personal.
 - Una imagen usada por el diseño activo o un perfil está protegida contra el borrado.
 - **Oscurecer fondo** mejora la legibilidad sobre imágenes claras.
 
@@ -195,7 +195,7 @@ La versión 0.9 vuelve por completo al flujo sin código para los diseños nuevo
 
 > **Principio de compatibilidad:** los datos CSS existentes nunca se cambian ni eliminan automáticamente al cargar o guardar. La versión 0.9 no crea reglas CSS nuevas, copias de reglas ni posiciones de tarjetas.
 
-Las reglas existentes se pueden activar, desactivar, editar o eliminar. El CSS libre existente se puede mantener, desactivar o borrar. Todos estos datos siguen siendo privados para el usuario actual.
+Las reglas existentes se pueden activar, desactivar, editar o eliminar. El CSS libre existente se puede mantener, desactivar o borrar. Todos estos datos siguen siendo privados para el administrador actual.
 
 ### 8.1 Desactivar los ajustes de posición antiguos
 
@@ -223,7 +223,7 @@ El editor de reglas solo se abre mediante **Editar** en una regla ya existente. 
 - **Aplicar diseño** guarda automáticamente el perfil seleccionado, genera el tema y lo activa. En el teléfono, Theme Studio vuelve después a la vista previa y al selector de secciones.
 - Antes de cada aplicación, el estado activo se guarda como punto de recuperación.
 - **Restaurar último diseño** intercambia el estado activo con ese punto.
-- **Restaurar diseño predeterminado de Home Assistant** desactiva Theme Studio para el usuario y vuelve a **Auto**. Los perfiles e imágenes se conservan.
+- **Restaurar diseño predeterminado de Home Assistant** desactiva Theme Studio para el administrador actual y vuelve a **Auto**. Los perfiles e imágenes se conservan.
 
 Si la vista previa es correcta pero el panel real no cambia, aplica el diseño o recarga completamente el navegador.
 
@@ -253,9 +253,9 @@ Estos datos son específicos de la instalación o del usuario.
 
 Un perfil exportado puede enviarse con **Enviar diseño** en [ha-theme-studio.com](https://ha-theme-studio.com/). El inicio de sesión usa GitHub y cada diseño se revisa antes de publicarse.
 
-## 11. Ajustes por usuario, datos y privacidad
+## 11. Ajustes por administrador, datos y privacidad
 
-Desde la versión 0.7.0, cada usuario tiene ajustes, perfiles, diseño activo, reglas expertas y puntos de recuperación privados. La biblioteca de imágenes sigue compartida y administrada por los administradores.
+Desde la versión 0.7.0, cada administrador de Home Assistant tiene ajustes, perfiles, diseño activo, reglas expertas y puntos de recuperación privados. Varios administradores no sobrescriben los diseños guardados de los demás. La biblioteca de imágenes sigue compartida y administrada por los administradores.
 
 Los datos permanecen localmente, entre otros lugares en:
 

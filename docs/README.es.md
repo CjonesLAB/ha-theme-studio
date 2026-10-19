@@ -6,7 +6,9 @@ Theme Studio es una integración personalizada para Home Assistant que permite c
 
 ![Vista general de Theme Studio 0.10.0](images/v010/theme-studio-overview.webp)
 
-> Versión actual: **0.10.1**
+> Versión actual: **0.10.2**
+>
+> **Acceso:** Theme Studio está disponible solo para administradores de Home Assistant porque al aplicar un diseño se escribe el archivo de tema generado y se recargan los temas de Home Assistant.
 >
 > Theme Studio todavía se encuentra en una fase temprana de desarrollo. Crea una copia de seguridad de Home Assistant antes de instalarlo o actualizarlo.
 >
@@ -53,7 +55,7 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 - validación y limpieza de archivos JSON en el servidor antes de importarlos
 - vista previa clara con los ajustes conservados y el contenido local eliminado
 - visualización de la versión instalada en el panel
-- separación de los ajustes, perfiles guardados, diseño activo y punto de recuperación de cada usuario de Home Assistant
+- separación de los ajustes, perfiles guardados, diseño activo y punto de recuperación de cada administrador de Home Assistant
 - galería de diseños verificados con vista previa completa en modo claro y oscuro e importación con un clic
 - galería de una sola fila con tres diseños visibles en escritorio, flechas y navegación mediante gestos
 - envío de diseños a [ha-theme-studio.com](https://ha-theme-studio.com/) para su revisión y publicación
@@ -77,7 +79,7 @@ La galería sigue automáticamente el modo del perfil cargado. Muestra únicamen
 - regreso seguro al diseño predeterminado de Home Assistant
 - funcionamiento adaptable en ordenador, tableta y teléfono; en teléfonos, la edición directa se limita a mover tarjetas
 
-Los ajustes de Theme Studio, los perfiles, el diseño activo y el punto de recuperación son privados para cada usuario de Home Assistant. En el primer acceso después de actualizar desde la versión 0.6.4, el diseño existente se copia al espacio personal de ese usuario. La biblioteca de imágenes de fondo continúa compartida dentro de la instancia de Home Assistant y la administran los administradores; cada usuario puede seleccionar una imagen compartida disponible.
+Theme Studio está disponible solo para administradores. Los ajustes, perfiles, diseño activo y punto de recuperación permanecen privados para la cuenta administradora actual. En el primer acceso después de actualizar desde la versión 0.6.4, el diseño existente se copia a su espacio personal. Varios administradores no sobrescriben los perfiles guardados de los demás. La biblioteca de imágenes de fondo continúa compartida dentro de la instancia de Home Assistant y los administradores pueden gestionarla y utilizarla.
 
 ## Capturas de pantalla
 
@@ -105,7 +107,7 @@ Los perfiles pueden enviarse directamente a [ha-theme-studio.com](https://ha-the
 6. Reinicia Home Assistant.
 7. Ve a **Ajustes → Dispositivos y servicios → Añadir integración**, busca **Theme Studio** y añade la integración.
 
-Theme Studio aparecerá en la barra lateral.
+Theme Studio aparecerá en la barra lateral para los administradores de Home Assistant.
 
 Theme Studio registra automáticamente su módulo de efectos del panel. No se necesita ninguna entrada `frontend.extra_module_url`.
 
@@ -130,7 +132,7 @@ Theme Studio registra automáticamente su módulo de efectos del panel. No se ne
 
 ## Uso
 
-1. Abre **Theme Studio** desde la barra lateral.
+1. Inicia sesión con una cuenta administradora de Home Assistant y abre **Theme Studio** desde la barra lateral.
 2. Elige un diseño verificado en la **Galería de la comunidad** y pulsa **Importar con un clic**, o carga un perfil propio.
 3. Selecciona un diseño guardado o crea uno con nombre y modo fijo claro/oscuro.
 4. Ajusta los colores, tarjetas, navegación y fondo.
@@ -139,7 +141,7 @@ Theme Studio registra automáticamente su módulo de efectos del panel. No se ne
 7. Si quieres, guarda el diseño completo como perfil reutilizable.
 8. Pulsa **Aplicar diseño** para guardar los ajustes y activar el tema.
 
-**Restaurar diseño predeterminado de Home Assistant** desactiva Theme Studio y restablece la apariencia del usuario actual al diseño predeterminado de Home Assistant en modo **Auto**. Las opciones nativas **Auto / Claro / Oscuro** vuelven a estar disponibles. Los perfiles y las imágenes guardadas se conservan. Las instalaciones antiguas que sigan mostrando Theme Studio después de una restauración se corrigen automáticamente al abrir el panel.
+**Restaurar diseño predeterminado de Home Assistant** desactiva Theme Studio y restablece la apariencia del administrador actual al diseño predeterminado de Home Assistant en modo **Auto**. Las opciones nativas **Auto / Claro / Oscuro** vuelven a estar disponibles. Los perfiles y las imágenes guardadas se conservan. Las instalaciones antiguas que sigan mostrando Theme Studio después de una restauración se corrigen automáticamente al abrir el panel.
 
 Antes de aplicar un diseño, Theme Studio guarda automáticamente el estado activo. **Restaurar último diseño** permite recuperarlo incluso después de reiniciar. El estado sustituido se convierte en el nuevo punto de recuperación.
 
@@ -153,7 +155,7 @@ En **Fondo → Biblioteca de imágenes** pueden gestionarse hasta 24 archivos JP
 
 ### CSS experto
 
-En la versión 0.9, la sección de CSS heredado solo aparece si el perfil seleccionado ya contiene CSS o reglas visuales de una versión anterior. Los datos siguen siendo propios del usuario y nunca se modifican automáticamente. Las reglas existentes se pueden activar, desactivar, editar o eliminar.
+En la versión 0.9, la sección de CSS heredado solo aparece si el perfil seleccionado ya contiene CSS o reglas visuales de una versión anterior. Los datos siguen siendo propios de la cuenta administradora actual y nunca se modifican automáticamente. Las reglas existentes se pueden activar, desactivar, editar o eliminar.
 
 > **Función experimental heredada:** la versión 0.9 ya no ofrece reglas nuevas, copias, ejemplos CSS ni posiciones de tarjetas. Los valores X/Y existentes pueden eliminarse con **Desactivar todos los ajustes de posición**, sin modificar los demás valores de las tarjetas.
 

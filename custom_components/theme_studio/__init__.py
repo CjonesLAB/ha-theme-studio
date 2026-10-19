@@ -93,7 +93,7 @@ async def async_setup_entry(
                 f"{STATIC_URL}/theme-studio-panel.js?v={FRONTEND_REVISION}"
             ),
             embed_iframe=False,
-            require_admin=False,
+            require_admin=True,
         )
 
     if not hass.data[DOMAIN].get(DATA_WEBSOCKET_REGISTERED):

@@ -22,7 +22,7 @@ This guide explains Theme Studio from installation through mobile-first visual d
 8. Legacy CSS and legacy position rules
 9. Apply, undo, restore, and reset
 10. JSON import, export, and publication
-11. Per-user settings, data, and privacy
+11. Per-administrator settings, data, and privacy
 12. Updating
 13. Troubleshooting and recommended workflow
 
@@ -32,7 +32,7 @@ Version 0.10.0 adds 40 bundled Carbon, Metal, Wood, and Abstract textures. They 
 
 ## 1. Requirements and compatibility
 
-Theme Studio is a custom Home Assistant integration. Administrator rights are required for installation. A regular user account is sufficient for day-to-day design work afterward.
+Theme Studio is a custom Home Assistant integration. Administrator rights are required for installation and for all day-to-day design work because applying a design writes the generated theme file and reloads Home Assistant themes.
 
 Theme Studio generates a real Home Assistant theme, so colors and compatible theme variables can affect many pages. Card effects and Expert CSS require the normal **Lovelace card structure**.
 
@@ -58,7 +58,7 @@ Also note:
 7. Open **Settings -> Devices & services -> Add integration**.
 8. Search for **Theme Studio** and add it.
 
-Theme Studio then appears in the sidebar. Its dashboard-effects module is registered automatically; no `frontend.extra_module_url` entry is required.
+Theme Studio then appears in the sidebar for Home Assistant administrators. Its dashboard-effects module is registered automatically; no `frontend.extra_module_url` entry is required.
 
 ### 2.2 Manual installation
 
@@ -78,10 +78,10 @@ After installation or an update, hard-refresh the browser with `Ctrl + F5`. Full
 
 ## 3. First start and interface
 
-Open Theme Studio from the Home Assistant sidebar. The main actions are shown at the top:
+Sign in with a Home Assistant administrator account and open Theme Studio from the sidebar. The main actions are shown at the top:
 
 - **Undo / Redo:** correct unapplied editing steps.
-- **Apply design:** save current values, generate the theme, and activate it for the current user.
+- **Apply design:** save current values, generate the theme, and activate it for the current administrator.
 - **Restore last design:** switch back to the automatically saved previous state.
 - **Version badge:** displays the installed Theme Studio version.
 
@@ -166,7 +166,7 @@ Header and sidebar can use custom background, text, icon, and accent colors. The
 Choose a solid color, gradient, or custom image. The image library supports up to 24 JPG, PNG, or WebP files.
 
 - Only administrators can add, rename, or delete shared images.
-- Every user can select an available shared image for a private design.
+- Every administrator can select an available shared image for a private design.
 - Images used by the active design or a saved profile are protected from accidental deletion.
 - **Darken background** helps keep text readable over bright images.
 
@@ -197,7 +197,7 @@ Version 0.9 returns new designs fully to the no-code workflow. The CSS section i
 
 > **Compatibility principle:** Existing CSS data is never changed or removed automatically when a profile is loaded or saved. Version 0.9 does not create new CSS rules, duplicates, or card positions.
 
-Existing visual rules can be enabled, disabled, edited, or deleted. Existing raw CSS can be maintained, disabled, or cleared. All legacy CSS remains private to the current user.
+Existing visual rules can be enabled, disabled, edited, or deleted. Existing raw CSS can be maintained, disabled, or cleared. All legacy CSS remains private to the current administrator.
 
 ### 8.1 Disable legacy position adjustments
 
@@ -222,10 +222,10 @@ The rule editor opens only through **Edit** on an existing rule. Existing target
 
 - **Undo / Redo** affects current edits in the open editor.
 - **Update profile** saves changes into the selected profile without activating the theme.
-- **Apply design** automatically saves the selected profile, generates the theme, and activates it for the current user. On a phone, Theme Studio then returns to the preview and section chooser.
+- **Apply design** automatically saves the selected profile, generates the theme, and activates it for the current administrator. On a phone, Theme Studio then returns to the preview and section chooser.
 - Before each application, the current active state is saved as a recovery point.
 - **Restore last design** swaps the active state with that recovery point, allowing you to move between both states.
-- **Restore Home Assistant default** disables Theme Studio for the current user and returns appearance selection to Home Assistant **Auto**. Profiles and background images remain stored.
+- **Restore Home Assistant default** disables Theme Studio for the current administrator and returns appearance selection to Home Assistant **Auto**. Profiles and background images remain stored.
 
 If the preview is correct but the real dashboard is unchanged, **Apply design** was usually not selected or the browser needs a hard refresh.
 
@@ -256,9 +256,9 @@ These values are installation- or user-specific and could target the wrong eleme
 
 Upload an exported profile through **Submit design** at [ha-theme-studio.com](https://ha-theme-studio.com/). Sign-in uses GitHub. Every submission is reviewed before it appears in the public gallery.
 
-## 11. Per-user settings, data, and privacy
+## 11. Per-administrator settings, data, and privacy
 
-Since version 0.7.0, every Home Assistant user has private settings, profiles, active design, Expert rules, and recovery points. The shared image library remains administrator-managed.
+Since version 0.7.0, every Home Assistant administrator has private settings, profiles, active design, Expert rules, and recovery points. Multiple administrators do not overwrite one another's stored designs. The shared image library remains administrator-managed.
 
 Theme Studio stores data locally in Home Assistant, including:
 
@@ -284,7 +284,7 @@ Only the optional Community Gallery connects to `ha-theme-studio.com` over HTTPS
 
 Replace the complete `/config/custom_components/theme_studio` folder with the folder from the new release. Do not mix individual files from different versions. Restart Home Assistant and the frontend afterward.
 
-Normal updates do not overwrite saved profiles or per-user settings. A backup is still strongly recommended.
+Normal updates do not overwrite saved profiles or per-administrator settings. A backup is still strongly recommended.
 
 ## 13. Troubleshooting and recommended workflow
 

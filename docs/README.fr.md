@@ -6,7 +6,9 @@ Theme Studio est une intégration personnalisée pour Home Assistant permettant 
 
 ![Vue d’ensemble de Theme Studio 0.10.0](images/v010/theme-studio-overview.webp)
 
-> Version actuelle : **0.10.1**
+> Version actuelle : **0.10.2**
+>
+> **Accès :** Theme Studio est réservé aux administrateurs Home Assistant, car l’application d’un design écrit le fichier de thème généré et recharge les thèmes Home Assistant.
 >
 > Theme Studio est encore à un stade précoce de développement. Créez une sauvegarde de Home Assistant avant toute installation ou mise à jour.
 >
@@ -53,7 +55,7 @@ La galerie suit automatiquement le mode du profil chargé. Elle affiche uniqueme
 - validation et nettoyage côté serveur des fichiers JSON avant importation
 - aperçu d’importation indiquant les réglages conservés et les contenus locaux supprimés
 - affichage de la version installée dans le panneau
-- séparation des réglages, profils enregistrés, thème actif et point de restauration pour chaque utilisateur Home Assistant
+- séparation des réglages, profils enregistrés, thème actif et point de restauration pour chaque administrateur Home Assistant
 - galerie de designs vérifiés avec aperçu complet en mode clair et sombre et importation en un clic
 - galerie sur une seule ligne avec trois designs visibles sur ordinateur, flèches et navigation tactile
 - envoi de designs sur [ha-theme-studio.com](https://ha-theme-studio.com/) pour vérification et publication
@@ -77,7 +79,7 @@ La galerie suit automatiquement le mode du profil chargé. Elle affiche uniqueme
 - retour sécurisé au design Home Assistant d’origine
 - interface adaptée aux ordinateurs, tablettes et smartphones
 
-Les réglages Theme Studio, les profils, le thème actif et le point de restauration sont privés pour chaque utilisateur Home Assistant. Lors du premier accès après la mise à jour depuis la version 0.6.4, le thème existant est copié dans l’espace personnel de cet utilisateur. La bibliothèque d’images d’arrière-plan reste partagée au sein de l’instance Home Assistant et est gérée par les administrateurs ; chaque utilisateur peut sélectionner une image partagée disponible.
+Theme Studio est réservé aux administrateurs. Les réglages, profils, thème actif et point de restauration restent privés pour le compte administrateur actuel. Lors du premier accès après la mise à jour depuis la version 0.6.4, le thème existant est copié dans son espace personnel. Plusieurs administrateurs n’écrasent pas leurs profils enregistrés respectifs. La bibliothèque d’images d’arrière-plan reste partagée au sein de l’instance Home Assistant et peut être gérée et utilisée par les administrateurs.
 
 ## Captures d’écran
 
@@ -105,7 +107,7 @@ Les profils peuvent être envoyés directement sur [ha-theme-studio.com](https:/
 6. Redémarrez Home Assistant.
 7. Ouvrez **Paramètres → Appareils et services → Ajouter une intégration**, recherchez **Theme Studio**, puis ajoutez l’intégration.
 
-Theme Studio apparaît ensuite dans la barre latérale.
+Theme Studio apparaît ensuite dans la barre latérale pour les administrateurs Home Assistant.
 
 Theme Studio enregistre automatiquement son module d’effets du tableau de bord. Aucune entrée `frontend.extra_module_url` n’est nécessaire.
 
@@ -130,7 +132,7 @@ Theme Studio enregistre automatiquement son module d’effets du tableau de bord
 
 ## Utilisation
 
-1. Ouvrez **Theme Studio** depuis la barre latérale.
+1. Connectez-vous avec un compte administrateur Home Assistant et ouvrez **Theme Studio** depuis la barre latérale.
 2. Choisissez un design vérifié dans la **Galerie communautaire** et utilisez **Importer en un clic**, ou chargez votre propre profil.
 3. Choisissez un thème enregistré ou créez un thème avec un nom et un mode fixe clair/sombre.
 4. Ajustez les couleurs, cartes, éléments de navigation et arrière-plans.
@@ -139,7 +141,7 @@ Theme Studio enregistre automatiquement son module d’effets du tableau de bord
 7. Enregistrez éventuellement le design complet comme profil réutilisable.
 8. Sélectionnez **Appliquer le thème** pour enregistrer et activer le thème.
 
-**Restaurer le thème Home Assistant par défaut** désactive Theme Studio et réinitialise l’apparence de l’utilisateur actuel sur le thème Home Assistant par défaut en mode **Auto**. Les options natives **Auto / Clair / Sombre** redeviennent disponibles. Les profils et images enregistrés sont conservés. Les anciennes installations restées sur Theme Studio après une restauration sont réparées automatiquement à l’ouverture du panneau.
+**Restaurer le thème Home Assistant par défaut** désactive Theme Studio et réinitialise l’apparence de l’administrateur actuel sur le thème Home Assistant par défaut en mode **Auto**. Les options natives **Auto / Clair / Sombre** redeviennent disponibles. Les profils et images enregistrés sont conservés. Les anciennes installations restées sur Theme Studio après une restauration sont réparées automatiquement à l’ouverture du panneau.
 
 Avant chaque application, Theme Studio sauvegarde automatiquement l’état actif. **Restaurer le dernier design** permet de le réactiver même après un redémarrage. L’état remplacé devient à son tour le nouveau point de restauration.
 
@@ -153,7 +155,7 @@ Jusqu’à 24 fichiers JPG, PNG ou WebP peuvent être gérés dans **Arrière-pl
 
 ### CSS expert
 
-Dans la version 0.9, la section CSS hérité apparaît uniquement si le profil sélectionné contient déjà du CSS ou des règles visuelles d’une ancienne version. Les données restent propres à l’utilisateur et ne sont jamais modifiées automatiquement. Les règles existantes peuvent être activées, désactivées, modifiées ou supprimées.
+Dans la version 0.9, la section CSS hérité apparaît uniquement si le profil sélectionné contient déjà du CSS ou des règles visuelles d’une ancienne version. Les données restent propres au compte administrateur actuel et ne sont jamais modifiées automatiquement. Les règles existantes peuvent être activées, désactivées, modifiées ou supprimées.
 
 > **Fonction expérimentale héritée :** la version 0.9 ne propose plus de nouvelles règles, de copies, d’exemples CSS ni de positions de cartes. Les valeurs X/Y existantes peuvent être supprimées avec **Désactiver tous les ajustements de position**, sans modifier les autres valeurs des cartes.
 

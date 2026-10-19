@@ -14,7 +14,9 @@ Theme Studio is a visual design workspace for Home Assistant. Create complete in
 
 ![Theme Studio 0.10.0 overview](docs/images/v010/theme-studio-overview.webp)
 
-> Current version: **0.10.1**
+> Current version: **0.10.2**
+>
+> **Access:** Theme Studio is available only to Home Assistant administrators because applying a design writes the generated theme file and reloads Home Assistant themes.
 >
 > Theme Studio is still in an early stage of development. Create a Home Assistant backup before installing or updating it.
 >
@@ -32,6 +34,14 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 | Español | [Abrir la guía](docs/guides/GUIA_USUARIO.es.md) | [Descargar](docs/downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Features
+
+### 0.10.2: clocks belong to their design
+
+The analog or digital style of Home Assistant's built-in Clock card is now
+stored with the active Theme Studio design. Switching designs restores the
+matching clock style without changing the clock face, date, seconds, size, or
+other native card options. Tech Frame status effects also retain their complete
+inset outline.
 
 ### 0.10.1: complete texture previews
 
@@ -115,7 +125,7 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - validate and sanitize JSON files on the server before importing them
 - clear import preview showing retained design settings and removed local content
 - display the installed Theme Studio version directly in the panel
-- keep settings, saved profiles, the active design and recovery history separate for every Home Assistant user
+- keep settings, saved profiles, the active design and recovery history separate for every Home Assistant administrator
 - browse verified community designs as complete mini-dashboard previews in light and dark mode and import them as a local profile with one click
 - single-row community gallery showing three designs on desktop, with arrow controls and swipe navigation for additional designs
 - submit custom designs to [ha-theme-studio.com](https://ha-theme-studio.com/) for review and publication in the community gallery
@@ -142,7 +152,7 @@ The gallery automatically follows the mode of the loaded profile. It strictly sh
 - safe return to the original Home Assistant default design
 - responsive operation on desktop, tablet, and smartphone
 
-Theme Studio settings, profiles, the active design, and the recovery point are private to each Home Assistant user. On first use after updating from 0.6.4, the existing design is copied into that user's private workspace. The background-image library remains shared across the Home Assistant instance and can be managed by administrators; every user can select an available shared image.
+Theme Studio is administrator-only. Settings, profiles, the active design, and the recovery point remain private to the current administrator account. On first use after updating from 0.6.4, the existing design is copied into that administrator's private workspace. Multiple administrators do not overwrite one another's stored profiles. The background-image library remains shared across the Home Assistant instance and can be managed and used by administrators.
 
 ## Screenshots
 
@@ -170,7 +180,7 @@ Theme Studio can be installed as a custom repository through HACS:
 6. Restart Home Assistant.
 7. Go to **Settings → Devices & services → Add integration**, search for **Theme Studio**, and add the integration.
 
-Theme Studio will then appear in the sidebar.
+Theme Studio will then appear in the sidebar for Home Assistant administrators.
 
 Theme Studio registers its dashboard effect module automatically. No `frontend.extra_module_url` entry is required.
 
@@ -198,11 +208,11 @@ Theme Studio registers its dashboard effect module automatically. No `frontend.e
 
 4. Go to **Settings → Devices & services → Add integration**, search for **Theme Studio**, and add the integration.
 
-5. Theme Studio will then appear in the sidebar.
+5. Theme Studio will then appear in the sidebar for Home Assistant administrators.
 
 ## Usage
 
-1. Open **Theme Studio** from the sidebar.
+1. Sign in with a Home Assistant administrator account and open **Theme Studio** from the sidebar.
 2. Choose a verified design in the **Community Gallery** and select **Import with one click**, or load one of your own profiles.
 3. Choose a saved design, or create a new design with a name and a fixed Light/Dark mode.
 4. Adjust colors, cards, navigation, and the background in the fine-tuning section.
@@ -211,7 +221,7 @@ Theme Studio registers its dashboard effect module automatically. No `frontend.e
 7. Optionally enter a name under **My design profiles** and save the complete design as a reusable profile.
 8. Use the permanently visible **Apply design** button to save the settings and activate the theme.
 
-**Restore Home Assistant default** disables Theme Studio and also resets the current user's appearance selection to Home Assistant's default in Auto mode. The native Auto/Light/Dark choices are then available again. Saved design profiles and background images are retained. Older installations left with Theme Studio selected after a restore are repaired automatically when the panel opens.
+**Restore Home Assistant default** disables Theme Studio and also resets the current administrator's appearance selection to Home Assistant's default in Auto mode. The native Auto/Light/Dark choices are then available again. Saved design profiles and background images are retained. Older installations left with Theme Studio selected after a restore are repaired automatically when the panel opens.
 
 Before applying a changed design, Theme Studio automatically saves the currently active state. **Restore last design** can reactivate this state even after a restart. The state replaced during restoration becomes the new recovery point, allowing you to switch between both states.
 
@@ -227,7 +237,7 @@ Card effects are only applied to the selected entities. This keeps large dashboa
 
 ### Expert CSS
 
-In version 0.9, the legacy CSS section is shown only when the selected profile already contains custom CSS or visual rules from an older release. Existing data remains private to the current Home Assistant user and is never changed automatically.
+In version 0.9, the legacy CSS section is shown only when the selected profile already contains custom CSS or visual rules from an older release. Existing data remains private to the current Home Assistant administrator and is never changed automatically.
 
 > **Experimental legacy feature:** Existing appearance rules can be enabled, disabled, edited, or deleted. Version 0.9 no longer offers new rules, duplicates, CSS examples, or card positions. Existing X/Y offsets can be removed with **Disable all position adjustments** without changing the remaining card values.
 

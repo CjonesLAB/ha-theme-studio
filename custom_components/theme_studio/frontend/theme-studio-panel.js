@@ -1,12 +1,12 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.1";
+} from "./theme-studio-locales.js?v=0.10.2";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-effects.js?v=0.10.1";
+} from "./theme-studio-effects.js?v=0.10.2";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.1";
+const BUNDLED_TEXTURE_VERSION = "0.10.2";
 
 const CSS_LIBRARY_EXAMPLES = [
   {

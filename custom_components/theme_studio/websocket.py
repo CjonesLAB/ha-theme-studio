@@ -2345,6 +2345,7 @@ async def websocket_get_settings(
         ): bool,
     }
 )
+@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_save_settings(
@@ -2456,6 +2457,7 @@ async def websocket_save_settings(
         ): bool,
     }
 )
+@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_restore_default_theme(
@@ -2581,6 +2583,7 @@ async def websocket_get_info(
         ): bool,
     }
 )
+@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_restore_last_design(
@@ -2828,6 +2831,7 @@ async def websocket_save_profile(
         vol.Required("clock_type"): vol.In(("analog", "digital")),
     }
 )
+@websocket_api.require_admin
 @websocket_api.async_response
 @storage_locked
 async def websocket_set_clock_type(

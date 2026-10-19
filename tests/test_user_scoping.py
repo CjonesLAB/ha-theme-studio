@@ -9,6 +9,9 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
 
+import pytest
+from homeassistant.exceptions import Unauthorized
+
 from custom_components.theme_studio import websocket
 
 
@@ -30,10 +33,10 @@ class MemoryStore:
 
 
 class ResultConnection:
-    """Capture one WebSocket result for a regular Home Assistant user."""
+    """Capture one WebSocket result for a Home Assistant administrator."""
 
-    def __init__(self, user_id: str) -> None:
-        self.user = SimpleNamespace(id=user_id, is_admin=False)
+    def __init__(self, user_id: str, *, is_admin: bool = True) -> None:
+        self.user = SimpleNamespace(id=user_id, is_admin=is_admin)
         self.result: dict[str, Any] | None = None
         self.error: tuple[Any, ...] | None = None
 
@@ -97,10 +100,10 @@ def test_theme_registry_keeps_active_users_separate() -> None:
     assert 'primary-color: "#abcdef"' in registry
 
 
-async def test_regular_user_save_does_not_change_another_user(
+async def test_admin_save_does_not_change_another_admin(
     monkeypatch: Any,
 ) -> None:
-    """A non-admin can apply a design without overwriting another user."""
+    """An administrator can apply a design without overwriting another admin."""
 
     user_store = MemoryStore(
         {"users": {"user-a": _state("#111111"), "user-b": _state("#222222")}}
@@ -133,6 +136,24 @@ async def test_regular_user_save_does_not_change_another_user(
     users = user_store.value["users"]
     assert users["user-a"]["settings"]["dark"]["primaryColor"] == "#abcdef"
     assert users["user-b"]["settings"]["dark"]["primaryColor"] == "#222222"
+
+
+@pytest.mark.parametrize(
+    "handler",
+    [
+        websocket.websocket_save_settings,
+        websocket.websocket_restore_default_theme,
+        websocket.websocket_restore_last_design,
+        websocket.websocket_set_clock_type,
+    ],
+)
+def test_theme_writing_commands_reject_non_admin(handler: Any) -> None:
+    """Reject non-admin users before any theme-writing command can run."""
+
+    connection = ResultConnection("regular-user", is_admin=False)
+
+    with pytest.raises(Unauthorized):
+        handler(object(), connection, {"id": 1})
 
 
 async def test_clock_type_is_saved_in_active_design(

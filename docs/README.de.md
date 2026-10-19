@@ -6,7 +6,9 @@ Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstelle
 
 ![Übersicht von Theme Studio 0.10.0](images/v010/theme-studio-overview.webp)
 
-> Aktuelle Version: **0.10.1**
+> Aktuelle Version: **0.10.2**
+>
+> **Zugriff:** Theme Studio steht nur Home-Assistant-Administratoren zur Verfügung, da beim Anwenden eines Designs die erzeugte Theme-Datei geschrieben und die Home-Assistant-Themes neu geladen werden.
 >
 > Theme Studio befindet sich noch in einer frühen Entwicklungsphase. Vor der Installation oder einem Update sollte ein Home-Assistant-Backup erstellt werden.
 >
@@ -24,6 +26,13 @@ Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio
 | Español | [Abrir la guía](guides/GUIA_USUARIO.es.md) | [Descargar](downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Funktionen
+
+### 0.10.2: Die Uhr gehört zum Design
+
+Die analoge oder digitale Darstellung der eingebauten Home-Assistant-Karte
+„Uhr“ wird jetzt mit dem aktiven Theme-Studio-Design gespeichert. Beim Wechsel
+des Designs erscheint automatisch die dazugehörige Uhrendarstellung. Zifferblatt,
+Datum, Sekunden, Größe und weitere Einstellungen der Karte bleiben erhalten.
 
 Jedes Profil ist genau ein eigenständiges **helles** oder **dunkles Design**. Unter **Neues Design erstellen** Name und Modus festlegen, danach direkt gestalten. **Design anwenden** aktiviert dessen Farben und festgelegten Modus. Innerhalb eines Designs gibt es keine Umschaltung und keine automatische Gegenmodus-Erzeugung mehr.
 
@@ -54,7 +63,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - JSON-Dateien vor dem Import serverseitig prüfen und bereinigen
 - übersichtliche Importvorschau mit den übernommenen Farben und entfernten lokalen Inhalten
 - installierte Theme-Studio-Version direkt im Bedienfeld anzeigen
-- Einstellungen, gespeicherte Profile, aktives Design und Wiederherstellungspunkt für jeden Home-Assistant-Benutzer getrennt speichern
+- Einstellungen, gespeicherte Profile, aktives Design und Wiederherstellungspunkt für jeden Home-Assistant-Administrator getrennt speichern
 - geprüfte Community-Designs in einer vollständigen Mini-Dashboard-Vorschau für Hell und Dunkel ansehen und mit einem Klick als lokales Profil importieren
 - einzeilige Community-Galerie mit drei sichtbaren Designs auf dem Desktop sowie Pfeilsteuerung und Wischbedienung für weitere Designs
 - eigene Designs über [ha-theme-studio.com](https://ha-theme-studio.com/) zur Prüfung und Veröffentlichung in der Community-Galerie einreichen
@@ -78,7 +87,7 @@ Die Galerie folgt automatisch dem Modus des geladenen Profils. Sie zeigt ausschl
 - sichere Rückkehr zum originalen Home-Assistant-Standarddesign
 - responsive Bedienung auf Desktop, Tablet und Smartphone
 
-Theme-Studio-Einstellungen, Profile, das aktive Design und der Wiederherstellungspunkt sind für jeden Home-Assistant-Benutzer privat. Beim ersten Zugriff nach dem Update von 0.6.4 wird das vorhandene Design in den persönlichen Bereich dieses Benutzers kopiert. Die Hintergrundbild-Bibliothek bleibt innerhalb der Home-Assistant-Instanz gemeinsam und wird von Administratoren verwaltet; jeder Benutzer kann ein verfügbares gemeinsames Bild auswählen.
+Theme Studio ist ausschließlich für Administratoren verfügbar. Einstellungen, Profile, das aktive Design und der Wiederherstellungspunkt bleiben für das aktuelle Administratorkonto privat. Beim ersten Zugriff nach dem Update von 0.6.4 wird das vorhandene Design in dessen persönlichen Bereich kopiert. Mehrere Administratoren überschreiben ihre gespeicherten Profile nicht gegenseitig. Die Hintergrundbild-Bibliothek bleibt innerhalb der Home-Assistant-Instanz gemeinsam und kann von Administratoren verwaltet und verwendet werden.
 
 ## Screenshots
 
@@ -106,7 +115,7 @@ Eigene Designprofile können direkt auf [ha-theme-studio.com](https://ha-theme-s
 6. Home Assistant neu starten.
 7. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen und die Integration hinzufügen.
 
-Danach erscheint **Theme Studio** in der Seitenleiste.
+Danach erscheint **Theme Studio** für Home-Assistant-Administratoren in der Seitenleiste.
 
 Theme Studio registriert sein Dashboard-Effektmodul automatisch. Ein Eintrag unter `frontend.extra_module_url` ist nicht erforderlich.
 
@@ -131,7 +140,7 @@ Theme Studio registriert sein Dashboard-Effektmodul automatisch. Ein Eintrag unt
 
 ## Bedienung
 
-1. In der Seitenleiste **Theme Studio** öffnen.
+1. Mit einem Home-Assistant-Administratorkonto anmelden und in der Seitenleiste **Theme Studio** öffnen.
 2. In der **Community-Galerie** ein geprüftes Design mit **Mit einem Klick importieren** übernehmen oder ein eigenes Profil laden.
 3. Ein gespeichertes Design wählen oder ein neues Design mit Name und festem Modus Hell/Dunkel erstellen.
 4. Farben, Karten, Navigation und Hintergrund anpassen.
@@ -140,7 +149,7 @@ Theme Studio registriert sein Dashboard-Effektmodul automatisch. Ein Eintrag unt
 7. Optional das komplette Design unter **Eigene Designprofile** speichern.
 8. Mit **Design anwenden** die Einstellungen speichern und das Theme aktivieren.
 
-Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio deaktiviert und die Darstellung des aktuellen Benutzers auf das Home-Assistant-Standarddesign im Modus **Auto** zurückgesetzt. Danach sind die nativen Optionen **Auto / Hell / Dunkel** wieder verfügbar. Profile und Hintergrundbilder bleiben erhalten. Ältere Installationen, bei denen nach einer Wiederherstellung noch Theme Studio ausgewählt ist, werden beim Öffnen des Panels automatisch repariert.
+Mit **Home-Assistant-Standard wiederherstellen** wird Theme Studio deaktiviert und die Darstellung des aktuellen Administrators auf das Home-Assistant-Standarddesign im Modus **Auto** zurückgesetzt. Danach sind die nativen Optionen **Auto / Hell / Dunkel** wieder verfügbar. Profile und Hintergrundbilder bleiben erhalten. Ältere Installationen, bei denen nach einer Wiederherstellung noch Theme Studio ausgewählt ist, werden beim Öffnen des Panels automatisch repariert.
 
 Vor dem Anwenden speichert Theme Studio den bisher aktiven Stand automatisch. **Letztes Design wiederherstellen** kann diesen Stand auch nach einem Neustart aktivieren. Der dabei abgelöste Stand wird zum neuen Wiederherstellungspunkt.
 
@@ -154,7 +163,7 @@ Unter **Hintergrund → Bildbibliothek** können bis zu 24 JPG-, PNG- oder WebP-
 
 ### Expertenmodus für CSS
 
-In Version 0.9 erscheint der Legacy-CSS-Bereich nur, wenn das ausgewählte Profil bereits eigenes CSS oder visuelle Regeln aus einer älteren Version enthält. Vorhandene Daten bleiben benutzerbezogen und werden nicht automatisch verändert.
+In Version 0.9 erscheint der Legacy-CSS-Bereich nur, wenn das ausgewählte Profil bereits eigenes CSS oder visuelle Regeln aus einer älteren Version enthält. Vorhandene Daten bleiben dem aktuellen Administratorkonto zugeordnet und werden nicht automatisch verändert.
 
 > **Experimentelle Legacy-Funktion:** Vorhandene Regeln können aktiviert, deaktiviert, bearbeitet oder gelöscht werden. Version 0.9 bietet keine neuen Regeln, Duplikate, CSS-Beispiele oder Kartenpositionen mehr an. Bestehende X/Y-Werte können mit **Alle Positionsanpassungen deaktivieren** entfernt werden, ohne andere Kartenwerte zu verändern.
 
