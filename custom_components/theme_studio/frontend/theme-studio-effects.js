@@ -29,9 +29,11 @@ const DEFAULT_TECH_FRAME_BORDER_WIDTH = 2;
 const DEFAULT_GLASS_BLUR = 22;
 const DEFAULT_GLASS_SATURATION = 145;
 const DEFAULT_GLASS_HIGHLIGHT = 42;
+const DEFAULT_CLOCK_TYPE = "";
 
 const EFFECT_CHECK_INTERVAL = 1200;
 const GLASS_SCAN_INTERVAL = 3000;
+const NATIVE_CLOCK_SCAN_INTERVAL = 3000;
 const STARTUP_SYNC_DELAYS = [
   0, 40, 100, 180, 280, 400, 550, 750,
   1000, 1300, 1600, 1900, 2200, 2500,
@@ -219,6 +221,11 @@ class ThemeStudioEffects {
     this.glassHighlight = DEFAULT_GLASS_HIGHLIGHT;
     this.overlayBackground = "#182326";
     this.cardBackgroundImage = "none";
+    this.nativeClockType = DEFAULT_CLOCK_TYPE;
+    this.nativeClockCards = new Set();
+    this.originalNativeClockConfigs = new WeakMap();
+    this.nativeClockLastScan = 0;
+    this.nativeClockSaveTimer = 0;
     this.effectsExcludedForConfig = false;
     this.stateSnapshot = new Map();
     this.cardAnimations = new WeakMap();
@@ -282,6 +289,7 @@ class ThemeStudioEffects {
       this.dashboardEditModeActive = false;
       this.dashboardEditModeCheckedAt = 0;
       this.glassLastScan = 0;
+      this.nativeClockLastScan = 0;
       this._readThemeSettings();
       this._startStartupSync();
       this._rememberDashboardPath();
@@ -319,6 +327,18 @@ class ThemeStudioEffects {
           this.dashboardMenuSyncTimeoutIds.add(timeoutId);
         }
       }
+    };
+    this.nativeClockConfigChangedHandler = (event) => {
+      this._handleNativeClockConfigChanged(event);
+    };
+    this.nativeClockTypeChangedHandler = (event) => {
+      const clockType = event?.detail?.clockType;
+      if (clockType !== "" && !["analog", "digital"].includes(clockType)) {
+        return;
+      }
+      this.nativeClockType = clockType;
+      this.nativeClockLastScan = 0;
+      this._syncNativeClockCards(true);
     };
     this.cardIndex = new Map();
     this.cardIndexBuiltAt = 0;
@@ -416,6 +436,15 @@ class ThemeStudioEffects {
         true
       );
     }
+    document.addEventListener(
+      "config-changed",
+      this.nativeClockConfigChangedHandler,
+      true
+    );
+    window.addEventListener(
+      "theme-studio-clock-type-changed",
+      this.nativeClockTypeChangedHandler
+    );
 
     this._startPolling();
   }
@@ -458,6 +487,7 @@ class ThemeStudioEffects {
         () => {
           this.startupSyncTimeoutIds.delete(timeoutId);
           this._readThemeSettings();
+          this._syncNativeClockCards(true);
 
           const materialEnabled =
             this.dashboardToolbarThemeActive
@@ -566,6 +596,17 @@ class ThemeStudioEffects {
       this.dashboardMenuEventHandler,
       true
     );
+    document.removeEventListener(
+      "config-changed",
+      this.nativeClockConfigChangedHandler,
+      true
+    );
+    window.removeEventListener(
+      "theme-studio-clock-type-changed",
+      this.nativeClockTypeChangedHandler
+    );
+    window.clearTimeout(this.nativeClockSaveTimer);
+    this.nativeClockSaveTimer = 0;
     for (const timeoutId of this.dashboardMenuSyncTimeoutIds) {
       window.clearTimeout(timeoutId);
     }
@@ -586,6 +627,7 @@ class ThemeStudioEffects {
     this._clearAlertCards();
     this._clearLiquidGlassCards();
     this._clearTechFrameCards();
+    this._restoreNativeClockCards();
     this._stopDashboardEditor(false);
     this._clearExpertCss();
     this.techFrameResizeObserver?.disconnect();
@@ -1167,6 +1209,15 @@ class ThemeStudioEffects {
         1
       ) >= 0.5;
 
+    const requestedClockTypeValue = this._readCssVariable(
+      "--theme-studio-clock-type"
+    );
+    const requestedClockType = ["analog", "digital"].includes(
+      requestedClockTypeValue
+    )
+      ? requestedClockTypeValue
+      : DEFAULT_CLOCK_TYPE;
+
     const requestedCardShapeValue = this._readCssVariable(
       "--theme-studio-card-shape"
     );
@@ -1307,6 +1358,7 @@ class ThemeStudioEffects {
       || requestedGlassBlur !== this.glassBlur
       || requestedGlassSaturation !== this.glassSaturation
       || requestedGlassHighlight !== this.glassHighlight
+      || requestedClockType !== this.nativeClockType
       || requestedOverlayBackground !== this.overlayBackground
       || nextCardBackgroundImage !== this.cardBackgroundImage
       || nextExpertCssEnabled !== this.expertCssEnabled
@@ -1360,6 +1412,7 @@ class ThemeStudioEffects {
     this.glassBlur = requestedGlassBlur;
     this.glassSaturation = requestedGlassSaturation;
     this.glassHighlight = requestedGlassHighlight;
+    this.nativeClockType = requestedClockType;
     this.overlayBackground = requestedOverlayBackground;
     this.cardBackgroundImage = nextCardBackgroundImage;
     this.expertCssEnabled = nextExpertCssEnabled;
@@ -1374,6 +1427,7 @@ class ThemeStudioEffects {
     this._applyEffect();
     this._syncConfigSurface();
     this._syncLiquidGlassCards(true);
+    this._syncNativeClockCards(true);
   }
 
   _isConfigPath() {
@@ -1466,11 +1520,163 @@ class ThemeStudioEffects {
       ?.hass;
   }
 
+  _handleNativeClockConfigChanged(event) {
+    const config = event?.detail?.config;
+
+    if (config?.type !== "clock") {
+      return;
+    }
+
+    const clockType = config.clock_style === "analog"
+      ? "analog"
+      : "digital";
+
+    window.clearTimeout(this.nativeClockSaveTimer);
+    this.nativeClockSaveTimer = window.setTimeout(() => {
+      this.nativeClockSaveTimer = 0;
+      this._saveNativeClockType(clockType);
+    }, 180);
+  }
+
+  async _saveNativeClockType(clockType) {
+    const hass = this._getHass();
+    if (!hass?.callWS) return;
+
+    try {
+      const settings = await hass.callWS({
+        type: "theme_studio/get_settings",
+      });
+      if (!settings?.active_profile_id) return;
+
+      const result = await hass.callWS({
+        type: "theme_studio/set_clock_type",
+        clock_type: clockType,
+      });
+      this.nativeClockType = result.clock_type;
+      this.nativeClockLastScan = 0;
+      this._syncNativeClockCards(true);
+      window.dispatchEvent(new CustomEvent(
+        "theme-studio-clock-type-changed",
+        { detail: { clockType: result.clock_type } }
+      ));
+    } catch (_error) {
+      // The native Home Assistant card remains fully usable without Theme Studio.
+    }
+  }
+
+  _syncNativeClockCards(force = false) {
+    if (!this.nativeClockType) {
+      this._restoreNativeClockCards();
+      return;
+    }
+
+    const now = Date.now();
+    if (
+      !force
+      && now - this.nativeClockLastScan < NATIVE_CLOCK_SCAN_INTERVAL
+    ) {
+      return;
+    }
+    this.nativeClockLastScan = now;
+
+    const currentCards = new Set();
+
+    this._visitElements(document, (element) => {
+      if (
+        element.localName !== "hui-clock-card"
+        || typeof element.setConfig !== "function"
+      ) {
+        return;
+      }
+
+      let config;
+      try {
+        config = element._config;
+      } catch (_error) {
+        return;
+      }
+
+      if (!config || typeof config !== "object") return;
+      currentCards.add(element);
+
+      if (!this.originalNativeClockConfigs.has(element)) {
+        this.originalNativeClockConfigs.set(element, {
+          hadClockStyle: Object.hasOwn(config, "clock_style"),
+          clockStyle: config.clock_style,
+        });
+      }
+
+      element.setAttribute(
+        "data-theme-studio-clock-style",
+        this.nativeClockType
+      );
+
+      if (config.clock_style === this.nativeClockType) return;
+
+      try {
+        element.setConfig({
+          ...config,
+          clock_style: this.nativeClockType,
+        });
+      } catch (_error) {
+        // Unsupported future Home Assistant implementations are left unchanged.
+      }
+    });
+
+    for (const card of this.nativeClockCards) {
+      if (!currentCards.has(card)) {
+        this.originalNativeClockConfigs.delete(card);
+      }
+    }
+
+    this.nativeClockCards = currentCards;
+  }
+
+  _restoreNativeClockCards() {
+    for (const card of this.nativeClockCards) {
+      const original = this.originalNativeClockConfigs.get(card);
+      let config;
+
+      try {
+        config = card._config;
+      } catch (_error) {
+        config = null;
+      }
+
+      if (
+        original
+        && config
+        && typeof config === "object"
+        && typeof card.setConfig === "function"
+      ) {
+        const restored = { ...config };
+        if (original.hadClockStyle) {
+          restored.clock_style = original.clockStyle;
+        } else {
+          delete restored.clock_style;
+        }
+
+        try {
+          card.setConfig(restored);
+        } catch (_error) {
+          // Card restoration is best effort during navigation or module reload.
+        }
+      }
+
+      card.removeAttribute("data-theme-studio-clock-style");
+      this.originalNativeClockConfigs.delete(card);
+    }
+
+    this.nativeClockCards.clear();
+    this.nativeClockLastScan = 0;
+  }
+
   _checkCardStates() {
     if (NATIVE_CARD_DESIGN_EDITOR_ENABLED) {
       this._syncNativeCardDesignEditors();
     }
     this._syncLiquidGlassCards();
+    this._syncNativeClockCards();
 
     if (this.cardEffects.length === 0) {
       this.stateSnapshot.clear();
