@@ -1,10 +1,10 @@
-# Theme Studio 0.10.0 - User Guide
+# Theme Studio 0.10.2 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.10.0**.
+This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.10.2**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 

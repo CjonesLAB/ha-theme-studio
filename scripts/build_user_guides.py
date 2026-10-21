@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 import shutil
 from pathlib import Path
@@ -34,6 +35,11 @@ ROOT = Path(__file__).resolve().parents[1]
 GUIDES = ROOT / "docs" / "guides"
 OUTPUT = ROOT / "output" / "pdf"
 DOWNLOADS = ROOT / "docs" / "downloads"
+VERSION = json.loads(
+    (ROOT / "custom_components" / "theme_studio" / "manifest.json").read_text(
+        encoding="utf-8"
+    )
+)["version"]
 
 GUIDE_SPECS = (
     ("USER_GUIDE.en.md", "theme-studio-user-guide-en.pdf", "Theme Studio User Guide", "English"),
@@ -321,7 +327,7 @@ def header_footer(canvas, doc, title: str, language: str, first_page: bool = Fal
         canvas.setFont("GuideSans", 7.5)
         canvas.setFillColor(MUTED)
         canvas.drawString(18 * mm, height - 10.5 * mm, title)
-        canvas.drawRightString(width - 18 * mm, height - 10.5 * mm, "Version 0.10.0")
+        canvas.drawRightString(width - 18 * mm, height - 10.5 * mm, f"Version {VERSION}")
     canvas.setStrokeColor(LINE)
     canvas.line(18 * mm, 14 * mm, width - 18 * mm, 14 * mm)
     canvas.setFont("GuideSans", 7.5)
@@ -338,7 +344,7 @@ def build_one(source_name: str, output_name: str, title: str, language: str) -> 
     document = SimpleDocTemplate(
         str(target), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm,
         topMargin=19 * mm, bottomMargin=19 * mm,
-        title=title, author="CjonesLAB", subject="Theme Studio 0.10.0",
+        title=title, author="CjonesLAB", subject=f"Theme Studio {VERSION}",
     )
     story = parse_markdown(source, style_map)
     document.build(
