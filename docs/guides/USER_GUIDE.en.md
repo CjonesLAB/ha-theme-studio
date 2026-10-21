@@ -49,14 +49,9 @@ Also note:
 
 ### 2.1 Recommended: install through HACS
 
-1. Open **Integrations** in HACS.
-2. Open the top-right three-dot menu and select **Custom repositories**.
-3. Enter `https://github.com/CjonesLAB/ha-theme-studio` as the repository.
-4. Select **Integration** as the category and add it.
-5. Open **Theme Studio** and download the latest version.
-6. Restart Home Assistant.
-7. Open **Settings -> Devices & services -> Add integration**.
-8. Search for **Theme Studio** and add it.
+[![Open Theme Studio in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=CjonesLAB&repository=ha-theme-studio&category=integration)
+
+[![Add Theme Studio to Home Assistant](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=theme_studio)
 
 Theme Studio then appears in the sidebar for Home Assistant administrators. Its dashboard-effects module is registered automatically; no `frontend.extra_module_url` entry is required.
 

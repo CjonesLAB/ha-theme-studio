@@ -49,14 +49,9 @@ Ten en cuenta también:
 
 ### 2.1 Recomendado: instalación mediante HACS
 
-1. Abre **Integraciones** en HACS.
-2. Abre el menú de tres puntos y selecciona **Repositorios personalizados**.
-3. Introduce `https://github.com/CjonesLAB/ha-theme-studio`.
-4. Elige la categoría **Integración** y añade el repositorio.
-5. Abre **Theme Studio** y descarga la versión actual.
-6. Reinicia Home Assistant.
-7. Abre **Ajustes -> Dispositivos y servicios -> Añadir integración**.
-8. Busca **Theme Studio** y añádelo.
+[![Abrir Theme Studio en HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=CjonesLAB&repository=ha-theme-studio&category=integration)
+
+[![Añadir Theme Studio a Home Assistant](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=theme_studio)
 
 Theme Studio aparecerá en la barra lateral para los administradores de Home Assistant. El módulo de efectos se registra automáticamente; no hace falta añadir `frontend.extra_module_url`.
 

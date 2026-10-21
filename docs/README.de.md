@@ -107,13 +107,9 @@ Eigene Designprofile können direkt auf [ha-theme-studio.com](https://ha-theme-s
 
 ## Installation über HACS
 
-1. In HACS den Bereich **Integrationen** öffnen.
-2. Oben rechts das Drei-Punkte-Menü öffnen und **Benutzerdefinierte Repositorys** auswählen.
-3. Als Repository-URL `https://github.com/CjonesLAB/ha-theme-studio` eintragen.
-4. Als Kategorie **Integration** auswählen und das Repository hinzufügen.
-5. **Theme Studio** in HACS öffnen und die aktuelle Version herunterladen.
-6. Home Assistant neu starten.
-7. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** nach **Theme Studio** suchen und die Integration hinzufügen.
+[![Theme Studio in HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=CjonesLAB&repository=ha-theme-studio&category=integration)
+
+[![Theme Studio zu Home Assistant hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=theme_studio)
 
 Danach erscheint **Theme Studio** für Home-Assistant-Administratoren in der Seitenleiste.
 

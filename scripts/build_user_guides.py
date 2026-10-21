@@ -102,6 +102,10 @@ def styles():
             fontSize=7.5, leading=9.5, textColor=MUTED, alignment=TA_CENTER,
             spaceBefore=1.2 * mm, spaceAfter=4 * mm,
         ),
+        "button": ParagraphStyle(
+            "GuideButton", parent=base["BodyText"], fontName="GuideSans-Bold",
+            fontSize=9.2, leading=12, textColor=colors.white, alignment=TA_CENTER,
+        ),
         "table": ParagraphStyle(
             "GuideTable", parent=base["BodyText"], fontName="GuideSans",
             fontSize=7.7, leading=10.2, textColor=INK,
@@ -138,6 +142,28 @@ def image_flowable(source: Path, alt: str, styles_map: dict):
     )
 
 
+def button_flowable(label: str, target: str, styles_map: dict):
+    content = Paragraph(
+        f'<link href="{html.escape(target, quote=True)}" color="#ffffff">'
+        f'<b>{html.escape(label)}</b></link>',
+        styles_map["button"],
+    )
+    button = Table([[content]], colWidths=[86 * mm], hAlign="LEFT")
+    button.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#03a9d9")),
+                ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#03a9d9")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    return KeepTogether([button, Spacer(1, 2.5 * mm)])
+
+
 def table_flowable(rows: list[list[str]], styles_map: dict):
     columns = max(len(row) for row in rows)
     available = 174 * mm
@@ -172,6 +198,16 @@ def parse_markdown(path: Path, styles_map: dict):
     while index < len(lines):
         line = lines[index].rstrip()
         if not line:
+            index += 1
+            continue
+
+        button_match = re.fullmatch(
+            r"\[!\[([^]]+)\]\([^)]+\)\]\((https?://[^)]+)\)", line
+        )
+        if button_match:
+            story.append(
+                button_flowable(button_match.group(1), button_match.group(2), styles_map)
+            )
             index += 1
             continue
 
