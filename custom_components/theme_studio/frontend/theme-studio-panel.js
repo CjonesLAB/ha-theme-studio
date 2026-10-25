@@ -1,15 +1,15 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.2";
+} from "./theme-studio-locales.js?v=0.10.3";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-textures.js?v=0.10.2";
+} from "./theme-studio-textures.js?v=0.10.3";
 import {
   CSS_LIBRARY_EXAMPLES,
-} from "./theme-studio-css-library.js?v=0.10.2";
+} from "./theme-studio-css-library.js?v=0.10.3";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.2";
+const BUNDLED_TEXTURE_VERSION = "0.10.3";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {

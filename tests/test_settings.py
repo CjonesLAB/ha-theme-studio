@@ -340,11 +340,11 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
         "/theme_studio_files/background-textures/"
-        "wood-01-walnut.webp?v=0.10.2"
+        "wood-01-walnut.webp?v=0.10.3"
     )
     assert (
         'url("/theme_studio_files/background-textures/'
-        'wood-01-walnut.webp?v=0.10.2")'
+        'wood-01-walnut.webp?v=0.10.3")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
@@ -606,11 +606,11 @@ def test_global_card_texture_is_normalized_and_exported_as_theme_variable() -> N
     assert normalized["background"] == "color"
     assert normalized["backgroundImage"] == ""
     assert normalized["cardBackgroundImage"] == (
-        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.2"
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.3"
     )
     assert values["theme-studio-card-background-image"] == (
         'url("/theme_studio_files/textures/'
-        'carbon-01-classic.webp?v=0.10.2")'
+        'carbon-01-classic.webp?v=0.10.3")'
     )
     assert values["theme-studio-card-texture-opacity"] == "0.92"
     assert values["theme-studio-card-texture-darkening"] == "0.35"
