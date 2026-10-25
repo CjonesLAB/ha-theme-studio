@@ -1,0 +1,58 @@
+export const CARD_TEXTURE_LIBRARY = [
+  {
+    id: "carbon", label: "Carbon", items: [
+      ["Klassisch", "carbon-01-classic.webp"],
+      ["Graphit", "carbon-02-graphite.webp"],
+      ["Forged Carbon", "carbon-03-forged.webp"],
+      ["Blue Carbon", "carbon-04-blue.webp"],
+      ["Silber", "carbon-05-silver.webp"],
+      ["Racing Matt", "carbon-06-racing.webp"],
+      ["Hochglanz", "carbon-07-gloss.webp"],
+      ["Feingewebe", "carbon-08-plain.webp"],
+      ["Honeycomb", "carbon-09-honeycomb.webp"],
+      ["Bronze", "carbon-10-bronze.webp"],
+    ],
+  },
+  {
+    id: "metal", label: "Metall", items: [
+      ["Edelstahl", "metal-01-steel.webp"],
+      ["Aluminium", "metal-02-aluminum.webp"],
+      ["Titan", "metal-03-titanium.webp"],
+      ["Gunmetal", "metal-04-gunmetal.webp"],
+      ["Kupfer", "metal-05-copper.webp"],
+      ["Schwarzer Stahl", "metal-06-black-steel.webp"],
+      ["Champagner", "metal-07-champagne.webp"],
+      ["Bronze", "metal-08-bronze.webp"],
+      ["Zink", "metal-09-zinc.webp"],
+      ["Rauchchrom", "metal-10-smoked-chrome.webp"],
+    ],
+  },
+  {
+    id: "wood", label: "Holz", items: [
+      ["Walnuss", "wood-01-walnut.webp"],
+      ["Räuchereiche", "wood-02-smoked-oak.webp"],
+      ["Teak", "wood-03-teak.webp"],
+      ["Ebenholz", "wood-04-ebony.webp"],
+      ["Mahagoni", "wood-05-mahogany.webp"],
+      ["Esche", "wood-06-ash.webp"],
+      ["Palisander", "wood-07-rosewood.webp"],
+      ["Wenge", "wood-08-wenge.webp"],
+      ["Ahorn Anthrazit", "wood-09-charcoal-maple.webp"],
+      ["Altholz", "wood-10-reclaimed.webp"],
+    ],
+  },
+  {
+    id: "abstract", label: "Abstrakt", items: [
+      ["Fluid", "abstract-01-fluid.webp"],
+      ["Nebel", "abstract-02-smoke.webp"],
+      ["Facetten", "abstract-03-facets.webp"],
+      ["Aurora", "abstract-04-aurora.webp"],
+      ["Konturen", "abstract-05-contours.webp"],
+      ["Ebenen", "abstract-06-layers.webp"],
+      ["Lichtfäden", "abstract-07-threads.webp"],
+      ["Wellenringe", "abstract-08-ripples.webp"],
+      ["Kristall", "abstract-09-crystal.webp"],
+      ["Sunset", "abstract-10-sunset.webp"],
+    ],
+  },
+];

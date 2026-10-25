@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ha-theme-studio.com/schemas/theme-studio-profile-v2.schema.json",
+  "title": "Theme Studio portable design profile",
+  "description": "Portable profile format exported by Theme Studio 0.10.0 and newer.",
+  "x-theme-studio-min-version": "0.10.0",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "name",
+    "exported_at",
+    "settings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "theme-studio-profile"
+    },
+    "version": {
+      "const": 2
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 48
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "settings": {
+      "type": "object",
+      "required": [
+        "mode",
+        "design"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "light",
+            "dark"
+          ]
+        },
+        "design": {
+          "$ref": "#/$defs/palette"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "backgroundUrl": {
+      "type": "string",
+      "anyOf": [
+        {
+          "const": ""
+        },
+        {
+          "pattern": "^/theme_studio_files/(textures|background-textures)/(carbon|metal|wood|abstract)-[a-z0-9-]+\\.webp(\\?v=[0-9A-Za-z.-]+)?$"
+        }
+      ]
+    },
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clockType",
+        "primaryColor",
+        "backgroundColor",
+        "cardColor",
+        "cardTextColor",
+        "cardIconColor",
+        "cardBorderColor",
+        "cardBackgroundImage",
+        "cardTextureDarkening",
+        "headerBackgroundColor",
+        "headerTextColor",
+        "sidebarBackgroundColor",
+        "sidebarTextColor",
+        "sidebarIconColor",
+        "sidebarSelectedColor",
+        "cardOpacity",
+        "cardBorderWidth",
+        "cardShadow",
+        "borderRadius",
+        "cardShape",
+        "techFrameCut",
+        "techFrameGlow",
+        "liquidGlass",
+        "glassTransparency",
+        "glassBlur",
+        "glassSaturation",
+        "glassHighlight",
+        "darkening",
+        "background",
+        "backgroundImage"
+      ],
+      "properties": {
+        "clockType": {
+          "enum": [
+            "",
+            "analog",
+            "digital"
+          ]
+        },
+        "primaryColor": {
+          "$ref": "#/$defs/color"
+        },
+        "backgroundColor": {
+          "$ref": "#/$defs/color"
+        },
+        "cardColor": {
+          "$ref": "#/$defs/color"
+        },
+        "cardTextColor": {
+          "$ref": "#/$defs/color"
+        },
+        "cardIconColor": {
+          "$ref": "#/$defs/color"
+        },
+        "cardBorderColor": {
+          "$ref": "#/$defs/color"
+        },
+        "cardBackgroundImage": {
+          "$ref": "#/$defs/backgroundUrl"
+        },
+        "cardTextureDarkening": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 80
+        },
+        "headerBackgroundColor": {
+          "$ref": "#/$defs/color"
+        },
+        "headerTextColor": {
+          "$ref": "#/$defs/color"
+        },
+        "sidebarBackgroundColor": {
+          "$ref": "#/$defs/color"
+        },
+        "sidebarTextColor": {
+          "$ref": "#/$defs/color"
+        },
+        "sidebarIconColor": {
+          "$ref": "#/$defs/color"
+        },
+        "sidebarSelectedColor": {
+          "$ref": "#/$defs/color"
+        },
+        "cardOpacity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "cardBorderWidth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "cardShadow": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50
+        },
+        "borderRadius": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 36
+        },
+        "cardShape": {
+          "enum": [
+            "standard",
+            "tech-frame"
+          ]
+        },
+        "techFrameCut": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 34
+        },
+        "techFrameGlow": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 70
+        },
+        "liquidGlass": {
+          "type": "boolean"
+        },
+        "glassTransparency": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "glassBlur": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30
+        },
+        "glassSaturation": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 180
+        },
+        "glassHighlight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 70
+        },
+        "darkening": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 80
+        },
+        "background": {
+          "enum": [
+            "color",
+            "waves",
+            "aurora",
+            "texture",
+            "image"
+          ]
+        },
+        "backgroundImage": {
+          "$ref": "#/$defs/backgroundUrl"
+        }
+      }
+    }
+  }
+}

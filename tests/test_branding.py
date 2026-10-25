@@ -53,8 +53,10 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert re.search(rf'^VERSION = "{re.escape(RELEASE_VERSION)}"$', constants, re.MULTILINE)
     assert re.search(rf'^FRONTEND_REVISION = "{re.escape(RELEASE_VERSION)}"$', constants, re.MULTILINE)
     assert f'theme-studio-locales.js?v={RELEASE_VERSION}' in panel
-    assert f'theme-studio-effects.js?v={RELEASE_VERSION}' in panel
+    assert f'theme-studio-textures.js?v={RELEASE_VERSION}' in panel
+    assert f'theme-studio-css-library.js?v={RELEASE_VERSION}' in panel
     assert f'THEME_STUDIO_EFFECTS_VERSION = "{RELEASE_VERSION}"' in effects
+    assert f'theme-studio-textures.js?v={RELEASE_VERSION}' in effects
     assert f'THEME_STUDIO_CLOCK_CARD_VERSION = "{RELEASE_VERSION}"' in clock_card
     assert "EFFECTS_MODULE_URL = (" in setup
     assert "CLOCK_CARD_MODULE_URL = (" in setup
@@ -78,3 +80,12 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
         assert warning_label in content
         assert "    extra_module_url:" not in content
         assert "v010/theme-studio-overview.webp" in content
+def test_minimum_home_assistant_version_is_covered_by_ci() -> None:
+    """The oldest supported Home Assistant release must remain in the test matrix."""
+
+    hacs = json.loads((ROOT / "hacs.json").read_text(encoding="utf-8"))
+    workflow_source = (ROOT / ".github/workflows/tests.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert f'- "{hacs["homeassistant"]}"' in workflow_source

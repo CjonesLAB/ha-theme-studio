@@ -9,6 +9,8 @@ Thumbs.db
 .venv-tests*/
 venv/
 .pytest_cache/
+.pytest-*-temp/
+.tmp-*/
 .release-inspect/
 dist/
 build/

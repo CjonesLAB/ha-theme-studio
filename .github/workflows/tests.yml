@@ -10,7 +10,14 @@ permissions:
 
 jobs:
   tests:
+    name: Home Assistant ${{ matrix.homeassistant }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        homeassistant:
+          - "2026.7.0"
+          - "2026.8.1"
 
     steps:
       - name: Repository auschecken
@@ -24,7 +31,12 @@ jobs:
           cache-dependency-path: requirements_test.txt
 
       - name: Testabhängigkeiten installieren
-        run: python -m pip install --requirement requirements_test.txt
+        run: |
+          python -m pip install --requirement requirements_test.txt
+          python -m pip install "homeassistant==${{ matrix.homeassistant }}"
+
+      - name: Python-Code statisch prüfen
+        run: python -m ruff check custom_components tests scripts
 
       - name: Python-Dateien prüfen
         run: python -m compileall -q custom_components/theme_studio
@@ -33,6 +45,20 @@ jobs:
         run: |
           node --check custom_components/theme_studio/frontend/theme-studio-panel.js
           node --check custom_components/theme_studio/frontend/theme-studio-effects.js
+          node --check custom_components/theme_studio/frontend/theme-studio-locales.js
+          node --check custom_components/theme_studio/frontend/theme-studio-clock-card.js
+          node --check custom_components/theme_studio/frontend/theme-studio-css-library.js
+          node --check custom_components/theme_studio/frontend/theme-studio-textures.js
+
+      - name: Frontend-Abläufe prüfen
+        run: |
+          node tests/frontend-save-race.cjs
+          node tests/frontend-counterpart.cjs
+          node tests/frontend-appearance.cjs
+          node tests/frontend-gallery-mode.cjs
+          node tests/frontend-legacy-position.cjs
+          node tests/frontend-profile-labels.cjs
+          node tests/frontend-profile-save-reminder.cjs
 
       - name: Automatisierte Tests ausführen
         run: python -m pytest

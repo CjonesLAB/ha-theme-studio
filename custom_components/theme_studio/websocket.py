@@ -22,6 +22,11 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN, VERSION
+from .design_defaults import (
+    DEFAULT_DARK_PROFILE,
+    DEFAULT_EFFECT_SETTINGS,
+    DEFAULT_LIGHT_PROFILE,
+)
 from .single_design import select_design, split_profiles
 from .gallery import (
     GalleryError,
@@ -61,95 +66,6 @@ MIME_EXTENSIONS = {
     "image/png": "png",
     "image/webp": "webp",
 }
-
-DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
-    "clockType": "",
-    "primaryColor": "#2f6fa3",
-    "backgroundColor": "#eef2f5",
-    "cardColor": "#ffffff",
-    "cardTextColor": "#1c1c1c",
-    "cardIconColor": "#2f6fa3",
-    "cardBorderColor": "#d5dde5",
-    "cardBackgroundImage": "",
-    "cardTextureDarkening": 0,
-    "headerBackgroundColor": "#eef2f5",
-    "headerTextColor": "#1c1c1c",
-    "sidebarBackgroundColor": "#eef2f5",
-    "sidebarTextColor": "#1c1c1c",
-    "sidebarIconColor": "#5f6b72",
-    "sidebarSelectedColor": "#2f6fa3",
-    "cardOpacity": 96,
-    "cardBorderWidth": 1,
-    "cardShadow": 16,
-    "borderRadius": 18,
-    "cardShape": "standard",
-    "techFrameCut": 18,
-    "techFrameGlow": 35,
-    "liquidGlass": False,
-    "glassTransparency": 56,
-    "glassBlur": 22,
-    "glassSaturation": 145,
-    "glassHighlight": 42,
-    "darkening": 10,
-    "background": "color",
-    "backgroundImage": "",
-}
-
-DEFAULT_DARK_PROFILE: dict[str, Any] = {
-    "clockType": "",
-    "primaryColor": "#26b2b3",
-    "backgroundColor": "#101719",
-    "cardColor": "#182326",
-    "cardTextColor": "#ffffff",
-    "cardIconColor": "#26b2b3",
-    "cardBorderColor": "#26b2b3",
-    "cardBackgroundImage": "",
-    "cardTextureDarkening": 0,
-    "headerBackgroundColor": "#101719",
-    "headerTextColor": "#ffffff",
-    "sidebarBackgroundColor": "#101719",
-    "sidebarTextColor": "#ffffff",
-    "sidebarIconColor": "#b8c4c7",
-    "sidebarSelectedColor": "#26b2b3",
-    "cardOpacity": 92,
-    "cardBorderWidth": 0,
-    "cardShadow": 28,
-    "borderRadius": 18,
-    "cardShape": "standard",
-    "techFrameCut": 18,
-    "techFrameGlow": 35,
-    "liquidGlass": False,
-    "glassTransparency": 66,
-    "glassBlur": 22,
-    "glassSaturation": 145,
-    "glassHighlight": 42,
-    "darkening": 30,
-    "background": "color",
-    "backgroundImage": "",
-}
-
-DEFAULT_EFFECT_SETTINGS: dict[str, Any] = {
-    "effect": "none",
-    "motion": 35,
-    "glow": 35,
-    "cardEffects": [],
-    "cardIntensity": 55,
-    "pulseEntities": [],
-    "energyEntities": [],
-    "energyWarning": 500,
-    "energyCritical": 2000,
-    "climateEntities": [],
-    "climateComfortMin": 19,
-    "climateComfortMax": 24,
-    "climateHot": 28,
-    "alertEntities": [],
-    "alertBatteryLow": 20,
-    "expertCssEnabled": False,
-    "expertRules": [],
-    "cardDesigns": [],
-    "expertCss": "",
-}
-
 
 def validate_expert_css(value: Any) -> str:
     """Validate user-authored dashboard CSS without rewriting it."""

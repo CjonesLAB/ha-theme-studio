@@ -19,6 +19,13 @@ EFFECTS_FILE = (
     / "frontend"
     / "theme-studio-effects.js"
 )
+TEXTURES_FILE = (
+    Path(__file__).parents[1]
+    / "custom_components"
+    / "theme_studio"
+    / "frontend"
+    / "theme-studio-textures.js"
+)
 
 
 def _panel_source() -> str:
@@ -31,6 +38,12 @@ def _effects_source() -> str:
     """Return the complete dashboard-effects source."""
 
     return EFFECTS_FILE.read_text(encoding="utf-8")
+
+
+def _textures_source() -> str:
+    """Return the shared texture catalog source."""
+
+    return TEXTURES_FILE.read_text(encoding="utf-8")
 
 
 def test_entity_picker_reuses_dom_collections() -> None:
@@ -172,7 +185,7 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-effects.js?v=0.10.2";' in panel_source
+    assert 'from "./theme-studio-textures.js?v=0.10.2";' in panel_source
     assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.2";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
@@ -558,18 +571,19 @@ def test_native_card_design_uses_material_background_choices() -> None:
     """The obsolete dot and grid buttons are replaced by a texture gallery."""
 
     effects_source = _effects_source()
+    textures_source = _textures_source()
 
     assert 'data-value="dots"><strong>Punkte</strong>' not in effects_source
     assert 'data-value="grid"><strong>Raster</strong>' not in effects_source
     assert 'data-value="carbon"><strong>Carbon</strong>' not in effects_source
     assert 'data-value="metal"><strong>Metall</strong>' not in effects_source
     assert 'data-value="texture"><strong>Texturgalerie</strong>' in effects_source
-    assert "export const CARD_TEXTURE_LIBRARY = [" in effects_source
-    assert 'id: "carbon", label: "Carbon"' in effects_source
-    assert 'id: "metal", label: "Metall"' in effects_source
-    assert 'id: "wood", label: "Holz"' in effects_source
-    assert 'id: "abstract", label: "Abstrakt"' in effects_source
-    assert effects_source.count('.webp"]') == 40
+    assert "export const CARD_TEXTURE_LIBRARY = [" in textures_source
+    assert 'id: "carbon", label: "Carbon"' in textures_source
+    assert 'id: "metal", label: "Metall"' in textures_source
+    assert 'id: "wood", label: "Holz"' in textures_source
+    assert 'id: "abstract", label: "Abstrakt"' in textures_source
+    assert textures_source.count('.webp"]') == 40
     assert "_nativeCardTextureGalleryMarkup" in effects_source
     assert "_openNativeCardTextureGallery" in effects_source
     assert "_syncNativeCardTextureGallery" in effects_source
