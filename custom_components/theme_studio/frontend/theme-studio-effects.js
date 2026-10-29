@@ -1,7 +1,7 @@
-import { CARD_TEXTURE_LIBRARY } from "./theme-studio-textures.js?v=0.10.3";
+import { CARD_TEXTURE_LIBRARY } from "./theme-studio-textures.js?v=0.10.4";
 
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.3";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.4";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -3993,6 +3993,12 @@ class ThemeStudioEffects {
 
   _rememberDashboardPath() {
     const path = window.location?.pathname || "";
+
+    if (new URLSearchParams(window.location?.search || "").has(
+      "theme_studio_preview"
+    )) {
+      return;
+    }
 
     if (!this._isDashboardPath()) {
       return;

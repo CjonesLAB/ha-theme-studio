@@ -1,15 +1,15 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.3";
+} from "./theme-studio-locales.js?v=0.10.4";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-textures.js?v=0.10.3";
+} from "./theme-studio-textures.js?v=0.10.4";
 import {
   CSS_LIBRARY_EXAMPLES,
-} from "./theme-studio-css-library.js?v=0.10.3";
+} from "./theme-studio-css-library.js?v=0.10.4";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.3";
+const BUNDLED_TEXTURE_VERSION = "0.10.4";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {
@@ -52,6 +52,16 @@ class ThemeStudioPanel extends HTMLElement {
     this.cardTextureCategory = "carbon";
     this.pendingCardTexturePath = "";
     this.cardTextureReturnFocus = null;
+    this.devicePreviewReturnFocus = null;
+    this.devicePreviewDevice = "desktop";
+    this.devicePreviewOrientation = "landscape";
+    this.devicePreviewProfileId = "";
+    this.devicePreviewDashboardPath = "";
+    this.devicePreviewDashboardsLoaded = false;
+    this.devicePreviewDashboardsLoading = false;
+    this.devicePreviewThemeTimer = 0;
+    this.devicePreviewThemeRevision = 0;
+    this.devicePreviewThemeCache = new Map();
     this.recoveryAvailable = false;
     this.themeStudioActive = true;
     this.activeThemeName = "Theme Studio";
@@ -2749,6 +2759,347 @@ class ThemeStudioPanel extends HTMLElement {
           box-shadow: var(--ha-card-box-shadow);
         }
 
+        .device-preview-open {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          width: 100%;
+          min-height: 40px;
+          margin-bottom: 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          font-weight: 700;
+        }
+
+        .device-preview-overlay[hidden] {
+          display: none !important;
+        }
+
+        .device-preview-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 10020;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: max(8px, env(safe-area-inset-top)) 8px
+            max(8px, env(safe-area-inset-bottom));
+          background: rgba(0, 0, 0, 0.78);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+
+        .device-preview-dialog {
+          display: flex;
+          width: 100%;
+          height: 100%;
+          max-height: none;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid var(--divider-color);
+          border-radius: 14px;
+          background: var(--card-background-color);
+          box-shadow: 0 22px 70px rgba(0, 0, 0, 0.5);
+        }
+
+        .device-preview-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 10px 14px;
+          border-bottom: 1px solid var(--divider-color);
+        }
+
+        .device-preview-head h2 {
+          margin: 0 0 3px;
+          font-size: 20px;
+        }
+
+        .device-preview-head p {
+          margin: 0;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .device-preview-close {
+          width: 38px;
+          height: 38px;
+          flex: 0 0 auto;
+          border: 1px solid var(--divider-color);
+          border-radius: 50%;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          font-size: 25px;
+        }
+
+        .device-preview-controls {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 18px;
+          flex-wrap: wrap;
+          padding: 8px 14px;
+          border-bottom: 1px solid var(--divider-color);
+          background: var(--secondary-background-color);
+        }
+
+        .device-preview-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 0;
+          background: transparent;
+        }
+
+        .device-preview-dashboard-picker,
+        .device-preview-profile-picker {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .device-preview-dashboard-picker[hidden],
+        .device-preview-profile-picker[hidden] {
+          display: none !important;
+        }
+
+        .device-preview-dashboard-picker select,
+        .device-preview-profile-picker select {
+          min-width: min(320px, 55vw);
+          min-height: 40px;
+          padding: 6px 34px 6px 11px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          color: var(--primary-text-color);
+          background: var(--card-background-color);
+        }
+
+        .device-preview-device,
+        .device-preview-rotate,
+        .device-preview-apply {
+          min-height: 40px;
+          padding: 7px 15px;
+          border: 1px solid var(--divider-color);
+          border-radius: 10px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font-weight: 700;
+        }
+
+        .device-preview-device.active {
+          border-color: var(--primary-color);
+          background: color-mix(
+            in srgb,
+            var(--primary-color) 18%,
+            var(--card-background-color)
+          );
+          color: var(--primary-color);
+        }
+
+        .device-preview-rotate[hidden] {
+          display: none !important;
+        }
+
+        .device-preview-apply {
+          padding-inline: 22px;
+          border-color: var(--primary-color);
+          background: var(--primary-color);
+          color: var(--text-primary-color, white);
+        }
+
+        .device-preview-apply[hidden] {
+          display: none !important;
+        }
+
+        .device-preview-stage {
+          display: flex;
+          min-height: 0;
+          flex: 1 1 auto;
+          align-items: center;
+          justify-content: center;
+          overflow: auto;
+          padding: 8px;
+          background:
+            radial-gradient(
+              circle at 50% 10%,
+              color-mix(in srgb, var(--primary-color) 12%, transparent),
+              transparent 44%
+            ),
+            var(--primary-background-color);
+        }
+
+        .device-preview-frame {
+          position: relative;
+          flex: 0 0 auto;
+          overflow: hidden;
+          border: 8px solid #202226;
+          border-radius: 18px;
+          background: #0f1114;
+          box-shadow: 0 16px 45px rgba(0, 0, 0, 0.48);
+          transition: width 180ms ease, aspect-ratio 180ms ease;
+        }
+
+        .device-preview-frame[data-device="desktop"] {
+          width: min(1100px, 84vw, calc(70vh * 1.7778));
+          aspect-ratio: 16 / 9;
+          border-width: 7px;
+          border-radius: 12px;
+        }
+
+        .device-preview-frame[data-preview-source="dashboard"][data-device="desktop"] {
+          width: 100%;
+          height: 100%;
+          aspect-ratio: auto;
+          border-width: 4px;
+          border-radius: 8px;
+        }
+
+        .device-preview-frame[data-device="tablet"][data-orientation="portrait"] {
+          width: min(650px, 82vw, calc(70vh * 0.75));
+          aspect-ratio: 3 / 4;
+          border-width: 10px;
+          border-radius: 24px;
+        }
+
+        .device-preview-frame[data-device="tablet"][data-orientation="landscape"] {
+          width: min(900px, 84vw, calc(70vh * 1.3333));
+          aspect-ratio: 4 / 3;
+          border-width: 10px;
+          border-radius: 24px;
+        }
+
+        .device-preview-frame[data-device="phone"][data-orientation="portrait"] {
+          width: min(390px, 82vw, calc(70vh * 0.5625));
+          aspect-ratio: 9 / 16;
+          border-width: 9px;
+          border-radius: 28px;
+        }
+
+        .device-preview-frame[data-device="phone"][data-orientation="landscape"] {
+          width: min(760px, 84vw, calc(70vh * 1.7778));
+          aspect-ratio: 16 / 9;
+          border-width: 9px;
+          border-radius: 28px;
+        }
+
+        .device-preview-frame .preview {
+          width: 100%;
+          height: 100%;
+          min-height: 0;
+          border-radius: 0;
+          pointer-events: none;
+        }
+
+        .device-preview-dashboard {
+          width: 100%;
+          height: 100%;
+          border: 0;
+          opacity: 0;
+          background: var(--primary-background-color);
+          pointer-events: auto;
+          transition: opacity 160ms ease;
+        }
+
+        .device-preview-frame[data-preview-source="dashboard"]::before {
+          content: attr(data-loading-label);
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          color: var(--secondary-text-color);
+          background: var(--primary-background-color);
+          font-size: 13px;
+        }
+
+        .device-preview-dashboard.loaded {
+          position: relative;
+          z-index: 1;
+          opacity: 1;
+        }
+
+        .device-preview-frame[data-device="tablet"] .preview-app-body {
+          grid-template-columns: 112px minmax(0, 1fr);
+        }
+
+        .device-preview-frame[data-device="tablet"] .preview-dashboard {
+          padding: 15px;
+        }
+
+        .device-preview-frame[data-device="tablet"] .preview-card {
+          min-height: 116px;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-app-header {
+          min-height: 38px;
+          padding: 0 11px;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-app-header-actions {
+          display: none;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-app-body {
+          grid-template-columns: 1fr;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-sidebar {
+          display: none;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-dashboard {
+          padding: 10px;
+          overflow: auto;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-header h2 {
+          font-size: 16px;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-time {
+          font-size: 13px;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-mode {
+          margin-bottom: 9px;
+          font-size: 9px;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-grid {
+          gap: 7px;
+        }
+
+        .device-preview-frame[data-device="phone"] .preview-card {
+          min-height: 96px;
+          padding: 10px;
+        }
+
+        .device-preview-frame[data-device="phone"][data-orientation="portrait"]
+        .preview-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .device-preview-frame[data-device="phone"][data-orientation="landscape"]
+        .preview-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .device-preview-note {
+          margin: 0;
+          padding: 10px 18px 13px;
+          color: var(--secondary-text-color);
+          font-size: 11px;
+          text-align: center;
+        }
+
         .preview-edit-hint {
           margin: 10px 4px 8px;
           color: var(--secondary-text-color);
@@ -4399,6 +4750,106 @@ class ThemeStudioPanel extends HTMLElement {
             padding: 0 13px 10px;
           }
         }
+
+        /* The selected preview format wins over the host screen's breakpoint. */
+        .device-preview-frame[data-device="desktop"] .preview-app-header {
+          min-height: 48px;
+          padding: 0 17px;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-app-header-actions,
+        .device-preview-frame[data-device="tablet"] .preview-app-header-actions {
+          display: flex;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-app-body {
+          grid-template-columns: 145px minmax(0, 1fr);
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-sidebar,
+        .device-preview-frame[data-device="tablet"] .preview-sidebar {
+          display: block;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-dashboard {
+          padding: 21px;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-header h2 {
+          font-size: 23px;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-time {
+          font-size: 20px;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-mode,
+        .device-preview-frame[data-device="tablet"] .preview-mode {
+          display: block;
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-grid,
+        .device-preview-frame[data-device="tablet"] .preview-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .device-preview-frame[data-device="desktop"] .preview-card {
+          min-height: 150px;
+          padding: 15px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .preview-card h3 {
+          gap: 7px;
+          margin-bottom: 11px;
+          font-size: 13px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .preview-icon {
+          width: 13px;
+          height: 13px;
+          flex-basis: 13px;
+          border-radius: 4px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .large-value {
+          font-size: 27px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .secondary-text {
+          margin-top: 5px;
+          font-size: 11px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .switch-row {
+          margin-top: 10px;
+          font-size: 11px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .fake-switch {
+          width: 38px;
+          height: 22px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .fake-switch::after {
+          top: 3px;
+          right: 3px;
+          width: 16px;
+          height: 16px;
+        }
+
+        .device-preview-frame:is([data-device="desktop"], [data-device="tablet"])
+        .chart {
+          gap: 5px;
+          height: 76px;
+          margin-top: 10px;
+        }
       </style>
 
       <nav class="mobile-navigation" aria-label="Mobile Navigation">
@@ -5671,6 +6122,14 @@ class ThemeStudioPanel extends HTMLElement {
           </div>
 
           <aside id="preview-panel" class="preview-panel">
+          <button
+            id="device-preview-open"
+            class="device-preview-open"
+            type="button"
+          >
+            <span aria-hidden="true">▣</span>
+            Gerätevorschau öffnen
+          </button>
           <div
             id="preview"
             class="preview"
@@ -5909,6 +6368,63 @@ class ThemeStudioPanel extends HTMLElement {
           </aside>
         </section>
       </main>
+      <div
+        id="device-preview-overlay"
+        class="device-preview-overlay"
+        hidden
+      >
+        <section
+          class="device-preview-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="device-preview-title"
+        >
+          <header class="device-preview-head">
+            <div>
+              <h2 id="device-preview-title">Gerätevorschau</h2>
+              <p>Unverbindliche Vorschau des aktuellen Designs – das echte Dashboard bleibt unverändert.</p>
+            </div>
+            <button
+              id="device-preview-close"
+              class="device-preview-close"
+              type="button"
+              aria-label="Gerätevorschau schließen"
+            >×</button>
+          </header>
+          <div class="device-preview-controls">
+            <div class="device-preview-toolbar" role="toolbar" aria-label="Vorschauformat">
+              <button class="device-preview-device active" type="button" data-device-preview-device="desktop" aria-pressed="true">Desktop</button>
+              <button class="device-preview-device" type="button" data-device-preview-device="tablet" aria-pressed="false">Tablet</button>
+              <button class="device-preview-device" type="button" data-device-preview-device="phone" aria-pressed="false">Smartphone</button>
+              <button id="device-preview-rotate" class="device-preview-rotate" type="button" hidden>↻ Querformat</button>
+            </div>
+            <label id="device-preview-dashboard-picker" class="device-preview-dashboard-picker" hidden>
+              <span>Dashboard-Ansicht</span>
+              <select id="device-preview-dashboard-select" aria-label="Dashboard-Ansicht">
+                <option value="">Dashboard wird geladen …</option>
+              </select>
+            </label>
+            <label id="device-preview-profile-picker" class="device-preview-profile-picker" hidden>
+              <span>Design</span>
+              <select id="device-preview-profile-select" aria-label="Design für Dashboard-Vorschau">
+                <option value="">Aktuelles Design</option>
+              </select>
+            </label>
+            <button id="device-preview-apply" class="device-preview-apply" type="button" hidden>
+              Design anwenden
+            </button>
+          </div>
+          <div class="device-preview-stage">
+            <div
+              id="device-preview-frame"
+              class="device-preview-frame"
+              data-device="desktop"
+              data-orientation="landscape"
+            ></div>
+          </div>
+          <p id="device-preview-note" class="device-preview-note">Die Darstellung dient zur Einschätzung von Farben, Materialien und Proportionen. Sie bildet kein persönliches Dashboard pixelgenau nach.</p>
+        </section>
+      </div>
     `;
 
     this._bindEvents();
@@ -5927,6 +6443,14 @@ class ThemeStudioPanel extends HTMLElement {
     this._stopProfileSaveSuccess();
     window.clearTimeout(this.editorSectionFocusTimer);
     window.clearTimeout(this.effectTargetHighlightTimer);
+    window.clearTimeout(this.devicePreviewThemeTimer);
+    this.devicePreviewThemeRevision += 1;
+    this.devicePreviewThemeCache.clear();
+    this._disposeDevicePreviewDashboard(
+      this.shadowRoot
+        ?.getElementById("device-preview-frame")
+        ?.querySelector(".device-preview-dashboard")
+    );
     window.cancelAnimationFrame(this.stickyOffsetFrame);
     window.cancelAnimationFrame(this.communitySliderFrame);
     this.stickyOffsetFrame = 0;
@@ -6532,6 +7056,596 @@ class ThemeStudioPanel extends HTMLElement {
     });
   }
 
+  _openDevicePreview() {
+    const overlay = this.shadowRoot.getElementById(
+      "device-preview-overlay"
+    );
+
+    if (!overlay) {
+      return;
+    }
+
+    this.devicePreviewReturnFocus = this.shadowRoot.activeElement;
+    overlay.hidden = false;
+    this._syncDevicePreviewControls();
+    if (!this.devicePreviewDashboardsLoaded) {
+      this.shadowRoot
+        .getElementById("device-preview-frame")
+        ?.replaceChildren();
+      void this._loadDevicePreviewDashboards();
+    } else {
+      this._refreshDevicePreview();
+    }
+    this.shadowRoot
+      .getElementById("device-preview-close")
+      ?.focus({ preventScroll: true });
+  }
+
+  _closeDevicePreview() {
+    const overlay = this.shadowRoot.getElementById(
+      "device-preview-overlay"
+    );
+
+    if (!overlay || overlay.hidden) {
+      return;
+    }
+
+    overlay.hidden = true;
+    window.clearTimeout(this.devicePreviewThemeTimer);
+    this.devicePreviewThemeTimer = 0;
+    this.devicePreviewThemeRevision += 1;
+    const frame = this.shadowRoot.getElementById("device-preview-frame");
+    this._disposeDevicePreviewDashboard(
+      frame?.querySelector(".device-preview-dashboard")
+    );
+    frame?.replaceChildren();
+    this.devicePreviewReturnFocus?.focus?.({ preventScroll: true });
+    this.devicePreviewReturnFocus = null;
+  }
+
+  _disposeDevicePreviewDashboard(dashboard) {
+    if (!dashboard) {
+      return;
+    }
+
+    dashboard._themeStudioReadOnlyCleanup?.();
+    delete dashboard._themeStudioReadOnlyCleanup;
+    try {
+      dashboard.contentWindow?.stop?.();
+    } catch (_error) {
+      // A dashboard that is already unloading needs no further cleanup.
+    }
+  }
+
+  _setDevicePreviewDevice(device) {
+    if (!["desktop", "tablet", "phone"].includes(device)) {
+      return;
+    }
+
+    this.devicePreviewDevice = device;
+    this.devicePreviewOrientation = device === "desktop"
+      ? "landscape"
+      : "portrait";
+    this._syncDevicePreviewControls();
+    this._refreshDevicePreview();
+  }
+
+  _rotateDevicePreview() {
+    if (this.devicePreviewDevice === "desktop") {
+      return;
+    }
+
+    this.devicePreviewOrientation =
+      this.devicePreviewOrientation === "portrait"
+        ? "landscape"
+        : "portrait";
+    this._syncDevicePreviewControls();
+    this._refreshDevicePreview();
+  }
+
+  _syncDevicePreviewControls() {
+    const frame = this.shadowRoot.getElementById("device-preview-frame");
+    const rotate = this.shadowRoot.getElementById("device-preview-rotate");
+
+    if (!frame || !rotate) {
+      return;
+    }
+
+    frame.dataset.device = this.devicePreviewDevice;
+    frame.dataset.orientation = this.devicePreviewOrientation;
+    frame.dataset.previewSource = "dashboard";
+    frame.dataset.loadingLabel = this._translate("Dashboard wird geladen …");
+    rotate.hidden = this.devicePreviewDevice === "desktop";
+    rotate.textContent = this._translate(
+      this.devicePreviewOrientation === "portrait"
+        ? "↻ Querformat"
+        : "↻ Hochformat"
+    );
+
+    this.shadowRoot
+      .querySelectorAll("[data-device-preview-device]")
+      .forEach((button) => {
+        const active = button.dataset.devicePreviewDevice ===
+          this.devicePreviewDevice;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+
+    const note = this.shadowRoot.getElementById("device-preview-note");
+    if (note) {
+      note.textContent = this._translate(
+        "Schreibgeschützte Ansicht des gewählten Designs auf deinem echten Dashboard. Schalter und Karten können hier nicht bedient werden."
+      );
+    }
+
+    const picker = this.shadowRoot.getElementById(
+      "device-preview-dashboard-picker"
+    );
+    if (picker) {
+      picker.hidden = false;
+    }
+
+    const profilePicker = this.shadowRoot.getElementById(
+      "device-preview-profile-picker"
+    );
+    if (profilePicker) {
+      profilePicker.hidden = false;
+    }
+    const applyButton = this.shadowRoot.getElementById(
+      "device-preview-apply"
+    );
+    if (applyButton) {
+      applyButton.hidden = false;
+    }
+    this._renderDevicePreviewProfileOptions();
+  }
+
+  _renderDevicePreviewProfileOptions() {
+    const select = this.shadowRoot.getElementById(
+      "device-preview-profile-select"
+    );
+    if (!select) {
+      return;
+    }
+
+    const selectedExists = this.profiles.some(
+      (profile) => profile.id === this.devicePreviewProfileId
+    );
+    if (!selectedExists) {
+      this.devicePreviewProfileId = "";
+    }
+
+    select.replaceChildren(new Option(
+      this._translate("Aktuelles Design"),
+      ""
+    ));
+    this.profiles.forEach((profile) => {
+      select.append(new Option(
+        this._profileDisplayLabel(profile),
+        profile.id
+      ));
+    });
+    select.value = this.devicePreviewProfileId;
+  }
+
+  async _applyDevicePreviewSelection() {
+    const button = this.shadowRoot.getElementById(
+      "device-preview-apply"
+    );
+    if (!button || button.disabled) {
+      return;
+    }
+
+    const selectedProfile = this.profiles.find(
+      (profile) => profile.id === this.devicePreviewProfileId
+    );
+
+    button.disabled = true;
+    button.textContent = this._translate("Wird aktiviert …");
+
+    if (selectedProfile) {
+      this.activeProfileId = selectedProfile.id;
+      this._replaceEditorSettings(selectedProfile.settings);
+      this._renderProfileOptions(false);
+    }
+
+    const succeeded = await this._saveAndApplySettings();
+    if (succeeded) {
+      this._closeDevicePreview();
+      return;
+    }
+
+    button.disabled = false;
+    button.textContent = this._translate("Design anwenden");
+  }
+
+  async _loadDevicePreviewDashboards() {
+    if (
+      this.devicePreviewDashboardsLoaded
+      || this.devicePreviewDashboardsLoading
+    ) {
+      return;
+    }
+
+    const select = this.shadowRoot.getElementById(
+      "device-preview-dashboard-select"
+    );
+    if (!select) {
+      return;
+    }
+
+    this.devicePreviewDashboardsLoading = true;
+    select.disabled = true;
+    select.replaceChildren(new Option(
+      this._translate("Dashboard wird geladen …"),
+      ""
+    ));
+
+    const options = [];
+    const panels = Object.entries(this._hass?.panels || {})
+      .filter(([, panel]) => panel?.component_name === "lovelace");
+
+    for (const [panelKey, panel] of panels) {
+      const basePath = String(panel?.url_path || panelKey || "lovelace")
+        .replace(/^\/+|\/+$/g, "");
+      const panelTitle = panel?.title || panel?.config?.title || basePath;
+      let config = null;
+
+      try {
+        const request = { type: "lovelace/config" };
+        if (basePath !== "lovelace") {
+          request.url_path = basePath;
+        }
+        config = await this._hass.callWS(request);
+      } catch (_error) {
+        try {
+          config = await this._hass.callWS({
+            type: "lovelace/config",
+            url_path: basePath,
+          });
+        } catch (_fallbackError) {
+          config = null;
+        }
+      }
+
+      const views = Array.isArray(config?.views) ? config.views : [];
+      if (!views.length) {
+        options.push({
+          path: `/${basePath}`,
+          label: panelTitle,
+        });
+        continue;
+      }
+
+      views.forEach((view, index) => {
+        const viewPath = String(view?.path ?? index).replace(/^\/+|\/+$/g, "");
+        const viewTitle = view?.title || viewPath || `${index + 1}`;
+        options.push({
+          path: `/${basePath}/${viewPath}`,
+          label: `${panelTitle} · ${viewTitle}`,
+        });
+      });
+    }
+
+    const uniqueOptions = [...new Map(
+      options.map((option) => [option.path, option])
+    ).values()];
+    const remembered = this._rememberedDevicePreviewDashboardPath();
+    let rememberedPath = remembered;
+    try {
+      rememberedPath = new URL(
+        remembered || "/",
+        window.location.origin
+      ).pathname;
+    } catch (_error) {
+      rememberedPath = remembered;
+    }
+    const selected = uniqueOptions.find((option) =>
+      option.path === rememberedPath
+    ) || uniqueOptions[0];
+
+    select.replaceChildren();
+    if (!uniqueOptions.length) {
+      select.append(new Option(
+        this._translate("Keine Dashboard-Ansicht gefunden"),
+        ""
+      ));
+    } else {
+      uniqueOptions.forEach((option) => {
+        select.append(new Option(option.label, option.path));
+      });
+      this.devicePreviewDashboardPath = selected.path;
+      select.value = selected.path;
+      this._storeDevicePreviewDashboardPath(selected.path);
+    }
+
+    select.disabled = !uniqueOptions.length;
+    this.devicePreviewDashboardsLoading = false;
+    this.devicePreviewDashboardsLoaded = true;
+
+    this._refreshDevicePreview(true);
+  }
+
+  _rememberedDevicePreviewDashboardPath() {
+    try {
+      return window.sessionStorage.getItem(
+        "theme-studio-preview-dashboard-path"
+      ) || window.sessionStorage.getItem(
+        "theme-studio-last-dashboard-path"
+      ) || "";
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  _storeDevicePreviewDashboardPath(path) {
+    try {
+      window.sessionStorage.setItem(
+        "theme-studio-preview-dashboard-path",
+        path
+      );
+    } catch (_error) {
+      // Remembering the explicitly selected preview is optional.
+    }
+  }
+
+  _dashboardPreviewPath() {
+    const remembered = this.devicePreviewDashboardPath
+      || this._rememberedDevicePreviewDashboardPath();
+
+    if (remembered.startsWith("/") && !remembered.startsWith("/theme-studio")) {
+      return remembered;
+    }
+
+    const panels = this._hass?.panels || {};
+    const preferred = this._hass?.defaultPanel
+      || this._hass?.config?.default_panel
+      || "lovelace";
+    const preferredPanel = panels[preferred];
+    const panel = preferredPanel?.component_name === "lovelace"
+      ? preferredPanel
+      : Object.values(panels).find((candidate) =>
+        candidate?.component_name === "lovelace"
+      );
+    const path = panel?.url_path || "lovelace";
+
+    return `/${String(path).replace(/^\/+/, "")}`;
+  }
+
+  _scheduleDevicePreviewTheme(dashboard, delay = 100) {
+    window.clearTimeout(this.devicePreviewThemeTimer);
+    this.devicePreviewThemeTimer = window.setTimeout(() => {
+      this.devicePreviewThemeTimer = 0;
+      void this._applyDevicePreviewTheme(dashboard);
+    }, delay);
+  }
+
+  _protectDevicePreviewDashboard(dashboard, dashboardDocument) {
+    if (dashboard.dataset.readOnlyGuard === "1") {
+      return;
+    }
+
+    const preventInteraction = (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const blockedEvents = [
+      "action",
+      "auxclick",
+      "click",
+      "dblclick",
+      "submit",
+      "change",
+      "input",
+    ];
+    blockedEvents.forEach((eventName) => {
+      dashboardDocument.addEventListener(
+        eventName,
+        preventInteraction,
+        true
+      );
+    });
+    dashboard._themeStudioReadOnlyCleanup = () => {
+      blockedEvents.forEach((eventName) => {
+        dashboardDocument.removeEventListener(
+          eventName,
+          preventInteraction,
+          true
+        );
+      });
+    };
+    dashboard.dataset.readOnlyGuard = "1";
+  }
+
+  async _applyDevicePreviewTheme(dashboard) {
+    if (
+      !dashboard?.isConnected
+      || !this._hass?.callWS
+    ) {
+      return;
+    }
+
+    let documentRoot;
+    let body;
+    let homeAssistant;
+    try {
+      const dashboardDocument = dashboard.contentDocument;
+      documentRoot = dashboardDocument?.documentElement;
+      body = dashboardDocument?.body;
+      homeAssistant = dashboardDocument?.querySelector("home-assistant");
+    } catch (_error) {
+      dashboard.dataset.themePreview = "failed";
+      return;
+    }
+
+    if (!documentRoot || !homeAssistant) {
+      const attempts = Number(dashboard.dataset.themePreviewAttempts || 0);
+      if (attempts < 12) {
+        dashboard.dataset.themePreviewAttempts = String(attempts + 1);
+        this._scheduleDevicePreviewTheme(dashboard, 150);
+      } else {
+        dashboard.dataset.themePreview = "failed";
+      }
+      return;
+    }
+
+    this._protectDevicePreviewDashboard(
+      dashboard,
+      homeAssistant.ownerDocument
+    );
+
+    const selectedProfile = this.profiles.find(
+      (profile) => profile.id === this.devicePreviewProfileId
+    );
+    const previewSettings = selectedProfile?.settings || this.settings;
+    const previewProfileId = selectedProfile?.id || this.activeProfileId || "";
+    const signature = JSON.stringify([
+      previewProfileId,
+      previewSettings,
+    ]);
+
+    if (
+      dashboard.dataset.themePreview === "ready"
+      && dashboard._themeStudioPreviewSignature === signature
+    ) {
+      return;
+    }
+
+    const requestRevision = ++this.devicePreviewThemeRevision;
+
+    let preview = this.devicePreviewThemeCache.get(signature);
+    if (!preview) {
+      try {
+        preview = await this._hass.callWS({
+          type: "theme_studio/preview_theme",
+          settings: this._cloneSettings(previewSettings),
+          active_profile_id: previewProfileId,
+        });
+      } catch (_error) {
+        if (requestRevision === this.devicePreviewThemeRevision) {
+          dashboard.dataset.themePreview = "failed";
+        }
+        return;
+      }
+
+      this.devicePreviewThemeCache.set(signature, preview);
+      if (this.devicePreviewThemeCache.size > 8) {
+        const oldest = this.devicePreviewThemeCache.keys().next().value;
+        this.devicePreviewThemeCache.delete(oldest);
+      }
+    }
+
+    if (
+      !dashboard.isConnected
+      || requestRevision !== this.devicePreviewThemeRevision
+    ) {
+      return;
+    }
+
+    const values = preview?.values || {};
+    const targets = [documentRoot, body, homeAssistant].filter(Boolean);
+    const properties = new Set(
+      Object.keys(values).map((key) =>
+        key.startsWith("--") ? key : `--${key}`
+      )
+    );
+    const previousProperties = dashboard._themeStudioPreviewProperties
+      || new Set();
+    previousProperties.forEach((property) => {
+      if (!properties.has(property)) {
+        targets.forEach((target) => target.style.removeProperty(property));
+      }
+    });
+    targets.forEach((target) => {
+      Object.entries(values).forEach(([key, value]) => {
+        const property = key.startsWith("--") ? key : `--${key}`;
+        target.style.setProperty(property, String(value));
+      });
+      target.style.setProperty(
+        "color-scheme",
+        preview?.mode === "light" ? "light" : "dark"
+      );
+    });
+
+    dashboard._themeStudioPreviewProperties = properties;
+    dashboard._themeStudioPreviewSignature = signature;
+    dashboard.dataset.themePreview = "ready";
+  }
+
+  _refreshDevicePreview(force = false) {
+    const overlay = this.shadowRoot.getElementById(
+      "device-preview-overlay"
+    );
+    const frame = this.shadowRoot.getElementById("device-preview-frame");
+
+    if (!overlay || overlay.hidden || !frame) {
+      return;
+    }
+
+    const current = frame.querySelector(".device-preview-dashboard");
+    const path = this._dashboardPreviewPath();
+
+    if (!force && current?.dataset.dashboardPath === path) {
+      this._scheduleDevicePreviewTheme(current);
+      return;
+    }
+
+    const dashboard = document.createElement("iframe");
+    const previewUrl = new URL(path, window.location.origin);
+    previewUrl.searchParams.set("theme_studio_preview", "1");
+    dashboard.className = "device-preview-dashboard";
+    dashboard.dataset.dashboardPath = path;
+    dashboard.src = `${previewUrl.pathname}${previewUrl.search}`;
+    dashboard.title = this._translate("Echtes Dashboard – schreibgeschützt");
+    dashboard.tabIndex = -1;
+    dashboard.setAttribute("aria-hidden", "true");
+    dashboard.addEventListener("load", () => {
+      dashboard.classList.add("loaded");
+      this._scheduleDevicePreviewTheme(dashboard, 0);
+    }, { once: true });
+    this._disposeDevicePreviewDashboard(current);
+    frame.replaceChildren(dashboard);
+  }
+
+  _handleDevicePreviewKeydown(event) {
+    const overlay = this.shadowRoot.getElementById(
+      "device-preview-overlay"
+    );
+
+    if (!overlay || overlay.hidden) {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      this._closeDevicePreview();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusable = [...overlay.querySelectorAll(
+      "button:not([hidden]):not(:disabled), select:not([hidden]):not(:disabled)"
+    )].filter((element) => element.offsetParent !== null);
+
+    if (!focusable.length) {
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && this.shadowRoot.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && this.shadowRoot.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   _showPreviewCardChoices(card) {
     this._hidePreviewCardChoices();
     card.classList.add("preview-context-selected");
@@ -6589,6 +7703,68 @@ class ThemeStudioPanel extends HTMLElement {
 
   _bindEvents() {
     const previewPanel = this.shadowRoot.getElementById("preview-panel");
+
+    this.shadowRoot
+      .getElementById("device-preview-open")
+      .addEventListener("click", () => this._openDevicePreview());
+
+    this.shadowRoot
+      .getElementById("device-preview-close")
+      .addEventListener("click", () => this._closeDevicePreview());
+
+    this.shadowRoot
+      .getElementById("device-preview-rotate")
+      .addEventListener("click", () => this._rotateDevicePreview());
+
+    this.shadowRoot
+      .querySelectorAll("[data-device-preview-device]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this._setDevicePreviewDevice(button.dataset.devicePreviewDevice);
+        });
+      });
+
+    this.shadowRoot
+      .getElementById("device-preview-dashboard-select")
+      .addEventListener("change", (event) => {
+        const path = event.target.value;
+        if (!path) {
+          return;
+        }
+        this.devicePreviewDashboardPath = path;
+        this._storeDevicePreviewDashboardPath(path);
+        this._refreshDevicePreview(true);
+      });
+
+    this.shadowRoot
+      .getElementById("device-preview-profile-select")
+      .addEventListener("change", (event) => {
+        this.devicePreviewProfileId = event.target.value;
+        const dashboard = this.shadowRoot
+          .getElementById("device-preview-frame")
+          ?.querySelector(".device-preview-dashboard");
+        if (dashboard) {
+          this._scheduleDevicePreviewTheme(dashboard, 0);
+        }
+      });
+
+    this.shadowRoot
+      .getElementById("device-preview-apply")
+      .addEventListener("click", () => {
+        void this._applyDevicePreviewSelection();
+      });
+
+    const devicePreviewOverlay = this.shadowRoot.getElementById(
+      "device-preview-overlay"
+    );
+    devicePreviewOverlay.addEventListener("click", (event) => {
+      if (event.target === devicePreviewOverlay) {
+        this._closeDevicePreview();
+      }
+    });
+    devicePreviewOverlay.addEventListener("keydown", (event) => {
+      this._handleDevicePreviewKeydown(event);
+    });
 
     this.shadowRoot
       .getElementById("mobile-preview-back")
@@ -11645,6 +12821,8 @@ class ThemeStudioPanel extends HTMLElement {
         ? "#1c1c1c"
         : "#ffffff"
     );
+
+    this._refreshDevicePreview();
   }
 
   _syncPreviewTechFrameOutline(card) {

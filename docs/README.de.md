@@ -4,9 +4,9 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-![Übersicht von Theme Studio 0.10.3](images/v010/theme-studio-overview-v0103.webp)
+![Übersicht von Theme Studio 0.10.4](images/v010/theme-studio-overview-v0104.webp)
 
-> Aktuelle Version: **0.10.3**
+> Aktuelle Version: **0.10.4**
 >
 > **Zugriff:** Theme Studio steht nur Home-Assistant-Administratoren zur Verfügung, da beim Anwenden eines Designs die erzeugte Theme-Datei geschrieben und die Home-Assistant-Themes neu geladen werden.
 >

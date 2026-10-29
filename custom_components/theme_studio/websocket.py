@@ -1874,12 +1874,11 @@ def build_card_designs_css(designs: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def build_theme_file(
+def build_effect_values(
     settings: dict[str, Any],
-    theme_name: str = THEME_NAME,
     active_profile_id: str = "",
-) -> str:
-    """Build a theme with light, dark and effect settings."""
+) -> dict[str, str]:
+    """Return the effect variables shared by files and live previews."""
 
     if not re.fullmatch(r"[a-f0-9]{32}", active_profile_id):
         active_profile_id = ""
@@ -1944,6 +1943,18 @@ def build_theme_file(
             expert_css.encode("utf-8")
         ).decode("ascii"),
     }
+
+    return effect_values
+
+
+def build_theme_file(
+    settings: dict[str, Any],
+    theme_name: str = THEME_NAME,
+    active_profile_id: str = "",
+) -> str:
+    """Build a theme with light, dark and effect settings."""
+
+    effect_values = build_effect_values(settings, active_profile_id)
 
     lines = [
         f"{theme_name}:",
@@ -2242,6 +2253,53 @@ async def websocket_get_settings(
             "theme_ready": state["theme_registered"],
             "user_scoped": True,
             "migrated": migrated,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required(
+            "type"
+        ): "theme_studio/preview_theme",
+        vol.Required("settings"): dict,
+        vol.Optional(
+            "active_profile_id",
+            default="",
+        ): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def websocket_preview_theme(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Build transient theme variables without saving or applying them."""
+
+    try:
+        settings = normalize_settings(msg["settings"])
+    except (vol.Invalid, TypeError, ValueError) as error:
+        connection.send_error(
+            msg["id"],
+            "invalid_settings",
+            f"Die Einstellungen sind ungültig: {error}",
+        )
+        return
+
+    mode = settings["mode"]
+    active_profile_id = msg.get("active_profile_id", "")
+    values = {
+        **build_effect_values(settings, active_profile_id),
+        **build_mode_values(settings[mode], mode),
+    }
+
+    connection.send_result(
+        msg["id"],
+        {
+            "mode": mode,
+            "values": values,
         },
     )
 
@@ -3508,6 +3566,11 @@ def async_register_websocket_commands(
     websocket_api.async_register_command(
         hass,
         websocket_save_settings,
+    )
+
+    websocket_api.async_register_command(
+        hass,
+        websocket_preview_theme,
     )
 
     websocket_api.async_register_command(

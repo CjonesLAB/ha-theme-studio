@@ -1,14 +1,14 @@
-# Theme Studio 0.10.3 - Guía de usuario
+# Theme Studio 0.10.4 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.10.3**.
+Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.10.4**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
-![Theme Studio con perfiles, ajustes y vista previa](../images/v010/theme-studio-overview-v0103.webp)
+![Theme Studio con perfiles, ajustes y vista previa](../images/v010/theme-studio-overview-v0104.webp)
 
 ## Contenido
 

@@ -59,6 +59,7 @@ jobs:
           node tests/frontend-legacy-position.cjs
           node tests/frontend-profile-labels.cjs
           node tests/frontend-profile-save-reminder.cjs
+          node tests/frontend-device-preview.cjs
 
       - name: Automatisierte Tests ausführen
         run: python -m pytest

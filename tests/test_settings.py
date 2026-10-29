@@ -19,6 +19,7 @@ from custom_components.theme_studio.websocket import (
     portable_import_settings,
     recovery_state_from_settings,
     sanitize_gallery_settings,
+    build_effect_values,
     build_mode_values,
     build_background,
     build_card_designs_css,
@@ -198,6 +199,21 @@ def test_active_profile_is_exposed_to_theme_aware_cards() -> None:
     assert 'theme-studio-active-profile: ""' in theme_without_valid_profile
 
 
+def test_live_preview_uses_the_same_effect_values_as_generated_themes() -> None:
+    """Transient dashboard previews match the saved theme representation."""
+
+    profile_id = "b" * 32
+    settings = normalize_settings(default_settings())
+    settings["effects"]["effect"] = "aurora"
+    values = build_effect_values(settings, profile_id)
+    theme = build_theme_file(settings, active_profile_id=profile_id)
+
+    assert values["theme-studio-effect"] == "aurora"
+    assert values["theme-studio-active-profile"] == profile_id
+    assert 'theme-studio-effect: "aurora"' in theme
+    assert f'theme-studio-active-profile: "{profile_id}"' in theme
+
+
 def test_clock_type_is_stored_in_each_design_palette() -> None:
     """The generated theme exposes the clock face selected for one design."""
 
@@ -340,11 +356,11 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
         "/theme_studio_files/background-textures/"
-        "wood-01-walnut.webp?v=0.10.3"
+        "wood-01-walnut.webp?v=0.10.4"
     )
     assert (
         'url("/theme_studio_files/background-textures/'
-        'wood-01-walnut.webp?v=0.10.3")'
+        'wood-01-walnut.webp?v=0.10.4")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
@@ -606,11 +622,11 @@ def test_global_card_texture_is_normalized_and_exported_as_theme_variable() -> N
     assert normalized["background"] == "color"
     assert normalized["backgroundImage"] == ""
     assert normalized["cardBackgroundImage"] == (
-        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.3"
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.4"
     )
     assert values["theme-studio-card-background-image"] == (
         'url("/theme_studio_files/textures/'
-        'carbon-01-classic.webp?v=0.10.3")'
+        'carbon-01-classic.webp?v=0.10.4")'
     )
     assert values["theme-studio-card-texture-opacity"] == "0.92"
     assert values["theme-studio-card-texture-darkening"] == "0.35"

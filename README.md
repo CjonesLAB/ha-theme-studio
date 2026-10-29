@@ -6,9 +6,9 @@
 
 Theme Studio is a visual design workspace for Home Assistant. Create complete interface designs, preview every change, and apply them without writing CSS.
 
-![Theme Studio 0.10.3 overview](docs/images/v010/theme-studio-overview-v0103.webp)
+![Theme Studio 0.10.4 overview](docs/images/v010/theme-studio-overview-v0104.webp)
 
-> Current version: **0.10.3**
+> Current version: **0.10.4**
 >
 > **Access:** Theme Studio is available only to Home Assistant administrators because applying a design writes the generated theme file and reloads Home Assistant themes.
 >
@@ -28,6 +28,12 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 | Español | [Abrir la guía](docs/guides/GUIA_USUARIO.es.md) | [Descargar](docs/downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Features
+
+### 0.10.4: preview designs on your real dashboard
+
+The full-screen device preview now renders a selected real Home Assistant dashboard with either the current editor settings or any saved Theme Studio design. Choose a dashboard view, switch between desktop, tablet, and smartphone layouts, rotate mobile formats, and scroll through the read-only result. **Apply design** activates the selected design and closes the preview. Preview data remains temporary until that button is used, and the dashboard itself is never modified by previewing.
+
+![Theme Studio 0.10.4 real-dashboard device preview](docs/images/v010/device-preview-v0104.webp)
 
 ### 0.10.2: clocks belong to their design
 

@@ -10,8 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.10.3"
-DOCUMENTED_RELEASE_VERSION = "0.10.3"
+RELEASE_VERSION = "0.10.4"
+DOCUMENTED_RELEASE_VERSION = "0.10.4"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
@@ -79,7 +79,7 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
         assert DOCUMENTED_RELEASE_VERSION in content
         assert warning_label in content
         assert "    extra_module_url:" not in content
-        assert "v010/theme-studio-overview-v0103.webp" in content
+        assert "v010/theme-studio-overview-v0104.webp" in content
 def test_minimum_home_assistant_version_is_covered_by_ci() -> None:
     """The oldest supported Home Assistant release must remain in the test matrix."""
 
