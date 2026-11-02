@@ -16,7 +16,6 @@ from .websocket import (
     async_register_websocket_commands,
 )
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -37,13 +36,13 @@ DATA_STATIC_PATH_REGISTERED = "static_path_registered"
 DATA_EFFECTS_MODULE_REGISTERED = "effects_module_registered"
 
 
-def _register_effects_module(hass: HomeAssistant) -> None:
-    """Register only the current Theme Studio frontend module URLs."""
+def _remove_effects_modules(hass: HomeAssistant) -> None:
+    """Remove all registered Theme Studio effect and clock modules."""
 
     manager = hass.data.get(frontend.DATA_EXTRA_MODULE_URL)
 
     if manager is not None:
-        for url in manager.urls:
+        for url in tuple(manager.urls):
             if url.startswith(
                 (
                     f"{STATIC_URL}/theme-studio-effects.js",
@@ -52,6 +51,11 @@ def _register_effects_module(hass: HomeAssistant) -> None:
             ):
                 frontend.remove_extra_js_url(hass, url)
 
+
+def _register_effects_module(hass: HomeAssistant) -> None:
+    """Register only the current Theme Studio frontend module URLs."""
+
+    _remove_effects_modules(hass)
     frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)
     frontend.add_extra_js_url(hass, CLOCK_CARD_MODULE_URL)
 
@@ -115,4 +119,6 @@ async def async_unload_entry(
     """Unload a Theme Studio config entry."""
 
     frontend.async_remove_panel(hass, PANEL_URL)
+    _remove_effects_modules(hass)
+    hass.data.get(DOMAIN, {}).pop(DATA_EFFECTS_MODULE_REGISTERED, None)
     return True

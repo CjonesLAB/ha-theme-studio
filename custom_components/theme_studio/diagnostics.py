@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -30,7 +29,6 @@ from .websocket import (
     normalize_settings,
     normalize_user_state,
 )
-
 
 _UNAVAILABLE = object()
 _ENTITY_LIST_KEYS = (

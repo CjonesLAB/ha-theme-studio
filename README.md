@@ -6,9 +6,9 @@
 
 Theme Studio is a visual design workspace for Home Assistant. Create complete interface designs, preview every change, and apply them without writing CSS.
 
-![Theme Studio 0.10.4 overview](docs/images/v010/theme-studio-overview-v0104.webp)
+![Theme Studio 0.10.5 overview](docs/images/v010/theme-studio-overview-v0105.webp)
 
-> Current version: **0.10.4**
+> Current version: **0.10.5**
 >
 > **Access:** Theme Studio is available only to Home Assistant administrators because applying a design writes the generated theme file and reloads Home Assistant themes.
 >
@@ -28,6 +28,10 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 | Español | [Abrir la guía](docs/guides/GUIA_USUARIO.es.md) | [Descargar](docs/downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Features
+
+### 0.10.5: privacy, stability, and cleaner internals
+
+Overlay dialogs now use a fully opaque Theme Studio material so dashboard content cannot show through. Liquid Glass overlays additionally use strong background blur, while selected card textures and background images remain visible. The release also splits the large preview and theme-generation modules into focused components, reduces repeated preview work, and expands automated validation across supported Home Assistant versions.
 
 ### 0.10.4: preview designs on your real dashboard
 

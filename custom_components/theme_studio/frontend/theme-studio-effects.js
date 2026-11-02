@@ -1,7 +1,7 @@
-import { CARD_TEXTURE_LIBRARY } from "./theme-studio-textures.js?v=0.10.4";
+import { CARD_TEXTURE_LIBRARY } from "./theme-studio-textures.js?v=0.10.5";
 
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.4";
+const THEME_STUDIO_EFFECTS_VERSION = "0.10.5";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -1700,6 +1700,7 @@ class ThemeStudioEffects {
 
     const currentCards = new Set();
     const currentHeadings = new Set();
+    const currentOverlaySurfaces = new Set();
     const currentScrims = new Set();
     const currentExpertStyles = new Set();
     const currentExpertCards = new Set();
@@ -1756,6 +1757,22 @@ class ThemeStudioEffects {
             }
           }
         }
+      }
+
+      if (this._isOverlayScrimElement(element)) {
+        if (this.liquidGlass) {
+          currentScrims.add(element);
+          this._styleOverlayScrim(element);
+        } else {
+          this._restoreOverlayScrim(element);
+        }
+        return;
+      }
+
+      if (this._shouldStyleOverlaySurface(element)) {
+        currentOverlaySurfaces.add(element);
+        this._styleOverlaySurface(element);
+        return;
       }
 
       if (element.localName !== "ha-card") {
@@ -1863,9 +1880,15 @@ class ThemeStudioEffects {
 
     this.glassHeadings = currentHeadings;
 
-    // Home Assistant owns all dialogs, menus and native picker surfaces.
-    // Theme Studio only excludes cards inside them from dashboard effects.
-    this._clearOverlaySurfaces();
+    // Home Assistant retains ownership of dialog layout and interaction.
+    // Privacy styling is limited to the exposed visual surface. Glass adds
+    // blur, while every other card style still receives an opaque material.
+    for (const overlay of this.overlaySurfaces) {
+      if (!currentOverlaySurfaces.has(overlay) || !overlay.isConnected) {
+        this._restoreOverlaySurface(overlay);
+      }
+    }
+    this.overlaySurfaces = currentOverlaySurfaces;
 
     for (const scrim of this.overlayScrims) {
       if (!currentScrims.has(scrim) || !scrim.isConnected) {
@@ -2030,11 +2053,15 @@ class ThemeStudioEffects {
   }
 
   _syncOpaqueOverlaySurfaces() {
-    // Remove styles left by an older frontend revision before inspecting
-    // dialog cards. Picker containers themselves remain fully native.
-    this._clearOverlaySurfaces();
+    const currentOverlaySurfaces = new Set();
 
     this._visitElements(document, (element) => {
+      if (this._shouldStyleOverlaySurface(element)) {
+        currentOverlaySurfaces.add(element);
+        this._styleOverlaySurface(element);
+        return;
+      }
+
       if (
         element.localName === "ha-card"
         && this._isInsideOverlay(element)
@@ -2044,6 +2071,13 @@ class ThemeStudioEffects {
         this._restoreTechFrameCard(element);
       }
     });
+
+    for (const overlay of this.overlaySurfaces) {
+      if (!currentOverlaySurfaces.has(overlay) || !overlay.isConnected) {
+        this._restoreOverlaySurface(overlay);
+      }
+    }
+    this.overlaySurfaces = currentOverlaySurfaces;
 
     this._clearOverlayScrims();
   }
@@ -2107,18 +2141,18 @@ class ThemeStudioEffects {
 
     element.style.setProperty(
       "background-color",
-      "rgba(0, 0, 0, 0.12)",
+      "rgba(0, 0, 0, 0.58)",
       "important"
     );
     element.style.setProperty("opacity", "1", "important");
     element.style.setProperty(
       "backdrop-filter",
-      "blur(2px) saturate(110%)",
+      "blur(64px) brightness(35%) saturate(60%)",
       "important"
     );
     element.style.setProperty(
       "-webkit-backdrop-filter",
-      "blur(2px) saturate(110%)",
+      "blur(64px) brightness(35%) saturate(60%)",
       "important"
     );
   }
@@ -2217,6 +2251,8 @@ class ThemeStudioEffects {
       "--ha-dialog-surface-background",
       "--mdc-dialog-surface-color",
       "--mdc-theme-surface",
+      "--wa-color-surface-raised",
+      "--md-sys-color-surface-container-high",
     ];
     const properties = [
       ...backgroundVariables,
@@ -2227,6 +2263,12 @@ class ThemeStudioEffects {
       "isolation",
       "background",
       "background-color",
+      "background-image",
+      "background-position",
+      "background-repeat",
+      "background-size",
+      "backdrop-filter",
+      "-webkit-backdrop-filter",
       "box-shadow",
       "--theme-studio-tech-frame-shape",
     ];
@@ -2252,6 +2294,12 @@ class ThemeStudioEffects {
       );
     }
 
+    const overlayBackdropFilter = this.liquidGlass
+      ? "blur(64px) brightness(35%) saturate(60%)"
+      : "none";
+    const overlayMaterialImage =
+      "var(--theme-studio-overlay-material-image, none)";
+
     if (this._isOverlayVisualSurface(element)) {
       element.style.setProperty(
         "background",
@@ -2261,6 +2309,24 @@ class ThemeStudioEffects {
       element.style.setProperty(
         "background-color",
         this.overlayBackground,
+        "important"
+      );
+      element.style.setProperty(
+        "background-image",
+        overlayMaterialImage,
+        "important"
+      );
+      element.style.setProperty("background-position", "center", "important");
+      element.style.setProperty("background-repeat", "no-repeat", "important");
+      element.style.setProperty("background-size", "cover", "important");
+      element.style.setProperty(
+        "backdrop-filter",
+        overlayBackdropFilter,
+        "important"
+      );
+      element.style.setProperty(
+        "-webkit-backdrop-filter",
+        overlayBackdropFilter,
         "important"
       );
     }
@@ -5424,11 +5490,25 @@ class ThemeStudioEffects {
       style.setAttribute("data-theme-studio-card-editor-opaque", "");
       style.textContent = `
         wa-dialog::part(dialog) {
-          background: var(
+          background-color: var(
             --theme-studio-overlay-background,
             var(--card-background-color, #182326)
           ) !important;
-          backdrop-filter: none !important;
+          background-image: var(
+            --theme-studio-overlay-material-image,
+            none
+          ) !important;
+          background-position: center !important;
+          background-repeat: no-repeat !important;
+          background-size: cover !important;
+          backdrop-filter: var(
+            --theme-studio-overlay-backdrop-filter,
+            none
+          ) !important;
+          -webkit-backdrop-filter: var(
+            --theme-studio-overlay-backdrop-filter,
+            none
+          ) !important;
         }
       `;
       root.appendChild(style);

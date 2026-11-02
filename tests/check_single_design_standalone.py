@@ -16,20 +16,27 @@ if len(sys.argv) > 1:
 import voluptuous as vol
 
 helpers = runpy.run_path(str(ROOT / 'custom_components/theme_studio/single_design.py'))
-source = ast.parse((ROOT / 'custom_components/theme_studio/websocket.py').read_text(encoding='utf-8-sig'))
+defaults = runpy.run_path(str(ROOT / 'custom_components/theme_studio/design_defaults.py'))
+sources = [
+    ast.parse((ROOT / 'custom_components/theme_studio/theme_builder.py').read_text(encoding='utf-8-sig')),
+    ast.parse((ROOT / 'custom_components/theme_studio/websocket.py').read_text(encoding='utf-8-sig')),
+]
 nodes = [ast.ImportFrom(module='__future__', names=[ast.alias(name='annotations')], level=0)]
-for node in source.body:
-    if isinstance(node, (ast.Assign, ast.AnnAssign)):
-        nodes.append(node)
-    elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-        node.decorator_list = []
-        nodes.append(node)
+for source in sources:
+    for node in source.body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            nodes.append(node)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            node.decorator_list = []
+            nodes.append(node)
 env = {
     'DOMAIN': 'theme_studio',
     'vol': vol,
     'json': json,
     'base64': base64,
     're': re,
+    'THEME_NAME': 'Theme Studio',
+    **defaults,
     **helpers,
 }
 exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), '<actual backend functions>', 'exec'), env)

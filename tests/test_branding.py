@@ -1,16 +1,15 @@
 """Release contracts for local branding and complete HACS validation."""
 
 import json
-from pathlib import Path
 import re
 import struct
+from pathlib import Path
 
 import pytest
 import yaml
 
-
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.10.4"
+RELEASE_VERSION = "0.10.5"
 DOCUMENTED_RELEASE_VERSION = "0.10.4"
 
 
@@ -55,6 +54,7 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert f'theme-studio-locales.js?v={RELEASE_VERSION}' in panel
     assert f'theme-studio-textures.js?v={RELEASE_VERSION}' in panel
     assert f'theme-studio-css-library.js?v={RELEASE_VERSION}' in panel
+    assert f'theme-studio-device-preview.js?v={RELEASE_VERSION}' in panel
     assert f'THEME_STUDIO_EFFECTS_VERSION = "{RELEASE_VERSION}"' in effects
     assert f'theme-studio-textures.js?v={RELEASE_VERSION}' in effects
     assert f'THEME_STUDIO_CLOCK_CARD_VERSION = "{RELEASE_VERSION}"' in clock_card

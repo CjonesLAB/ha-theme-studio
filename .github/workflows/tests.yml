@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Repository auschecken
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Python einrichten
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.14"
           cache: pip
@@ -44,6 +44,7 @@ jobs:
       - name: JavaScript-Dateien prüfen
         run: |
           node --check custom_components/theme_studio/frontend/theme-studio-panel.js
+          node --check custom_components/theme_studio/frontend/theme-studio-device-preview.js
           node --check custom_components/theme_studio/frontend/theme-studio-effects.js
           node --check custom_components/theme_studio/frontend/theme-studio-locales.js
           node --check custom_components/theme_studio/frontend/theme-studio-clock-card.js
@@ -62,4 +63,8 @@ jobs:
           node tests/frontend-device-preview.cjs
 
       - name: Automatisierte Tests ausführen
-        run: python -m pytest
+        run: >-
+          python -m pytest
+          --cov=custom_components.theme_studio
+          --cov-report=term-missing:skip-covered
+          --cov-fail-under=65

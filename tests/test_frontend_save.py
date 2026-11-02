@@ -1,7 +1,6 @@
 """Run behavioral save tests against the actual panel method."""
-from pathlib import Path
 import subprocess
-
+from pathlib import Path
 
 PANEL_SOURCE = (
     Path(__file__).parents[1]

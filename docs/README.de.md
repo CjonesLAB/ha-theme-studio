@@ -4,9 +4,9 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-![Übersicht von Theme Studio 0.10.4](images/v010/theme-studio-overview-v0104.webp)
+![Übersicht von Theme Studio 0.10.5](images/v010/theme-studio-overview-v0105.webp)
 
-> Aktuelle Version: **0.10.4**
+> Aktuelle Version: **0.10.5**
 >
 > **Zugriff:** Theme Studio steht nur Home-Assistant-Administratoren zur Verfügung, da beim Anwenden eines Designs die erzeugte Theme-Datei geschrieben und die Home-Assistant-Themes neu geladen werden.
 >
@@ -26,6 +26,10 @@ Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio
 | Español | [Abrir la guía](guides/GUIA_USUARIO.es.md) | [Descargar](downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Funktionen
+
+### 0.10.5: Privatsphäre, Stabilität und sauberere Technik
+
+Overlay-Dialoge erhalten jetzt eine vollständig deckende Theme-Studio-Oberfläche, damit Dashboard-Inhalte nicht durchscheinen. Beim Kartenstil Liquid Glass wird der Hintergrund zusätzlich stark unscharf dargestellt; ausgewählte Kartentexturen und Hintergrundbilder bleiben dennoch erhalten. Außerdem wurden die große Vorschau- und Theme-Erzeugungslogik in klarere Bausteine aufgeteilt, unnötige Vorschauarbeit reduziert und die automatischen Prüfungen für unterstützte Home-Assistant-Versionen erweitert.
 
 ### 0.10.2: Die Uhr gehört zum Design
 

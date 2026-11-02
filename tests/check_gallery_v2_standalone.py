@@ -23,8 +23,8 @@ async def check():
         assert item['preview']['modes'][mode]['primary'] == '#7ac143'
         profile = {'format':'theme-studio-profile','version':2,'name':'Mint',
                    'settings':{'mode':mode,'design':{'primaryColor':'#7ac143'}}}
-        async def fake_download(*args):
-            return profile
+        async def fake_download(*args, _profile=profile):
+            return _profile
         env['_async_get_json'] = fake_download
         assert await env['async_download_gallery_profile'](None, public_id) == profile
         for invalid in ('auto', None, [], 1):

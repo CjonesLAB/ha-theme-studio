@@ -11,7 +11,6 @@ from typing import Any
 from urllib.parse import urlencode
 
 from aiohttp import ClientError
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -22,12 +21,13 @@ from .const import (
     VERSION,
 )
 
-
 MAX_LIST_BYTES = 512 * 1024
 MAX_PROFILE_BYTES = 1024 * 1024
 REQUEST_TIMEOUT_SECONDS = 15
 GALLERY_CACHE_SECONDS = 5 * 60
+GALLERY_FORCE_REFRESH_COOLDOWN_SECONDS = 30
 GALLERY_CACHE_KEY = "gallery_designs"
+GALLERY_REFRESH_LOCK_KEY = "gallery_refresh_lock"
 PUBLIC_ID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-"
     r"[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
@@ -363,46 +363,56 @@ async def async_get_gallery_designs(
     """Return validated, published gallery designs."""
 
     domain_data = hass.data.setdefault(DOMAIN, {})
-    cached = domain_data.get(GALLERY_CACHE_KEY)
+    refresh_lock = domain_data.get(GALLERY_REFRESH_LOCK_KEY)
+    if not isinstance(refresh_lock, asyncio.Lock):
+        refresh_lock = asyncio.Lock()
+        domain_data[GALLERY_REFRESH_LOCK_KEY] = refresh_lock
 
-    if (
-        not force_refresh
-        and isinstance(cached, tuple)
-        and len(cached) == 2
-        and isinstance(cached[0], (int, float))
-        and time.monotonic() - cached[0] < GALLERY_CACHE_SECONDS
-        and isinstance(cached[1], list)
-    ):
-        return cached[1]
-
-    payload = await _async_get_json(
-        hass,
-        GALLERY_LIST_URL,
-        MAX_LIST_BYTES,
-    )
-
-    if (
-        not isinstance(payload, dict)
-        or payload.get("success") is not True
-        or payload.get("api_version") != 1
-        or not isinstance(payload.get("designs"), list)
-    ):
-        raise GalleryError(
-            "Die Galerie verwendet ein nicht unterstütztes Datenformat."
+    async with refresh_lock:
+        cached = domain_data.get(GALLERY_CACHE_KEY)
+        maximum_age = (
+            GALLERY_FORCE_REFRESH_COOLDOWN_SECONDS
+            if force_refresh
+            else GALLERY_CACHE_SECONDS
         )
 
-    designs = []
+        if (
+            isinstance(cached, tuple)
+            and len(cached) == 2
+            and isinstance(cached[0], (int, float))
+            and time.monotonic() - cached[0] < maximum_age
+            and isinstance(cached[1], list)
+        ):
+            return cached[1]
 
-    for item in payload["designs"][:60]:
-        normalized = _normalize_gallery_item(item)
-        if normalized is not None:
-            designs.append(normalized)
+        payload = await _async_get_json(
+            hass,
+            GALLERY_LIST_URL,
+            MAX_LIST_BYTES,
+        )
 
-    domain_data[GALLERY_CACHE_KEY] = (
-        time.monotonic(),
-        designs,
-    )
-    return designs
+        if (
+            not isinstance(payload, dict)
+            or payload.get("success") is not True
+            or payload.get("api_version") != 1
+            or not isinstance(payload.get("designs"), list)
+        ):
+            raise GalleryError(
+                "Die Galerie verwendet ein nicht unterstütztes Datenformat."
+            )
+
+        designs = []
+
+        for item in payload["designs"][:60]:
+            normalized = _normalize_gallery_item(item)
+            if normalized is not None:
+                designs.append(normalized)
+
+        domain_data[GALLERY_CACHE_KEY] = (
+            time.monotonic(),
+            designs,
+        )
+        return designs
 
 
 async def async_download_gallery_profile(

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from inspect import unwrap
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
+from custom_components.theme_studio import websocket
 from custom_components.theme_studio.websocket import (
     background_is_referenced,
     background_results,
@@ -14,7 +15,6 @@ from custom_components.theme_studio.websocket import (
     normalize_saved_backgrounds,
     sync_background_library,
 )
-from custom_components.theme_studio import websocket
 
 
 async def test_delete_protects_recovery_background(monkeypatch) -> None:

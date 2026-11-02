@@ -1,14 +1,14 @@
-# Theme Studio 0.10.4 - Guide utilisateur
+# Theme Studio 0.10.5 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.10.4**.
+Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.10.5**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
-![Theme Studio avec profils, réglages et aperçu](../images/v010/theme-studio-overview-v0104.webp)
+![Theme Studio avec profils, réglages et aperçu](../images/v010/theme-studio-overview-v0105.webp)
 
 ## Sommaire
 

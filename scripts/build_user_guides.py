@@ -30,7 +30,6 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-
 ROOT = Path(__file__).resolve().parents[1]
 GUIDES = ROOT / "docs" / "guides"
 OUTPUT = ROOT / "output" / "pdf"

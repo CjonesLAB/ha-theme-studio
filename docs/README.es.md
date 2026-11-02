@@ -4,9 +4,9 @@
 
 Theme Studio es una integración personalizada para Home Assistant que permite crear, previsualizar y aplicar directamente tus propios diseños de interfaz.
 
-![Vista general de Theme Studio 0.10.4](images/v010/theme-studio-overview-v0104.webp)
+![Vista general de Theme Studio 0.10.5](images/v010/theme-studio-overview-v0105.webp)
 
-> Versión actual: **0.10.4**
+> Versión actual: **0.10.5**
 >
 > **Acceso:** Theme Studio está disponible solo para administradores de Home Assistant porque al aplicar un diseño se escribe el archivo de tema generado y se recargan los temas de Home Assistant.
 >
@@ -26,6 +26,10 @@ Historial de versiones: [Notas de las versiones](https://github.com/CjonesLAB/ha
 | Français | [Ouvrir le guide](guides/GUIDE_UTILISATEUR.fr.md) | [Télécharger](downloads/theme-studio-guide-utilisateur-fr.pdf) |
 
 ## Funciones
+
+### 0.10.5: privacidad, estabilidad y una base más limpia
+
+Los diálogos superpuestos ahora usan una superficie de Theme Studio totalmente opaca para impedir que se vea el contenido del panel situado detrás. Con el estilo Liquid Glass, el fondo también se desenfoca intensamente, mientras se conservan las texturas e imágenes de fondo elegidas para las tarjetas. La versión también divide los grandes módulos de vista previa y generación de temas, reduce trabajo repetido y amplía las comprobaciones automáticas para las versiones compatibles de Home Assistant.
 
 Cada perfil es un diseño independiente **claro** u **oscuro**. Define su nombre y modo con **Crear diseño** y después personalízalo. **Aplicar diseño** activa sus colores y su modo fijo. Ya no se cambia de modo ni se genera automáticamente un modo opuesto dentro de un diseño.
 

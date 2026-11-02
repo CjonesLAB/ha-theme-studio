@@ -2,13 +2,21 @@ const fs = require("node:fs");
 const path = require("node:path");
 const assert = require("node:assert/strict");
 
-const source = fs.readFileSync(
+const panelSource = fs.readFileSync(
   path.join(
     __dirname,
     "../custom_components/theme_studio/frontend/theme-studio-panel.js"
   ),
   "utf8"
 );
+const devicePreviewSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    "../custom_components/theme_studio/frontend/theme-studio-device-preview.js"
+  ),
+  "utf8"
+);
+const source = `${panelSource}\n${devicePreviewSource}`;
 const locales = fs.readFileSync(
   path.join(
     __dirname,

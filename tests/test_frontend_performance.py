@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 PANEL_FILE = (
     Path(__file__).parents[1]
     / "custom_components"
@@ -185,8 +184,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-textures.js?v=0.10.4";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.4";' in effects_source
+    assert 'from "./theme-studio-textures.js?v=0.10.5";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.5";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -683,8 +682,8 @@ def test_local_card_design_badge_is_limited_to_dashboard_edit_mode() -> None:
     assert "this._syncLiquidGlassCards(true);" in effects_source
 
 
-def test_liquid_glass_excludes_overlay_dialogs() -> None:
-    """More-info dialogs retain Home Assistant's native presentation."""
+def test_liquid_glass_keeps_native_dialogs_and_privatises_the_scrim() -> None:
+    """Glass dialogs stay native while their backdrop hides dashboard data."""
 
     effects_source = _effects_source()
     overlay_card_block = effects_source.split(
@@ -703,14 +702,16 @@ def test_liquid_glass_excludes_overlay_dialogs() -> None:
     assert "this._restoreTechFrameCard(element);" in overlay_card_block
     assert "return;" in overlay_card_block
     assert "if (this.liquidGlass)" not in overlay_card_block
-    assert "this._styleOverlayScrim(element);" not in effects_source
-    assert "this._styleOverlaySurface(element);" not in effects_source
+    assert "if (this._isOverlayScrimElement(element)) {" in effects_source
+    assert "this._styleOverlayScrim(element);" in effects_source
+    assert '"blur(64px) brightness(35%) saturate(60%)"' in effects_source
+    assert '"rgba(0, 0, 0, 0.58)"' in effects_source
     assert "this._styleTechFrameOverlaySurface(element);" not in effects_source
     assert "this._clearOverlaySurfaces();" in effects_source
 
 
-def test_native_dialog_container_never_receives_full_screen_background() -> None:
-    """All Home Assistant picker and dialog surfaces remain fully native."""
+def test_every_design_uses_an_opaque_overlay_surface() -> None:
+    """All designs hide the dashboard while preserving card textures."""
 
     effects_source = _effects_source()
     liquid_sync = effects_source.split(
@@ -728,12 +729,24 @@ def test_native_dialog_container_never_receives_full_screen_background() -> None
         maxsplit=1,
     )[0]
 
-    assert "this._styleOverlaySurface(element);" not in liquid_sync
-    assert "this._styleOverlaySurface(element);" not in opaque_sync
-    assert "this._shouldStyleOverlaySurface(element)" not in liquid_sync
-    assert "this._shouldStyleOverlaySurface(element)" not in opaque_sync
-    assert "this._clearOverlaySurfaces();" in liquid_sync
-    assert "this._clearOverlaySurfaces();" in opaque_sync
+    assert "this._shouldStyleOverlaySurface(element)" in liquid_sync
+    assert "this._styleOverlaySurface(element);" in liquid_sync
+    assert "this._styleOverlaySurface(element);" in opaque_sync
+    assert "this._shouldStyleOverlaySurface(element)" in opaque_sync
+    assert 'name === "dialog"' not in effects_source.split(
+        "_shouldStyleOverlaySurface(element) {",
+        maxsplit=1,
+    )[1].split("_isInsideOverlay(element) {", maxsplit=1)[0]
+    assert "const overlayBackdropFilter = this.liquidGlass" in effects_source
+    assert ': "none";' in effects_source
+    assert '"blur(64px) brightness(35%) saturate(60%)"' in effects_source
+    assert '"background-image"' in effects_source
+    assert "--theme-studio-overlay-material-image" in effects_source
+    assert "--theme-studio-overlay-backdrop-filter" in effects_source
+    assert "wa-dialog::part(dialog)" in effects_source
+    assert 'element.style.setProperty(\n        "background-color",\n        this.overlayBackground' in effects_source
+    assert "currentOverlaySurfaces.add(element);" in liquid_sync
+    assert "this.overlaySurfaces = currentOverlaySurfaces" in liquid_sync
 
 
 def test_config_area_excludes_all_special_effects() -> None:

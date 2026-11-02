@@ -10,7 +10,6 @@ import pytest
 
 from custom_components.theme_studio import gallery
 
-
 PUBLIC_ID = "12345678-1234-4123-8123-123456789abc"
 
 
@@ -188,6 +187,39 @@ async def test_gallery_list_is_validated_and_cached(monkeypatch: Any) -> None:
 
     assert [design["title"] for design in first] == ["Gültig"]
     assert second == first
+    get_json.assert_awaited_once()
+
+
+async def test_forced_gallery_refresh_obeys_short_cooldown(
+    monkeypatch: Any,
+) -> None:
+    """Repeated manual refreshes cannot bypass the server cache in a burst."""
+
+    get_json = AsyncMock(
+        side_effect=[
+            {
+                "success": True,
+                "api_version": 1,
+                "designs": [{"id": PUBLIC_ID, "title": "Erster Abruf"}],
+            },
+            {
+                "success": True,
+                "api_version": 1,
+                "designs": [{"id": PUBLIC_ID, "title": "Zweiter Abruf"}],
+            },
+        ]
+    )
+    monkeypatch.setattr(gallery, "_async_get_json", get_json)
+    monkeypatch.setattr(gallery.time, "monotonic", lambda: 100.0)
+    hass = SimpleNamespace(data={})
+
+    first = await gallery.async_get_gallery_designs(hass)  # type: ignore[arg-type]
+    repeated = await gallery.async_get_gallery_designs(  # type: ignore[arg-type]
+        hass,
+        force_refresh=True,
+    )
+
+    assert repeated == first
     get_json.assert_awaited_once()
 
 

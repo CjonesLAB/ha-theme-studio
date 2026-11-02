@@ -240,3 +240,33 @@ async def test_first_user_access_migrates_legacy_data(
     assert state["settings"]["dark"]["primaryColor"] == "#123456"
     assert user_store.value is not None
     assert "user-a" in user_store.value["users"]
+
+
+def test_background_metadata_rejects_non_admin() -> None:
+    """The global background library is visible only to administrators."""
+
+    connection = ResultConnection("regular-user", is_admin=False)
+
+    with pytest.raises(Unauthorized):
+        websocket.websocket_get_backgrounds(
+            object(),
+            connection,
+            {"id": 1, "type": "theme_studio/get_backgrounds"},
+        )
+
+
+async def test_forced_gallery_refresh_rejects_non_admin() -> None:
+    """Only administrators can bypass the normal gallery cache."""
+
+    connection = ResultConnection("regular-user", is_admin=False)
+
+    with pytest.raises(Unauthorized):
+        await unwrap(websocket.websocket_get_gallery_designs)(
+            object(),
+            connection,  # type: ignore[arg-type]
+            {
+                "id": 1,
+                "type": "theme_studio/get_gallery_designs",
+                "refresh": True,
+            },
+        )

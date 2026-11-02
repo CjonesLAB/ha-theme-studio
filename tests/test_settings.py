@@ -12,20 +12,20 @@ from custom_components.theme_studio.websocket import (
     DEFAULT_DARK_PROFILE,
     DEFAULT_EFFECT_SETTINGS,
     DEFAULT_LIGHT_PROFILE,
+    build_background,
+    build_card_designs_css,
+    build_effect_values,
+    build_expert_rules_css,
+    build_mode_values,
+    build_theme_file,
     default_settings,
+    normalize_effects,
     normalize_profile,
     normalize_recovery_state,
     normalize_settings,
     portable_import_settings,
     recovery_state_from_settings,
     sanitize_gallery_settings,
-    build_effect_values,
-    build_mode_values,
-    build_background,
-    build_card_designs_css,
-    build_expert_rules_css,
-    build_theme_file,
-    normalize_effects,
 )
 
 
@@ -356,11 +356,11 @@ def test_profile_accepts_bundled_texture_as_dashboard_background() -> None:
     assert normalized["background"] == "texture"
     assert normalized["backgroundImage"] == (
         "/theme_studio_files/background-textures/"
-        "wood-01-walnut.webp?v=0.10.4"
+        "wood-01-walnut.webp?v=0.10.5"
     )
     assert (
         'url("/theme_studio_files/background-textures/'
-        'wood-01-walnut.webp?v=0.10.4")'
+        'wood-01-walnut.webp?v=0.10.5")'
         in background
     )
     assert "center / cover no-repeat fixed" in background
@@ -573,6 +573,9 @@ def test_liquid_glass_theme_values_include_material_controls() -> None:
     assert values["theme-studio-glass-saturation"] == "150"
     assert values["theme-studio-glass-highlight"] == "40"
     assert values["theme-studio-overlay-background"] == "#ffffff"
+    assert values["theme-studio-overlay-backdrop-filter"] == (
+        "blur(64px) brightness(35%) saturate(60%)"
+    )
     assert "inset 0 1px 0" in values["ha-card-box-shadow"]
 
 
@@ -622,14 +625,27 @@ def test_global_card_texture_is_normalized_and_exported_as_theme_variable() -> N
     assert normalized["background"] == "color"
     assert normalized["backgroundImage"] == ""
     assert normalized["cardBackgroundImage"] == (
-        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.4"
+        "/theme_studio_files/textures/carbon-01-classic.webp?v=0.10.5"
     )
     assert values["theme-studio-card-background-image"] == (
         'url("/theme_studio_files/textures/'
-        'carbon-01-classic.webp?v=0.10.4")'
+        'carbon-01-classic.webp?v=0.10.5")'
     )
     assert values["theme-studio-card-texture-opacity"] == "0.92"
     assert values["theme-studio-card-texture-darkening"] == "0.35"
+    assert values["theme-studio-card-texture-veil"] == (
+        "rgba(24, 35, 38, 0.08)"
+    )
+    assert values["theme-studio-overlay-background"] == "#182326"
+    assert values["theme-studio-overlay-material-image"] == (
+        "linear-gradient(var(--theme-studio-card-texture-veil), "
+        "var(--theme-studio-card-texture-veil)), "
+        "linear-gradient(rgba(0, 0, 0, 0.35), "
+        "rgba(0, 0, 0, 0.35)), "
+        'url("/theme_studio_files/textures/'
+        'carbon-01-classic.webp?v=0.10.5")'
+    )
+    assert values["theme-studio-overlay-backdrop-filter"] == "none"
 
 
 def test_liquid_glass_normalization_prevents_conflicting_card_settings() -> None:

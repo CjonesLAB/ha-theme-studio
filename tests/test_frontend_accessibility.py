@@ -1,8 +1,7 @@
 """Accessibility contract tests for the Theme Studio frontend."""
 
-from pathlib import Path
 import subprocess
-
+from pathlib import Path
 
 PANEL_SOURCE = (
     Path(__file__).parents[1]

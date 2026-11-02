@@ -10,4 +10,9 @@ assert.equal(fn.call(ctx,{name:'Azur Pastel – Hell',settings:{mode:'light'}}),
 assert.equal(fn.call(ctx,{name:'Nacht - Dunkel',settings:{mode:'dark'}}),'Nacht - Dunkel');
 assert.equal(fn.call(ctx,{name:'Mitternacht',settings:{mode:'dark'}}),'Mitternacht · Dunkel');
 assert.ok(src.includes('name: design.title.slice(0, 48)'),'gallery imports must not embed the mode in the name');
+assert.ok(
+  src.includes('select.replaceChildren(newProfileOption, ...profileOptions)')
+    && src.includes('document.createElement("option")'),
+  'profile labels must be rendered as text nodes instead of dynamic HTML'
+);
 console.log('Profile label checks passed: one mode label only and clean gallery import names.');

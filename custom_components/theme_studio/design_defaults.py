@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 DEFAULT_LIGHT_PROFILE: dict[str, Any] = {
     "clockType": "",
     "primaryColor": "#2f6fa3",
