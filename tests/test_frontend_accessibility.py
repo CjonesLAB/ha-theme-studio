@@ -250,7 +250,8 @@ def test_card_editor_overlay_surface_is_opaque_without_styling_pickers() -> None
     assert 'style[data-theme-studio-card-editor-opaque]' in opaque_helper
     assert "wa-dialog::part(dialog)" in opaque_helper
     assert "--theme-studio-overlay-background" in opaque_helper
-    assert "backdrop-filter: none !important" in opaque_helper
+    assert "--theme-studio-overlay-backdrop-filter" in opaque_helper
+    assert "--theme-studio-overlay-material-image" in opaque_helper
     assert "--ha-dialog-surface-background" not in opaque_helper
 
 
