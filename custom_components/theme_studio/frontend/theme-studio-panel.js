@@ -1,18 +1,18 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.10.5";
+} from "./theme-studio-locales.js?v=0.11.0";
 import {
   CARD_TEXTURE_LIBRARY,
-} from "./theme-studio-textures.js?v=0.10.5";
+} from "./theme-studio-textures.js?v=0.11.0";
 import {
   CSS_LIBRARY_EXAMPLES,
-} from "./theme-studio-css-library.js?v=0.10.5";
+} from "./theme-studio-css-library.js?v=0.11.0";
 import {
   ThemeStudioDevicePreviewMixin,
-} from "./theme-studio-device-preview.js?v=0.10.5";
+} from "./theme-studio-device-preview.js?v=0.11.0";
 
-const BUNDLED_TEXTURE_VERSION = "0.10.5";
+const BUNDLED_TEXTURE_VERSION = "0.11.0";
 
 class ThemeStudioPanel extends HTMLElement {
   constructor() {

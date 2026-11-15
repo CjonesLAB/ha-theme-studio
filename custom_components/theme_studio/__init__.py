@@ -30,6 +30,9 @@ EFFECTS_MODULE_URL = (
 CLOCK_CARD_MODULE_URL = (
     f"{STATIC_URL}/theme-studio-clock-card.js?v={FRONTEND_REVISION}"
 )
+DEVICE_CARDS_MODULE_URL = (
+    f"{STATIC_URL}/theme-studio-device-cards.js?v={FRONTEND_REVISION}"
+)
 
 DATA_WEBSOCKET_REGISTERED = "websocket_registered"
 DATA_STATIC_PATH_REGISTERED = "static_path_registered"
@@ -37,7 +40,7 @@ DATA_EFFECTS_MODULE_REGISTERED = "effects_module_registered"
 
 
 def _remove_effects_modules(hass: HomeAssistant) -> None:
-    """Remove all registered Theme Studio effect and clock modules."""
+    """Remove all registered Theme Studio frontend modules."""
 
     manager = hass.data.get(frontend.DATA_EXTRA_MODULE_URL)
 
@@ -47,6 +50,7 @@ def _remove_effects_modules(hass: HomeAssistant) -> None:
                 (
                     f"{STATIC_URL}/theme-studio-effects.js",
                     f"{STATIC_URL}/theme-studio-clock-card.js",
+                    f"{STATIC_URL}/theme-studio-device-cards.js",
                 )
             ):
                 frontend.remove_extra_js_url(hass, url)
@@ -58,6 +62,7 @@ def _register_effects_module(hass: HomeAssistant) -> None:
     _remove_effects_modules(hass)
     frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)
     frontend.add_extra_js_url(hass, CLOCK_CARD_MODULE_URL)
+    frontend.add_extra_js_url(hass, DEVICE_CARDS_MODULE_URL)
 
 
 async def async_setup_entry(

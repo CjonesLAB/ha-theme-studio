@@ -1,14 +1,14 @@
-# Theme Studio 0.10.5 - Guía de usuario
+# Theme Studio 0.11.0 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.10.5**.
+Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.11.0**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
-![Theme Studio con perfiles, ajustes y vista previa](../images/v010/theme-studio-overview-v0105.webp)
+![Theme Studio con perfiles, ajustes y vista previa](../images/v011/theme-studio-overview-v0110.png)
 
 ## Contenido
 
@@ -25,6 +25,40 @@ Esta guía explica Theme Studio, desde la instalación hasta el diseño visual m
 11. Ajustes por administrador, datos y privacidad
 12. Actualización
 13. Solución de problemas y método recomendado
+
+### Novedades de la versión 0.11.0
+
+La versión 0.11.0 añade tres tarjetas de dispositivo opcionales y compactas de Theme Studio. Siguen el diseño activo y ofrecen controles específicos sin ocupar de forma permanente una gran parte del panel.
+
+#### Tarjeta de enchufe y energía
+
+La tarjeta de enchufe reúne el control, la potencia actual, la energía total, un gráfico compacto y un diálogo de análisis separado. Los sensores compatibles adicionales, como tensión y corriente, se detectan automáticamente cuando están disponibles.
+
+![Tarjetas de enchufe compactas con potencia y energía en directo](../images/v011/power-cards-v0110.png)
+
+![Detalles del enchufe con gráfico de potencia y mediciones adicionales](../images/v011/power-card-details-v0110.png)
+
+#### Tarjeta de luz
+
+La tarjeta de luz permite encender, apagar y regular directamente. Su diálogo separa el color del control blanco nativo. Según la luz, controla directamente un canal W dedicado, los canales blancos RGBW/RGBWW o el intervalo de temperatura indicado, sin aproximar el blanco mediante RGB.
+
+![Tarjeta de luz compacta con control de brillo](../images/v011/light-card-v0110.png)
+
+![Detalles de la luz con control directo del canal blanco](../images/v011/light-card-white-channel-details-v0110.png)
+
+![Detalles de la luz con círculo cromático completo](../images/v011/light-card-details-v0110.png)
+
+#### Tarjeta universal de persiana
+
+La tarjeta de persiana admite entidades Cover normales de Home Assistant. Incluye abrir, detener y cerrar, una ventana animada, un nombre opcional, selección de material y superficie, y una calibración guiada del tiempo de recorrido para dispositivos sin información de posición.
+
+![Tarjeta de persiana compacta con ventana animada](../images/v011/cover-card-v0110.png)
+
+![Editor de la tarjeta de persiana con apariencia y calibración del recorrido](../images/v011/cover-card-editor-v0110.png)
+
+![Detalles de la persiana con controles claros para abrir, detener y cerrar](../images/v011/cover-card-details-v0110.png)
+
+> En entidades Cover sin información de posición, el porcentaje mostrado es una estimación basada en el tiempo de recorrido aprendido. Los finales de carrera físicos y el propio dispositivo siguen siendo la referencia. La orden de parada requiere que la integración Cover de Home Assistant admita la función de detener.
 
 ### Novedades de la versión 0.10.0
 

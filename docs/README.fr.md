@@ -4,9 +4,9 @@
 
 Theme Studio est une intégration personnalisée pour Home Assistant permettant de créer, prévisualiser et appliquer directement vos propres designs d’interface.
 
-![Vue d’ensemble de Theme Studio 0.10.5](images/v010/theme-studio-overview-v0105.webp)
+![Vue d’ensemble de Theme Studio 0.11.0](images/v011/theme-studio-overview-v0110.png)
 
-> Version actuelle : **0.10.5**
+> Version actuelle : **0.11.0**
 >
 > **Accès :** Theme Studio est réservé aux administrateurs Home Assistant, car l’application d’un design écrit le fichier de thème généré et recharge les thèmes Home Assistant.
 >
@@ -26,6 +26,22 @@ Historique des versions : [Notes de version](https://github.com/CjonesLAB/ha-the
 | Español | [Abrir la guía](guides/GUIA_USUARIO.es.md) | [Descargar](downloads/theme-studio-guia-usuario-es.pdf) |
 
 ## Fonctionnalités
+
+### 0.11.0 : cartes compactes Theme Studio
+
+Trois cartes facultatives offrent des commandes directes sans encombrer le tableau de bord : une carte d’éclairage avec luminosité, canal blanc dédié, température de couleur et roue chromatique, une prise avec puissance en direct, énergie et mesures électriques associées, ainsi qu’une carte universelle pour volet avec ouverture, arrêt, fermeture, estimation visuelle de la position, choix du matériau et étalonnage du temps de course lorsque la position n’est pas remontée. Les réglages avancés s’ouvrent dans une boîte de dialogue opaque et défilable. Les cartes utilisent les variables et les surfaces de Home Assistant afin de conserver les designs, textures et effets de Theme Studio.
+
+| Prises avec suivi d’énergie | Commande universelle de volet |
+| --- | --- |
+| ![Cartes de prise compactes avec puissance en direct](images/v011/power-cards-v0110.png) | ![Carte de volet compacte avec estimation visuelle de la position](images/v011/cover-card-v0110.png) |
+
+| Détails de la prise | Détails du volet |
+| --- | --- |
+| ![Fenêtre de détail de la prise avec puissance en direct et mesures électriques](images/v011/power-card-details-v0110.png) | ![Fenêtre de détail du volet avec commandes d’ouverture, d’arrêt et de fermeture](images/v011/cover-card-details-v0110.png) |
+
+| Commande d’éclairage compacte | Canal blanc dédié | Commande des couleurs |
+| --- | --- | --- |
+| ![Carte d’éclairage compacte avec réglage de luminosité](images/v011/light-card-v0110.png) | ![Fenêtre de détail commandant directement le canal blanc](images/v011/light-card-white-channel-details-v0110.png) | ![Fenêtre de détail avec roue chromatique complète](images/v011/light-card-details-v0110.png) |
 
 ### 0.10.5 : confidentialité, stabilité et code plus clair
 

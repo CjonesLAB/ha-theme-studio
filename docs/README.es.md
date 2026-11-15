@@ -4,9 +4,9 @@
 
 Theme Studio es una integración personalizada para Home Assistant que permite crear, previsualizar y aplicar directamente tus propios diseños de interfaz.
 
-![Vista general de Theme Studio 0.10.5](images/v010/theme-studio-overview-v0105.webp)
+![Vista general de Theme Studio 0.11.0](images/v011/theme-studio-overview-v0110.png)
 
-> Versión actual: **0.10.5**
+> Versión actual: **0.11.0**
 >
 > **Acceso:** Theme Studio está disponible solo para administradores de Home Assistant porque al aplicar un diseño se escribe el archivo de tema generado y se recargan los temas de Home Assistant.
 >
@@ -26,6 +26,22 @@ Historial de versiones: [Notas de las versiones](https://github.com/CjonesLAB/ha
 | Français | [Ouvrir le guide](guides/GUIDE_UTILISATEUR.fr.md) | [Télécharger](downloads/theme-studio-guide-utilisateur-fr.pdf) |
 
 ## Funciones
+
+### 0.11.0: tarjetas compactas de Theme Studio
+
+Tres tarjetas opcionales ofrecen controles directos sin ocupar demasiado espacio: una tarjeta de luz con brillo, canal blanco dedicado, temperatura de color y rueda cromática completa; un enchufe con potencia en directo, energía y medidas eléctricas relacionadas; y una tarjeta universal de persiana con abrir, detener, cerrar, estimación visual de posición, materiales y calibración del tiempo de recorrido para dispositivos sin información de posición. Los ajustes avanzados se abren en un diálogo opaco y desplazable. Las tarjetas utilizan las variables y superficies de Home Assistant para conservar los diseños, las texturas y los efectos de Theme Studio.
+
+| Enchufes con control de energía | Control universal de persiana |
+| --- | --- |
+| ![Tarjetas compactas de enchufe con potencia en directo](images/v011/power-cards-v0110.png) | ![Tarjeta compacta de persiana con estimación visual de posición](images/v011/cover-card-v0110.png) |
+
+| Detalles del enchufe | Detalles de la persiana |
+| --- | --- |
+| ![Diálogo del enchufe con potencia en directo y medidas eléctricas](images/v011/power-card-details-v0110.png) | ![Diálogo de la persiana con controles para abrir, detener y cerrar](images/v011/cover-card-details-v0110.png) |
+
+| Control compacto de luz | Canal blanco dedicado | Control de color |
+| --- | --- | --- |
+| ![Tarjeta compacta de luz con regulador de brillo](images/v011/light-card-v0110.png) | ![Diálogo de luz que controla directamente el canal blanco](images/v011/light-card-white-channel-details-v0110.png) | ![Diálogo de luz con rueda cromática completa](images/v011/light-card-details-v0110.png) |
 
 ### 0.10.5: privacidad, estabilidad y una base más limpia
 
