@@ -39,6 +39,10 @@ Trois cartes facultatives offrent des commandes directes sans encombrer le table
 | --- | --- |
 | ![Fenêtre de détail de la prise avec puissance en direct et mesures électriques](images/v011/power-card-details-v0110.png) | ![Fenêtre de détail du volet avec commandes d’ouverture, d’arrêt et de fermeture](images/v011/cover-card-details-v0110.png) |
 
+| Configuration, apparence et apprentissage du temps de trajet du volet |
+| --- |
+| ![Éditeur de la carte volet avec nom personnalisé, choix du matériau, aperçu et apprentissage guidé du temps de trajet](images/v011/cover-card-editor-v0110.png) |
+
 | Commande d’éclairage compacte | Canal blanc dédié | Commande des couleurs |
 | --- | --- | --- |
 | ![Carte d’éclairage compacte avec réglage de luminosité](images/v011/light-card-v0110.png) | ![Fenêtre de détail commandant directement le canal blanc](images/v011/light-card-white-channel-details-v0110.png) | ![Fenêtre de détail avec roue chromatique complète](images/v011/light-card-details-v0110.png) |
