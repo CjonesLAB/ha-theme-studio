@@ -25,20 +25,39 @@ SOURCE_VERSION_FILES = (
     Path("custom_components/theme_studio/frontend/theme-studio-panel.js"),
     Path("custom_components/theme_studio/frontend/theme-studio-effects.js"),
     Path("custom_components/theme_studio/frontend/theme-studio-clock-card.js"),
+    Path("custom_components/theme_studio/frontend/theme-studio-locales.js"),
+    Path("custom_components/theme_studio/frontend/theme-studio-card-base.js"),
+    Path("custom_components/theme_studio/frontend/theme-studio-device-cards.js"),
+    Path("custom_components/theme_studio/frontend/theme-studio-light-card.js"),
+    Path("custom_components/theme_studio/frontend/theme-studio-power-card.js"),
+    Path("custom_components/theme_studio/frontend/theme-studio-cover-card.js"),
     Path("tests/test_branding.py"),
     Path("tests/test_frontend_performance.py"),
     Path("tests/test_settings.py"),
+    Path("tests/frontend-device-cards.cjs"),
 )
 CURRENT_VERSION_FILES = DOCUMENTATION_VERSION_FILES + SOURCE_VERSION_FILES
+
+
+def read_source(path: Path) -> str:
+    """Read text without normalizing the repository's existing line endings."""
+
+    with path.open("r", encoding="utf-8", newline="") as source_file:
+        return source_file.read()
+
+
+def write_source(path: Path, source: str) -> None:
+    """Write text while preserving the line endings already present in source."""
+
+    with path.open("w", encoding="utf-8", newline="") as source_file:
+        source_file.write(source)
 
 
 def manifest_version() -> str:
     """Return the version currently declared in the integration manifest."""
 
     manifest = json.loads(
-        (ROOT / "custom_components/theme_studio/manifest.json").read_text(
-            encoding="utf-8"
-        )
+        read_source(ROOT / "custom_components/theme_studio/manifest.json")
     )
     return str(manifest["version"])
 
@@ -65,7 +84,7 @@ def changed_files(old: str, new: str, *, write: bool) -> list[Path]:
     changed: list[Path] = []
     for relative_path in CURRENT_VERSION_FILES:
         path = ROOT / relative_path
-        source = path.read_text(encoding="utf-8")
+        source = read_source(path)
         if relative_path in DOCUMENTATION_VERSION_FILES:
             updated = replace_document_header(source, old, new)
         else:
@@ -74,18 +93,17 @@ def changed_files(old: str, new: str, *, write: bool) -> list[Path]:
             continue
         changed.append(relative_path)
         if write:
-            path.write_text(updated, encoding="utf-8", newline="\n")
+            write_source(path, updated)
 
     manifest_path = ROOT / "custom_components/theme_studio/manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest = json.loads(read_source(manifest_path))
     if manifest.get("version") != new:
         changed.append(manifest_path.relative_to(ROOT))
         if write:
             manifest["version"] = new
-            manifest_path.write_text(
+            write_source(
+                manifest_path,
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
-                newline="\n",
             )
     return changed
 
@@ -95,7 +113,7 @@ def inconsistent_files(expected: str) -> list[Path]:
 
     inconsistent: list[Path] = []
     for relative_path in CURRENT_VERSION_FILES:
-        source = (ROOT / relative_path).read_text(encoding="utf-8")
+        source = read_source(ROOT / relative_path)
         if relative_path in DOCUMENTATION_VERSION_FILES:
             source = "".join(source.splitlines(keepends=True)[:12])
         if expected not in source:

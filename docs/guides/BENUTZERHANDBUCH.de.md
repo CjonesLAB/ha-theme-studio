@@ -1,14 +1,14 @@
-# Theme Studio 0.10.5 - Benutzerhandbuch
+# Theme Studio 0.11.0 - Benutzerhandbuch
 
 [English](USER_GUIDE.en.md) | **Deutsch** | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [PDF herunterladen](../downloads/theme-studio-benutzerhandbuch-de.pdf) | [Aktuelle Version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Fehler melden](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.10.5**.
+Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.11.0**.
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
-![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/v010/theme-studio-overview-v0105.webp)
+![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/v011/theme-studio-overview-v0110.png)
 
 ## Inhalt
 
@@ -25,6 +25,40 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 11. Administratorbezogene Einstellungen, Daten und Datenschutz
 12. Aktualisierung
 13. Fehlerbehebung und bewährte Vorgehensweise
+
+### Neu in 0.11.0
+
+Version 0.11.0 ergänzt drei optionale, kompakte Theme-Studio-Gerätekarten. Sie übernehmen das aktive Theme-Studio-Design und bieten gezielte Bedienmöglichkeiten, ohne das Dashboard dauerhaft mit großen Ansichten zu füllen.
+
+#### Steckdosen- und Energiekarte
+
+Die Steckdosenkarte verbindet Schalten, aktuelle Leistung, Gesamtenergie, eine kompakte Aktivitätsanzeige und einen getrennten Analysedialog. Weitere kompatible Sensoren wie Spannung und Stromstärke werden automatisch erkannt, sofern sie vorhanden sind.
+
+![Kompakte Steckdosenkarten mit Live-Leistung und Energie](../images/v011/power-cards-v0110.png)
+
+![Steckdosen-Details mit Leistungsdiagramm und weiteren Messwerten](../images/v011/power-card-details-v0110.png)
+
+#### Lichtkarte
+
+Die Lichtkarte bietet direktes Schalten und Dimmen. Der Detaildialog trennt Farbe von der nativen Weißsteuerung. Abhängig von der Leuchte steuert die Karte einen separaten W-Kanal, RGBW-/RGBWW-Weißkanäle oder den gemeldeten Farbtemperaturbereich direkt an, ohne Weiß über RGB anzunähern.
+
+![Kompakte Lichtkarte mit Helligkeitsregler](../images/v011/light-card-v0110.png)
+
+![Licht-Details zur direkten Steuerung des Weißkanals](../images/v011/light-card-white-channel-details-v0110.png)
+
+![Licht-Details mit vollständigem Farbkreis](../images/v011/light-card-details-v0110.png)
+
+#### Universelle Jalousiekarte
+
+Die Jalousiekarte unterstützt normale Home-Assistant-Cover-Entitäten. Sie bietet Öffnen, Stopp und Schließen, eine animierte Fensterdarstellung, einen optionalen Kartennamen, Material- und Oberflächenauswahl sowie eine geführte Laufzeitmessung für Geräte ohne Positionsrückmeldung.
+
+![Kompakte Jalousiekarte mit animierter Fensterdarstellung](../images/v011/cover-card-v0110.png)
+
+![Editor der Jalousiekarte mit Darstellung und Laufzeitmessung](../images/v011/cover-card-editor-v0110.png)
+
+![Jalousie-Details mit klaren Bedienelementen für Öffnen, Stopp und Schließen](../images/v011/cover-card-details-v0110.png)
+
+> Bei Cover-Entitäten ohne Positionsrückmeldung ist der angezeigte Prozentwert eine Schätzung auf Grundlage der eingelernten Laufzeit. Maßgeblich bleiben die physischen Endlagen und das Gerät selbst. Die Stopp-Funktion setzt voraus, dass die verwendete Home-Assistant-Cover-Integration das Stoppen unterstützt.
 
 ### Neu in 0.10.0
 

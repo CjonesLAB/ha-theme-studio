@@ -19,6 +19,7 @@ async def test_unload_removes_owned_frontend_modules(monkeypatch) -> None:
         urls={
             theme_studio.EFFECTS_MODULE_URL,
             theme_studio.CLOCK_CARD_MODULE_URL,
+            theme_studio.DEVICE_CARDS_MODULE_URL,
             unrelated_url,
         }
     )
@@ -44,11 +45,12 @@ async def test_unload_removes_owned_frontend_modules(monkeypatch) -> None:
 
     assert result is True
     remove_panel.assert_called_once_with(hass, theme_studio.PANEL_URL)
-    assert remove_module.call_count == 2
+    assert remove_module.call_count == 3
     remove_module.assert_has_calls(
         [
             call(hass, theme_studio.EFFECTS_MODULE_URL),
             call(hass, theme_studio.CLOCK_CARD_MODULE_URL),
+            call(hass, theme_studio.DEVICE_CARDS_MODULE_URL),
         ],
         any_order=True,
     )
@@ -110,6 +112,7 @@ async def test_setup_registers_frontend_resources_only_once(monkeypatch) -> None
     assert add_module.call_args_list == [
         call(hass, theme_studio.EFFECTS_MODULE_URL),
         call(hass, theme_studio.CLOCK_CARD_MODULE_URL),
+        call(hass, theme_studio.DEVICE_CARDS_MODULE_URL),
     ]
     assert refresh_registry.await_count == 2
 

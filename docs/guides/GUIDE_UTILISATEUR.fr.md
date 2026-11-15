@@ -1,14 +1,14 @@
-# Theme Studio 0.10.5 - Guide utilisateur
+# Theme Studio 0.11.0 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.10.5**.
+Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.11.0**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
-![Theme Studio avec profils, réglages et aperçu](../images/v010/theme-studio-overview-v0105.webp)
+![Theme Studio avec profils, réglages et aperçu](../images/v011/theme-studio-overview-v0110.png)
 
 ## Sommaire
 
@@ -25,6 +25,40 @@ Ce guide présente Theme Studio, de l’installation à la conception visuelle m
 11. Réglages par administrateur, données et confidentialité
 12. Mise à jour
 13. Dépannage et méthode recommandée
+
+### Nouveautés de la version 0.11.0
+
+La version 0.11.0 ajoute trois cartes d’appareil Theme Studio facultatives et compactes. Elles suivent le design Theme Studio actif et proposent des commandes ciblées sans occuper durablement une grande partie du tableau de bord.
+
+#### Carte prise et énergie
+
+La carte prise regroupe la commande, la puissance actuelle, l’énergie totale, un graphique compact et une fenêtre d’analyse séparée. Les capteurs compatibles supplémentaires, comme la tension et le courant, sont détectés automatiquement lorsqu’ils sont disponibles.
+
+![Cartes prises compactes avec puissance et énergie en direct](../images/v011/power-cards-v0110.png)
+
+![Détails de la prise avec graphique de puissance et mesures supplémentaires](../images/v011/power-card-details-v0110.png)
+
+#### Carte lumière
+
+La carte lumière permet l’allumage et la variation directs. Sa fenêtre de détails sépare la couleur de la commande blanche native. Selon la lampe, elle commande directement un canal W dédié, les canaux blancs RGBW/RGBWW ou la plage de température déclarée, sans recréer le blanc avec les canaux RVB.
+
+![Carte lumière compacte avec réglage de luminosité](../images/v011/light-card-v0110.png)
+
+![Détails de la lumière avec commande directe du canal blanc](../images/v011/light-card-white-channel-details-v0110.png)
+
+![Détails de la lumière avec cercle chromatique complet](../images/v011/light-card-details-v0110.png)
+
+#### Carte universelle pour volet
+
+La carte volet prend en charge les entités Cover normales de Home Assistant. Elle offre l’ouverture, l’arrêt et la fermeture, une fenêtre animée, un nom facultatif, le choix du matériau et de la surface, ainsi qu’un apprentissage guidé du temps de trajet pour les appareils sans retour de position.
+
+![Carte volet compacte avec fenêtre animée](../images/v011/cover-card-v0110.png)
+
+![Éditeur de la carte volet avec apparence et apprentissage du trajet](../images/v011/cover-card-editor-v0110.png)
+
+![Détails du volet avec commandes claires d’ouverture, d’arrêt et de fermeture](../images/v011/cover-card-details-v0110.png)
+
+> Pour les entités Cover sans retour de position, le pourcentage affiché est une estimation basée sur le temps de trajet appris. Les fins de course physiques et l’appareil restent prioritaires. La commande d’arrêt nécessite que l’intégration Cover de Home Assistant prenne en charge l’arrêt.
 
 ### Nouveautés de la version 0.10.0
 

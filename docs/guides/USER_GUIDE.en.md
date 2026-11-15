@@ -1,14 +1,14 @@
-# Theme Studio 0.10.5 - User Guide
+# Theme Studio 0.11.0 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.10.5**.
+This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.11.0**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
-![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/v010/theme-studio-overview-v0105.webp)
+![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/v011/theme-studio-overview-v0110.png)
 
 ## Contents
 
@@ -25,6 +25,40 @@ This guide explains Theme Studio from installation through mobile-first visual d
 11. Per-administrator settings, data, and privacy
 12. Updating
 13. Troubleshooting and recommended workflow
+
+### New in 0.11.0
+
+Version 0.11.0 adds three optional, compact Theme Studio device cards. They follow the active Theme Studio design and provide focused controls without filling the dashboard with large permanent panels.
+
+#### Smart-plug and energy card
+
+The smart-plug card combines switching, current power, total energy, a compact activity graph, and a separate analysis dialog. Additional compatible sensors such as voltage and current are detected automatically when available.
+
+![Compact smart-plug cards with live power and energy values](../images/v011/power-cards-v0110.png)
+
+![Smart-plug details with live power graph and additional measurements](../images/v011/power-card-details-v0110.png)
+
+#### Light card
+
+The light card offers direct switching and dimming. Its details dialog separates color from native white control. Depending on the selected light, it directly controls a dedicated W channel, RGBW/RGBWW white channels, or the reported color-temperature range without approximating white through RGB.
+
+![Compact light card with brightness control](../images/v011/light-card-v0110.png)
+
+![Light details controlling the dedicated white channel](../images/v011/light-card-white-channel-details-v0110.png)
+
+![Light details with the full color wheel](../images/v011/light-card-details-v0110.png)
+
+#### Universal cover card
+
+The cover card supports normal Home Assistant cover entities and includes open, stop, and close controls, an animated window view, an optional custom name, material and surface choices, and a guided travel-time calibration for devices without position feedback.
+
+![Compact cover card with animated window view](../images/v011/cover-card-v0110.png)
+
+![Cover card editor with appearance and travel-time calibration](../images/v011/cover-card-editor-v0110.png)
+
+![Cover details with clear open, stop, and close controls](../images/v011/cover-card-details-v0110.png)
+
+> For cover entities without position feedback, the displayed percentage is an estimate based on the learned travel time. Physical end stops and the device remain authoritative. The Stop command requires the Home Assistant cover integration to support stopping.
 
 ### New in 0.10.0
 

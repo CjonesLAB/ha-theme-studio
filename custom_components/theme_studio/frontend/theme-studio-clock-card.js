@@ -1,4 +1,13 @@
-const THEME_STUDIO_CLOCK_CARD_VERSION = "0.10.5";
+import {
+  ThemeStudioLocalizer,
+  themeStudioLanguage,
+} from "./theme-studio-locales.js?v=0.11.0";
+
+const THEME_STUDIO_CLOCK_CARD_VERSION = "0.11.0";
+
+function translateClockText(value, hass = null) {
+  return new ThemeStudioLocalizer(themeStudioLanguage(hass)).translate(value);
+}
 
 const DEFAULT_CONFIG = Object.freeze({
   clock_type: "analog",
@@ -447,10 +456,13 @@ class ThemeStudioClockCardEditor extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = normalizedConfig();
     this._themeClockTypeOverride = "";
+    this._language = "";
+    this._localizer = null;
   }
 
   set hass(hass) {
     this._hass = hass;
+    this._syncLocalization();
   }
 
   setConfig(config) {
@@ -460,6 +472,24 @@ class ThemeStudioClockCardEditor extends HTMLElement {
 
   connectedCallback() {
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._localizer?.disconnect();
+  }
+
+  _syncLocalization() {
+    const language = themeStudioLanguage(this._hass);
+    if (this._localizer && this._language === language) {
+      this._localizer.translateTree(this.shadowRoot);
+      if (!this._localizer.observer) this._localizer.observe(this.shadowRoot);
+      return;
+    }
+    this._localizer?.disconnect();
+    this._language = language;
+    this._localizer = new ThemeStudioLocalizer(language);
+    this._localizer.translateTree(this.shadowRoot);
+    this._localizer.observe(this.shadowRoot);
   }
 
   _render() {
@@ -535,6 +565,7 @@ class ThemeStudioClockCardEditor extends HTMLElement {
       else element.value = key === "clock_type" ? clockType : this._config[key];
       element.addEventListener("change", (event) => this._change(event));
     }
+    this._syncLocalization();
   }
 
   _change(event) {
@@ -611,8 +642,8 @@ window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === "theme-studio-clock-card")) {
   window.customCards.push({
     type: "theme-studio-clock-card",
-    name: "Theme Studio Uhr",
-    description: "Analoge oder digitale Uhr im Design des aktiven Theme-Studio-Themes.",
+    name: translateClockText("Theme Studio Uhr"),
+    description: translateClockText("Analoge oder digitale Uhr im Design des aktiven Theme-Studio-Themes."),
     preview: true,
   });
 }

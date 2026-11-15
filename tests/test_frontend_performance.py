@@ -184,8 +184,8 @@ def test_effect_module_replaces_a_stale_cached_instance() -> None:
     effects_source = _effects_source()
     panel_source = _panel_source()
 
-    assert 'from "./theme-studio-textures.js?v=0.10.5";' in panel_source
-    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.10.5";' in effects_source
+    assert 'from "./theme-studio-textures.js?v=0.11.0";' in panel_source
+    assert 'const THEME_STUDIO_EFFECTS_VERSION = "0.11.0";' in effects_source
     assert "current?.version === THEME_STUDIO_EFFECTS_VERSION" in effects_source
     assert "current._stopPolling?.();" in effects_source
     assert "current._readThemeSettings = () => {};" in effects_source
@@ -749,6 +749,33 @@ def test_every_design_uses_an_opaque_overlay_surface() -> None:
     assert "this.overlaySurfaces = currentOverlaySurfaces" in liquid_sync
 
 
+def test_picker_positioning_hosts_are_not_painted_as_dialog_surfaces() -> None:
+    """Entity pickers keep their full-screen positioning layer transparent."""
+
+    effects_source = _effects_source()
+    surface_helper = effects_source.split(
+        "_shouldStyleOverlaySurface(element) {",
+        maxsplit=1,
+    )[1].split("_isInsideOverlay(element) {", maxsplit=1)[0]
+
+    assert 'name === "ha-dialog"' not in surface_helper
+    assert 'name === "ha-adaptive-dialog"' not in surface_helper
+    assert 'name === "ha-more-info-dialog"' not in surface_helper
+    assert 'name.startsWith("hui-dialog-")' not in surface_helper
+    assert 'name.startsWith("more-info-")' not in surface_helper
+    assert "this._isViewportOverlayLayer(element)" in surface_helper
+    assert 'classes.includes("mdc-dialog__surface")' in surface_helper
+    assert 'parts.includes("dialog")' in surface_helper
+
+    viewport_helper = effects_source.split(
+        "_isViewportOverlayLayer(element) {",
+        maxsplit=1,
+    )[1].split("_isInsideOverlay(element) {", maxsplit=1)[0]
+
+    assert "rect.width >= viewportWidth * 0.9" in viewport_helper
+    assert "rect.height >= viewportHeight * 0.9" in viewport_helper
+
+
 def test_config_area_excludes_all_special_effects() -> None:
     """Home Assistant settings stay opaque and free of dashboard effects."""
 
@@ -793,7 +820,7 @@ def test_clock_is_a_native_dashboard_card_without_fixed_overlay() -> None:
     assert 'customElements.define("theme-studio-clock-card"' in source
     assert 'customElements.define("theme-studio-clock-card-editor"' in source
     assert 'type: "theme-studio-clock-card"' in source
-    assert 'name: "Theme Studio Uhr"' in source
+    assert 'name: translateClockText("Theme Studio Uhr")' in source
     assert "static getConfigElement()" in source
     assert "static getStubConfig()" in source
     assert "getGridOptions()" in source

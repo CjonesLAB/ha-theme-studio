@@ -47,7 +47,16 @@ jobs:
           node --check custom_components/theme_studio/frontend/theme-studio-device-preview.js
           node --check custom_components/theme_studio/frontend/theme-studio-effects.js
           node --check custom_components/theme_studio/frontend/theme-studio-locales.js
+          node --check custom_components/theme_studio/frontend/locales/de.js
+          node --check custom_components/theme_studio/frontend/locales/en.js
+          node --check custom_components/theme_studio/frontend/locales/fr.js
+          node --check custom_components/theme_studio/frontend/locales/es.js
           node --check custom_components/theme_studio/frontend/theme-studio-clock-card.js
+          node --check custom_components/theme_studio/frontend/theme-studio-card-base.js
+          node --check custom_components/theme_studio/frontend/theme-studio-device-cards.js
+          node --check custom_components/theme_studio/frontend/theme-studio-light-card.js
+          node --check custom_components/theme_studio/frontend/theme-studio-power-card.js
+          node --check custom_components/theme_studio/frontend/theme-studio-cover-card.js
           node --check custom_components/theme_studio/frontend/theme-studio-css-library.js
           node --check custom_components/theme_studio/frontend/theme-studio-textures.js
 
@@ -61,6 +70,8 @@ jobs:
           node tests/frontend-profile-labels.cjs
           node tests/frontend-profile-save-reminder.cjs
           node tests/frontend-device-preview.cjs
+          node tests/frontend-device-cards.cjs
+          node tests/frontend-localization.cjs
 
       - name: Automatisierte Tests ausführen
         run: >-

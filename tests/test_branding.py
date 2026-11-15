@@ -9,8 +9,8 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.10.5"
-DOCUMENTED_RELEASE_VERSION = "0.10.5"
+RELEASE_VERSION = "0.11.0"
+DOCUMENTED_RELEASE_VERSION = "0.11.0"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
@@ -47,6 +47,15 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     clock_card = (integration / "frontend/theme-studio-clock-card.js").read_text(
         encoding="utf-8"
     )
+    device_cards = (integration / "frontend/theme-studio-device-cards.js").read_text(
+        encoding="utf-8"
+    )
+    locales = (integration / "frontend/theme-studio-locales.js").read_text(
+        encoding="utf-8"
+    )
+    card_base = (integration / "frontend/theme-studio-card-base.js").read_text(
+        encoding="utf-8"
+    )
 
     assert manifest["version"] == RELEASE_VERSION
     assert re.search(rf'^VERSION = "{re.escape(RELEASE_VERSION)}"$', constants, re.MULTILINE)
@@ -58,12 +67,20 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
     assert f'THEME_STUDIO_EFFECTS_VERSION = "{RELEASE_VERSION}"' in effects
     assert f'theme-studio-textures.js?v={RELEASE_VERSION}' in effects
     assert f'THEME_STUDIO_CLOCK_CARD_VERSION = "{RELEASE_VERSION}"' in clock_card
+    assert f'THEME_STUDIO_DEVICE_CARDS_VERSION = "{RELEASE_VERSION}"' in device_cards
+    assert f'./locales/de.js?v={RELEASE_VERSION}' in locales
+    assert f'./locales/en.js?v={RELEASE_VERSION}' in locales
+    assert f'./locales/fr.js?v={RELEASE_VERSION}' in locales
+    assert f'./locales/es.js?v={RELEASE_VERSION}' in locales
+    assert f'theme-studio-locales.js?v={RELEASE_VERSION}' in card_base
     assert "EFFECTS_MODULE_URL = (" in setup
     assert "CLOCK_CARD_MODULE_URL = (" in setup
+    assert "DEVICE_CARDS_MODULE_URL = (" in setup
     assert "def _register_effects_module(hass: HomeAssistant)" in setup
     assert "frontend.remove_extra_js_url(hass, url)" in setup
     assert "frontend.add_extra_js_url(hass, EFFECTS_MODULE_URL)" in setup
     assert "frontend.add_extra_js_url(hass, CLOCK_CARD_MODULE_URL)" in setup
+    assert "frontend.add_extra_js_url(hass, DEVICE_CARDS_MODULE_URL)" in setup
     assert "DATA_EFFECTS_MODULE_REGISTERED" in setup
     assert "await async_refresh_theme_registry(hass)" in setup
     assert "require_admin=True" in setup
@@ -79,7 +96,11 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
         assert DOCUMENTED_RELEASE_VERSION in content
         assert warning_label in content
         assert "    extra_module_url:" not in content
-        assert "v010/theme-studio-overview-v0105.webp" in content
+        assert "v011/theme-studio-overview-v0110.png" in content
+        assert "v011/light-card-white-channel-details-v0110.png" in content
+        assert "v011/light-card-details-v0110.png" in content
+
+
 def test_minimum_home_assistant_version_is_covered_by_ci() -> None:
     """The oldest supported Home Assistant release must remain in the test matrix."""
 

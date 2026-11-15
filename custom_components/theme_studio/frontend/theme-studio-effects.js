@@ -1,7 +1,7 @@
-import { CARD_TEXTURE_LIBRARY } from "./theme-studio-textures.js?v=0.10.5";
+import { CARD_TEXTURE_LIBRARY } from "./theme-studio-textures.js?v=0.11.0";
 
 const EFFECT_LAYER_ID = "theme-studio-effects-layer";
-const THEME_STUDIO_EFFECTS_VERSION = "0.10.5";
+const THEME_STUDIO_EFFECTS_VERSION = "0.11.0";
 const DIRECT_CARD_EDITOR_ENABLED = false;
 const NATIVE_CARD_DESIGN_EDITOR_ENABLED = true;
 
@@ -2207,22 +2207,35 @@ class ThemeStudioEffects {
   }
 
   _shouldStyleOverlaySurface(element) {
-    const name = String(element?.localName || "");
     const classes = String(element?.className || "")
       .split(/\s+/);
     const parts = String(element?.getAttribute?.("part") || "")
       .split(/\s+/);
 
-    // Modern Home Assistant pickers use a native <dialog> as a full-screen
-    // positioning layer. It must remain transparent; only the ha-dialog host
-    // or the actual exposed dialog surface receives the profile background.
-    return name === "ha-dialog"
-      || name === "ha-adaptive-dialog"
-      || name === "ha-more-info-dialog"
-      || name.startsWith("hui-dialog-")
-      || name.startsWith("more-info-")
-      || classes.includes("mdc-dialog__surface")
+    // Dialog custom elements are positioning hosts whose CSS variables cascade
+    // into Home Assistant's picker. Styling a host can therefore repaint the
+    // full viewport after the picker has opened. Only concrete visual surfaces
+    // are eligible, and viewport-sized surfaces always remain transparent.
+    if (this._isViewportOverlayLayer(element)) {
+      return false;
+    }
+
+    return classes.includes("mdc-dialog__surface")
       || parts.includes("dialog");
+  }
+
+  _isViewportOverlayLayer(element) {
+    const rect = element?.getBoundingClientRect?.();
+    const view = element?.ownerDocument?.defaultView || globalThis;
+    const viewportWidth = Number(view?.innerWidth || 0);
+    const viewportHeight = Number(view?.innerHeight || 0);
+
+    if (!rect || viewportWidth <= 0 || viewportHeight <= 0) {
+      return false;
+    }
+
+    return rect.width >= viewportWidth * 0.9
+      && rect.height >= viewportHeight * 0.9;
   }
 
   _isInsideOverlay(element) {
@@ -2415,18 +2428,29 @@ class ThemeStudioEffects {
   }
 
   _styleLiquidGlassCard(card) {
+    const presentationCarryover = card.hasAttribute(
+      "data-theme-studio-presentation-carryover"
+    );
     if (!this.originalGlassStyles.has(card)) {
       this.originalGlassStyles.set(card, {
-        backdropFilter: card.style.getPropertyValue("backdrop-filter"),
-        backdropFilterPriority:
-          card.style.getPropertyPriority("backdrop-filter"),
-        webkitBackdropFilter:
-          card.style.getPropertyValue("-webkit-backdrop-filter"),
-        webkitBackdropFilterPriority:
-          card.style.getPropertyPriority("-webkit-backdrop-filter"),
-        backgroundImage: card.style.getPropertyValue("background-image"),
-        backgroundImagePriority:
-          card.style.getPropertyPriority("background-image"),
+        backdropFilter: presentationCarryover
+          ? ""
+          : card.style.getPropertyValue("backdrop-filter"),
+        backdropFilterPriority: presentationCarryover
+          ? ""
+          : card.style.getPropertyPriority("backdrop-filter"),
+        webkitBackdropFilter: presentationCarryover
+          ? ""
+          : card.style.getPropertyValue("-webkit-backdrop-filter"),
+        webkitBackdropFilterPriority: presentationCarryover
+          ? ""
+          : card.style.getPropertyPriority("-webkit-backdrop-filter"),
+        backgroundImage: presentationCarryover
+          ? ""
+          : card.style.getPropertyValue("background-image"),
+        backgroundImagePriority: presentationCarryover
+          ? ""
+          : card.style.getPropertyPriority("background-image"),
       });
     }
 
@@ -2460,6 +2484,7 @@ class ThemeStudioEffects {
     }
 
     card.style.setProperty("background-image", gradient, "important");
+    card.removeAttribute("data-theme-studio-presentation-carryover");
   }
 
   _styleLiquidGlassHeading(heading) {
@@ -2593,13 +2618,20 @@ class ThemeStudioEffects {
       "--theme-studio-tech-frame-border-width",
     ];
 
+    const presentationCarryover = card.hasAttribute(
+      "data-theme-studio-presentation-carryover"
+    );
     if (!this.originalTechFrameStyles.has(card)) {
       const originals = {};
 
       for (const property of properties) {
         originals[property] = {
-          value: card.style.getPropertyValue(property),
-          priority: card.style.getPropertyPriority(property),
+          value: presentationCarryover
+            ? ""
+            : card.style.getPropertyValue(property),
+          priority: presentationCarryover
+            ? ""
+            : card.style.getPropertyPriority(property),
         };
       }
 
@@ -2668,6 +2700,7 @@ class ThemeStudioEffects {
 
     this.techFrameCards.add(card);
     this.techFrameResizeObserver?.observe(card);
+    card.removeAttribute("data-theme-studio-presentation-carryover");
   }
 
   _syncTechFrameOutline(card, cut, borderWidth = this.techFrameBorderWidth) {

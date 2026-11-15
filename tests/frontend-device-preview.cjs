@@ -17,13 +17,13 @@ const devicePreviewSource = fs.readFileSync(
   "utf8"
 );
 const source = `${panelSource}\n${devicePreviewSource}`;
-const locales = fs.readFileSync(
-  path.join(
-    __dirname,
-    "../custom_components/theme_studio/frontend/theme-studio-locales.js"
-  ),
-  "utf8"
+const localeDirectory = path.join(
+  __dirname,
+  "../custom_components/theme_studio/frontend/locales"
 );
+const locales = ["en", "fr", "es"]
+  .map((language) => fs.readFileSync(path.join(localeDirectory, `${language}.js`), "utf8"))
+  .join("\n");
 const websocket = fs.readFileSync(
   path.join(
     __dirname,
