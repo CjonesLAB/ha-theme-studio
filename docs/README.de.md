@@ -39,6 +39,10 @@ Drei optionale Dashboard-Karten verbinden direkte Bedienung mit einer platzspare
 | --- | --- |
 | ![Detailfenster der Steckdosenkarte mit Live-Leistung und elektrischen Messwerten](images/v011/power-card-details-v0110.png) | ![Detailfenster der Jalousie-/Rollladenkarte mit Öffnen, Stopp und Schließen](images/v011/cover-card-details-v0110.png) |
 
+| Einrichtung, Darstellung und Laufzeitmessung der Jalousie-/Rollladenkarte |
+| --- |
+| ![Editor der Jalousie-/Rollladenkarte mit eigenem Namen, Materialauswahl, Vorschau und geführter Laufzeitmessung](images/v011/cover-card-editor-v0110.png) |
+
 | Kompakte Lichtsteuerung | Separater Weißkanal | Farbsteuerung |
 | --- | --- | --- |
 | ![Kompakte Lichtkarte mit Helligkeitsregler](images/v011/light-card-v0110.png) | ![Licht-Detailfenster zur direkten Steuerung des Weißkanals](images/v011/light-card-white-channel-details-v0110.png) | ![Licht-Detailfenster mit vollständigem Farbkreis](images/v011/light-card-details-v0110.png) |

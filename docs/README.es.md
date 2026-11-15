@@ -39,6 +39,10 @@ Tres tarjetas opcionales ofrecen controles directos sin ocupar demasiado espacio
 | --- | --- |
 | ![Diálogo del enchufe con potencia en directo y medidas eléctricas](images/v011/power-card-details-v0110.png) | ![Diálogo de la persiana con controles para abrir, detener y cerrar](images/v011/cover-card-details-v0110.png) |
 
+| Configuración, apariencia y calibración del recorrido de la persiana |
+| --- |
+| ![Editor de la tarjeta de persiana con nombre personalizado, selección de material, vista previa y calibración guiada del recorrido](images/v011/cover-card-editor-v0110.png) |
+
 | Control compacto de luz | Canal blanco dedicado | Control de color |
 | --- | --- | --- |
 | ![Tarjeta compacta de luz con regulador de brillo](images/v011/light-card-v0110.png) | ![Diálogo de luz que controla directamente el canal blanco](images/v011/light-card-white-channel-details-v0110.png) | ![Diálogo de luz con rueda cromática completa](images/v011/light-card-details-v0110.png) |

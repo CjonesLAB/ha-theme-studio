@@ -41,6 +41,10 @@ Three optional dashboard cards add direct controls without filling the dashboard
 | --- | --- |
 | ![Smart-plug detail dialog with live power and electrical values](docs/images/v011/power-card-details-v0110.png) | ![Cover detail dialog with open, stop, and close controls](docs/images/v011/cover-card-details-v0110.png) |
 
+| Cover-card setup, appearance, and travel-time calibration |
+| --- |
+| ![Cover-card editor with custom name, material selection, preview, and guided travel-time calibration](docs/images/v011/cover-card-editor-v0110.png) |
+
 | Compact light control | Dedicated white channel | Color controls |
 | --- | --- | --- |
 | ![Compact light card with brightness control](docs/images/v011/light-card-v0110.png) | ![Light detail dialog controlling the dedicated white channel](docs/images/v011/light-card-white-channel-details-v0110.png) | ![Light detail dialog with the full color wheel](docs/images/v011/light-card-details-v0110.png) |
