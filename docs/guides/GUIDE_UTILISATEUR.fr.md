@@ -1,14 +1,14 @@
-# Theme Studio 0.11.0 - Guide utilisateur
+# Theme Studio 0.11.1 - Guide utilisateur
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | **Français** | [Español](GUIA_USUARIO.es.md)
 
 [Télécharger le PDF](../downloads/theme-studio-guide-utilisateur-fr.pdf) | [Dernière version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Signaler un problème](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.11.0**.
+Ce guide présente Theme Studio, de l’installation à la conception visuelle mobile du tableau de bord et à la gestion sûre des anciennes règles. Il s’applique à la version **0.11.1**.
 
 > Créez toujours une sauvegarde complète de Home Assistant avant une installation, une mise à jour ou une modification importante du design.
 
-![Theme Studio avec profils, réglages et aperçu](../images/v011/theme-studio-overview-v0110.png)
+![Theme Studio avec profils, réglages et aperçu](../images/v011/theme-studio-overview-v0111.png)
 
 ## Sommaire
 
@@ -27,6 +27,8 @@ Ce guide présente Theme Studio, de l’installation à la conception visuelle m
 13. Dépannage et méthode recommandée
 
 ### Nouveautés de la version 0.11.0
+
+![Vue d’ensemble des cartes Theme Studio pour l’énergie, les volets, l’éclairage et l’horloge](../images/v011/device-cards-overview-v0110.png)
 
 La version 0.11.0 ajoute trois cartes d’appareil Theme Studio facultatives et compactes. Elles suivent le design Theme Studio actif et proposent des commandes ciblées sans occuper durablement une grande partie du tableau de bord.
 
@@ -50,15 +52,15 @@ La carte lumière permet l’allumage et la variation directs. Sa fenêtre de d�
 
 #### Carte universelle pour volet
 
-La carte volet prend en charge les entités Cover normales de Home Assistant. Elle offre l’ouverture, l’arrêt et la fermeture, une fenêtre animée, un nom facultatif, le choix du matériau et de la surface, ainsi qu’un apprentissage guidé du temps de trajet pour les appareils sans retour de position.
+La carte volet prend en charge les entités Cover normales de Home Assistant. Elle offre l’ouverture, l’arrêt et la fermeture, une fenêtre animée, un nom facultatif, le choix du matériau et de la surface, la saisie manuelle des temps de course, un contrôle passif de l’actionneur et une course d’apprentissage protégée. Pendant le contrôle passif, l’utilisateur actionne uniquement l’interrupteur mural ; Theme Studio observe les états signalés et n’envoie aucune commande de mouvement. Après confirmation, une course d’ouverture ou de fermeture peut être lancée. « Fin de course atteinte et arrêter » arrête immédiatement le moteur et enregistre le temps mesuré. Un arrêt d’urgence permanent et un arrêt de sécurité géré par Home Assistant après 60 secondes au maximum protègent la course d’apprentissage.
 
-![Carte volet compacte avec fenêtre animée](../images/v011/cover-card-v0110.png)
+![Carte volet compacte avec fenêtre animée](../images/v011/cover-card-v0111.png)
 
-![Éditeur de la carte volet avec apparence et apprentissage du trajet](../images/v011/cover-card-editor-v0110.png)
+![Éditeur de la carte volet avec apparence, course d’apprentissage et contrôle passif de l’actionneur](../images/v011/cover-card-editor-v0111.png)
 
-![Détails du volet avec commandes claires d’ouverture, d’arrêt et de fermeture](../images/v011/cover-card-details-v0110.png)
+![Détails du volet avec commandes claires d’ouverture, d’arrêt et de fermeture](../images/v011/cover-card-details-v0111.png)
 
-> Pour les entités Cover sans retour de position, le pourcentage affiché est une estimation basée sur le temps de trajet appris. Les fins de course physiques et l’appareil restent prioritaires. La commande d’arrêt nécessite que l’intégration Cover de Home Assistant prenne en charge l’arrêt.
+> Pour les entités Cover sans retour de position, le pourcentage affiché est une estimation basée sur le temps de course saisi manuellement et porte le signe `~`. Les fins de course physiques et l’appareil restent prioritaires. Après une commande directe depuis la carte, Home Assistant exécute le mouvement et envoie exactement une commande d’arrêt à la fin du temps de course restant calculé, même si le tableau de bord a été fermé. La commande temporisée n’est activée que si l’intégration Cover prend en charge l’arrêt et si le contrôle passif de l’actionneur a été confirmé. Après un redémarrage de Home Assistant, tout mouvement inachevé mémorisé est arrêté par précaution.
 
 ### Nouveautés de la version 0.10.0
 

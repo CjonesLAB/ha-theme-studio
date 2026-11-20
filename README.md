@@ -6,9 +6,9 @@
 
 Theme Studio is a visual design workspace for Home Assistant. Create complete interface designs, preview every change, and apply them without writing CSS.
 
-![Theme Studio 0.11.0 overview](docs/images/v011/theme-studio-overview-v0110.png)
+![Theme Studio 0.11.1 overview](docs/images/v011/theme-studio-overview-v0111.png)
 
-> Current version: **0.11.0**
+> Current version: **0.11.1**
 >
 > **Access:** Theme Studio is available only to Home Assistant administrators because applying a design writes the generated theme file and reloads Home Assistant themes.
 >
@@ -29,21 +29,27 @@ Version history: [Release notes](https://github.com/CjonesLAB/ha-theme-studio/re
 
 ## Features
 
+### 0.11.1: reliable cover motion and protected learning rides
+
+Positionless covers now keep their estimated position synchronized through Home Assistant, so phones, tablets, and desktop browsers display the same value. Timed movements and safety stops continue in the backend after the dashboard is closed. Direction changes, reconnects, restarts, delayed device responses, and failed stop commands are handled defensively. The card editor also includes protected opening and closing learning rides with a permanent emergency stop and a 60-second safety timeout. All new controls and messages are available in German, English, French, and Spanish.
+
 ### 0.11.0: compact Theme Studio device cards
 
-Three optional dashboard cards add direct controls without filling the dashboard: a light card with brightness, a dedicated white-channel mode, color temperature, and a full color wheel; an energy-aware smart-plug card with live power, energy, and related electrical values; and a universal cover card with open, stop, close, a visual position estimate, material choices, and travel-time calibration for devices without position feedback. Each card keeps its essential controls compact and opens a solid, scrollable detail dialog for advanced settings. The cards use Home Assistant theme variables and native card surfaces, so Theme Studio designs, textures, and effects continue to apply.
+![Theme Studio energy, cover, light, and clock cards](docs/images/v011/device-cards-overview-v0110.png)
+
+Three optional dashboard cards add direct controls without filling the dashboard: a light card with brightness, a dedicated white-channel mode, color temperature, and a full color wheel; an energy-aware smart-plug card with live power, energy, and related electrical values; and a universal cover card with open, stop, close, a visual position estimate, material choices, manually entered travel times, and a passive actuator compatibility check. The check only observes Home Assistant state changes and never sends movement commands. For confirmed positionless covers, Home Assistant itself monitors the remaining travel time and sends one stop command even when the dashboard is closed. Each card keeps its essential controls compact and opens a solid, scrollable detail dialog for advanced settings. The cards use Home Assistant theme variables and native card surfaces, so Theme Studio designs, textures, and effects continue to apply.
 
 | Energy-aware smart plugs | Universal cover control |
 | --- | --- |
-| ![Compact smart-plug cards with live power graphs](docs/images/v011/power-cards-v0110.png) | ![Compact cover card with visual position estimate](docs/images/v011/cover-card-v0110.png) |
+| ![Compact smart-plug cards with live power graphs](docs/images/v011/power-cards-v0110.png) | ![Compact cover card with visual position estimate](docs/images/v011/cover-card-v0111.png) |
 
 | Smart-plug details | Cover details |
 | --- | --- |
-| ![Smart-plug detail dialog with live power and electrical values](docs/images/v011/power-card-details-v0110.png) | ![Cover detail dialog with open, stop, and close controls](docs/images/v011/cover-card-details-v0110.png) |
+| ![Smart-plug detail dialog with live power and electrical values](docs/images/v011/power-card-details-v0110.png) | ![Cover detail dialog with open, stop, and close controls](docs/images/v011/cover-card-details-v0111.png) |
 
-| Cover-card setup, appearance, and travel-time calibration |
+| Cover-card setup, appearance, and passive compatibility check |
 | --- |
-| ![Cover-card editor with custom name, material selection, preview, and guided travel-time calibration](docs/images/v011/cover-card-editor-v0110.png) |
+| ![Cover-card editor with custom name, material selection, preview, learning ride, and passive compatibility check](docs/images/v011/cover-card-editor-v0111.png) |
 
 | Compact light control | Dedicated white channel | Color controls |
 | --- | --- | --- |
