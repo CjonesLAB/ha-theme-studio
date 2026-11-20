@@ -9,8 +9,8 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).parents[1]
-RELEASE_VERSION = "0.11.0"
-DOCUMENTED_RELEASE_VERSION = "0.11.0"
+RELEASE_VERSION = "0.11.1"
+DOCUMENTED_RELEASE_VERSION = "0.11.1"
 
 
 @pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
@@ -96,7 +96,11 @@ def test_release_version_and_frontend_cache_are_consistent() -> None:
         assert DOCUMENTED_RELEASE_VERSION in content
         assert warning_label in content
         assert "    extra_module_url:" not in content
-        assert "v011/theme-studio-overview-v0110.png" in content
+        assert "v011/theme-studio-overview-v0111.png" in content
+        assert "v011/device-cards-overview-v0110.png" in content
+        assert "v011/cover-card-v0111.png" in content
+        assert "v011/cover-card-editor-v0111.png" in content
+        assert "v011/cover-card-details-v0111.png" in content
         assert "v011/light-card-white-channel-details-v0110.png" in content
         assert "v011/light-card-details-v0110.png" in content
 

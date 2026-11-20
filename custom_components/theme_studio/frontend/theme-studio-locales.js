@@ -1,7 +1,7 @@
-import { MESSAGES as DE_MESSAGES } from "./locales/de.js?v=0.11.0";
-import { MESSAGES as EN_MESSAGES } from "./locales/en.js?v=0.11.0";
-import { MESSAGES as FR_MESSAGES } from "./locales/fr.js?v=0.11.0";
-import { MESSAGES as ES_MESSAGES } from "./locales/es.js?v=0.11.0";
+import { MESSAGES as DE_MESSAGES } from "./locales/de.js?v=0.11.1";
+import { MESSAGES as EN_MESSAGES } from "./locales/en.js?v=0.11.1";
+import { MESSAGES as FR_MESSAGES } from "./locales/fr.js?v=0.11.1";
+import { MESSAGES as ES_MESSAGES } from "./locales/es.js?v=0.11.1";
 
 const TRANSLATIONS = Object.freeze({
   de: DE_MESSAGES,
@@ -68,6 +68,10 @@ function translatePatterns(text, language) {
       [/^Schließfahrt läuft: (.+) Sekunden$/, "Closing run: $1 seconds"],
       [/^Motor gestoppt\. Gemessene Öffnungszeit: (.+) Sekunden\.$/, "Motor stopped. Measured opening time: $1 seconds."],
       [/^Motor gestoppt\. Gemessene Schließzeit: (.+) Sekunden\.$/, "Motor stopped. Measured closing time: $1 seconds."],
+      [/^Öffnungsfahrt läuft\. Am Endpunkt sofort stoppen\.$/, "Opening ride is running. Stop immediately at the endpoint."],
+      [/^Schließfahrt läuft\. Am Endpunkt sofort stoppen\.$/, "Closing ride is running. Stop immediately at the endpoint."],
+      [/^Öffnungszeit gespeichert: (.+) Sekunden\.$/, "Opening time saved: $1 seconds."],
+      [/^Schließzeit gespeichert: (.+) Sekunden\.$/, "Closing time saved: $1 seconds."],
       [/^Diese Karte benötigt eine (.+)\.-Entität\.$/, "This card requires a $1 entity."],
       [/^(.+) analysieren$/, "Analyze $1"]
     ],
@@ -105,6 +109,10 @@ function translatePatterns(text, language) {
       [/^Schließfahrt läuft: (.+) Sekunden$/, "Fermeture en cours : $1 secondes"],
       [/^Motor gestoppt\. Gemessene Öffnungszeit: (.+) Sekunden\.$/, "Moteur arrêté. Temps d’ouverture mesuré : $1 secondes."],
       [/^Motor gestoppt\. Gemessene Schließzeit: (.+) Sekunden\.$/, "Moteur arrêté. Temps de fermeture mesuré : $1 secondes."],
+      [/^Öffnungsfahrt läuft\. Am Endpunkt sofort stoppen\.$/, "Course d’ouverture en cours. Arrêtez immédiatement à la fin de course."],
+      [/^Schließfahrt läuft\. Am Endpunkt sofort stoppen\.$/, "Course de fermeture en cours. Arrêtez immédiatement à la fin de course."],
+      [/^Öffnungszeit gespeichert: (.+) Sekunden\.$/, "Temps d’ouverture enregistré : $1 secondes."],
+      [/^Schließzeit gespeichert: (.+) Sekunden\.$/, "Temps de fermeture enregistré : $1 secondes."],
       [/^Diese Karte benötigt eine (.+)\.-Entität\.$/, "Cette carte nécessite une entité $1."],
       [/^(.+) analysieren$/, "Analyser $1"]
     ],
@@ -142,6 +150,10 @@ function translatePatterns(text, language) {
       [/^Schließfahrt läuft: (.+) Sekunden$/, "Cierre en curso: $1 segundos"],
       [/^Motor gestoppt\. Gemessene Öffnungszeit: (.+) Sekunden\.$/, "Motor detenido. Tiempo de apertura medido: $1 segundos."],
       [/^Motor gestoppt\. Gemessene Schließzeit: (.+) Sekunden\.$/, "Motor detenido. Tiempo de cierre medido: $1 segundos."],
+      [/^Öffnungsfahrt läuft\. Am Endpunkt sofort stoppen\.$/, "Recorrido de apertura en curso. Detén inmediatamente al llegar al final."],
+      [/^Schließfahrt läuft\. Am Endpunkt sofort stoppen\.$/, "Recorrido de cierre en curso. Detén inmediatamente al llegar al final."],
+      [/^Öffnungszeit gespeichert: (.+) Sekunden\.$/, "Tiempo de apertura guardado: $1 segundos."],
+      [/^Schließzeit gespeichert: (.+) Sekunden\.$/, "Tiempo de cierre guardado: $1 segundos."],
       [/^Diese Karte benötigt eine (.+)\.-Entität\.$/, "Esta tarjeta necesita una entidad $1."],
       [/^(.+) analysieren$/, "Analizar $1"]
     ]

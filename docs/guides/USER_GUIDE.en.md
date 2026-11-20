@@ -1,14 +1,14 @@
-# Theme Studio 0.11.0 - User Guide
+# Theme Studio 0.11.1 - User Guide
 
 **English** | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [Download PDF](../downloads/theme-studio-user-guide-en.pdf) | [Latest release](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Report an issue](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.11.0**.
+This guide explains Theme Studio from installation through mobile-first visual dashboard design and safe management of legacy rules. It applies to version **0.11.1**.
 
 > Always create a complete Home Assistant backup before installation, updates, or major design changes.
 
-![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/v011/theme-studio-overview-v0110.png)
+![Theme Studio with profiles, fine-tuning, and dashboard preview](../images/v011/theme-studio-overview-v0111.png)
 
 ## Contents
 
@@ -27,6 +27,8 @@ This guide explains Theme Studio from installation through mobile-first visual d
 13. Troubleshooting and recommended workflow
 
 ### New in 0.11.0
+
+![Overview of Theme Studio energy, cover, light, and clock cards](../images/v011/device-cards-overview-v0110.png)
 
 Version 0.11.0 adds three optional, compact Theme Studio device cards. They follow the active Theme Studio design and provide focused controls without filling the dashboard with large permanent panels.
 
@@ -50,15 +52,15 @@ The light card offers direct switching and dimming. Its details dialog separates
 
 #### Universal cover card
 
-The cover card supports normal Home Assistant cover entities and includes open, stop, and close controls, an animated window view, an optional custom name, material and surface choices, and a guided travel-time calibration for devices without position feedback.
+The cover card supports normal Home Assistant cover entities and includes open, stop, and close controls, an animated window view, an optional custom name, material and surface choices, manually entered travel times, a passive actuator compatibility check, and a protected learning ride. During the passive check, the user operates only the wall switch; Theme Studio merely observes reported states and sends no movement commands. Once confirmed, an opening or closing learning ride can be started. “Endpoint reached & stop” stops the motor immediately and saves the measured time. A permanent emergency-stop control and a Home Assistant-side safety stop after no more than 60 seconds protect the learning ride.
 
-![Compact cover card with animated window view](../images/v011/cover-card-v0110.png)
+![Compact cover card with animated window view](../images/v011/cover-card-v0111.png)
 
-![Cover card editor with appearance and travel-time calibration](../images/v011/cover-card-editor-v0110.png)
+![Cover card editor with appearance, learning ride, and passive actuator check](../images/v011/cover-card-editor-v0111.png)
 
-![Cover details with clear open, stop, and close controls](../images/v011/cover-card-details-v0110.png)
+![Cover details with clear open, stop, and close controls](../images/v011/cover-card-details-v0111.png)
 
-> For cover entities without position feedback, the displayed percentage is an estimate based on the learned travel time. Physical end stops and the device remain authoritative. The Stop command requires the Home Assistant cover integration to support stopping.
+> For cover entities without position feedback, the displayed percentage is an estimate based on the manually entered travel time and is marked with `~`. Physical end stops and the device remain authoritative. After a direct command from the card, Home Assistant executes the movement and sends exactly one stop command after the calculated remaining travel time, even if the dashboard has been closed. Timed control is enabled only when the cover integration supports stopping and the passive actuator check has been confirmed. After a Home Assistant restart, any remembered unfinished movement is stopped as a precaution.
 
 ### New in 0.10.0
 

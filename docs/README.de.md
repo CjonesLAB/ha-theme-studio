@@ -4,9 +4,9 @@
 
 Theme Studio ist eine benutzerdefinierte Home-Assistant-Integration zum Erstellen, Vorschauen und direkten Anwenden eigener Oberflächendesigns.
 
-![Übersicht von Theme Studio 0.11.0](images/v011/theme-studio-overview-v0110.png)
+![Übersicht von Theme Studio 0.11.1](images/v011/theme-studio-overview-v0111.png)
 
-> Aktuelle Version: **0.11.0**
+> Aktuelle Version: **0.11.1**
 >
 > **Zugriff:** Theme Studio steht nur Home-Assistant-Administratoren zur Verfügung, da beim Anwenden eines Designs die erzeugte Theme-Datei geschrieben und die Home-Assistant-Themes neu geladen werden.
 >
@@ -27,21 +27,27 @@ Versionsverlauf: [Release-Hinweise](https://github.com/CjonesLAB/ha-theme-studio
 
 ## Funktionen
 
+### 0.11.1: zuverlässige Jalousiefahrten und abgesicherte Lernfahrt
+
+Bei Jalousien ohne Positionsrückmeldung wird die geschätzte Position jetzt über Home Assistant abgeglichen, damit Smartphone, Tablet und Desktop denselben Wert anzeigen. Zeitfahrten und Sicherheitsstopps laufen im Backend weiter, auch wenn das Dashboard geschlossen wurde. Richtungswechsel, Neuverbindungen, Neustarts, verzögerte Geräteantworten und fehlgeschlagene Stoppbefehle werden defensiv behandelt. Der Karteneditor bietet außerdem geschützte Öffnungs- und Schließlernfahrten mit ständig erreichbarem Not-Stopp und einem Sicherheitsstopp nach spätestens 60 Sekunden. Alle neuen Bedienelemente und Meldungen stehen auf Deutsch, Englisch, Französisch und Spanisch bereit.
+
 ### 0.11.0: kompakte Theme-Studio-Gerätekarten
 
-Drei optionale Dashboard-Karten verbinden direkte Bedienung mit einer platzsparenden Darstellung: eine Lichtkarte für Helligkeit, einen separaten Weißkanal, Farbtemperatur und einen vollständigen Farbkreis, eine Energie-Steckdose mit Live-Leistung, Energie und zugehörigen Messwerten sowie eine universelle Jalousie-/Rollladenkarte mit Auf, Stopp, Zu, visueller Positionsschätzung, Materialauswahl und Laufzeit-Kalibrierung für Geräte ohne Positionsrückmeldung. Erweiterte Einstellungen öffnen sich in einem deckenden, scrollbaren Detailfenster. Die Karten übernehmen die Home-Assistant-Designwerte und normalen Kartenoberflächen, damit Theme-Studio-Designs, Texturen und Effekte weiterhin funktionieren.
+![Theme-Studio-Karten für Energie, Jalousie, Licht und Uhr](images/v011/device-cards-overview-v0110.png)
+
+Drei optionale Dashboard-Karten verbinden direkte Bedienung mit einer platzsparenden Darstellung: eine Lichtkarte für Helligkeit, einen separaten Weißkanal, Farbtemperatur und einen vollständigen Farbkreis, eine Energie-Steckdose mit Live-Leistung, Energie und zugehörigen Messwerten sowie eine universelle Jalousie-/Rollladenkarte mit Auf, Stopp, Zu, visueller Positionsschätzung, Materialauswahl, manuell eingetragenen Laufzeiten und passiver Aktor-Prüfung. Die Prüfung beobachtet nur Home-Assistant-Zustände und sendet keine Fahrbefehle. Bei bestätigten Aktoren ohne Positionsrückmeldung überwacht Home Assistant selbst die Restfahrzeit und sendet auch bei geschlossenem Dashboard genau einen Stopp-Befehl. Erweiterte Einstellungen öffnen sich in einem deckenden, scrollbaren Detailfenster. Die Karten übernehmen die Home-Assistant-Designwerte und normalen Kartenoberflächen, damit Theme-Studio-Designs, Texturen und Effekte weiterhin funktionieren.
 
 | Energie-Steckdosen | Universelle Jalousie-/Rollladenkarte |
 | --- | --- |
-| ![Kompakte Steckdosenkarten mit Live-Leistung](images/v011/power-cards-v0110.png) | ![Kompakte Jalousie-/Rollladenkarte mit visueller Positionsschätzung](images/v011/cover-card-v0110.png) |
+| ![Kompakte Steckdosenkarten mit Live-Leistung](images/v011/power-cards-v0110.png) | ![Kompakte Jalousie-/Rollladenkarte mit visueller Positionsschätzung](images/v011/cover-card-v0111.png) |
 
 | Steckdosen-Details | Jalousie-/Rollladen-Details |
 | --- | --- |
-| ![Detailfenster der Steckdosenkarte mit Live-Leistung und elektrischen Messwerten](images/v011/power-card-details-v0110.png) | ![Detailfenster der Jalousie-/Rollladenkarte mit Öffnen, Stopp und Schließen](images/v011/cover-card-details-v0110.png) |
+| ![Detailfenster der Steckdosenkarte mit Live-Leistung und elektrischen Messwerten](images/v011/power-card-details-v0110.png) | ![Detailfenster der Jalousie-/Rollladenkarte mit Öffnen, Stopp und Schließen](images/v011/cover-card-details-v0111.png) |
 
-| Einrichtung, Darstellung und Laufzeitmessung der Jalousie-/Rollladenkarte |
+| Einrichtung, Darstellung und passive Aktor-Prüfung der Jalousie-/Rollladenkarte |
 | --- |
-| ![Editor der Jalousie-/Rollladenkarte mit eigenem Namen, Materialauswahl, Vorschau und geführter Laufzeitmessung](images/v011/cover-card-editor-v0110.png) |
+| ![Editor der Jalousie-/Rollladenkarte mit eigenem Namen, Materialauswahl, Vorschau, Lernfahrt und passiver Aktor-Prüfung](images/v011/cover-card-editor-v0111.png) |
 
 | Kompakte Lichtsteuerung | Separater Weißkanal | Farbsteuerung |
 | --- | --- | --- |

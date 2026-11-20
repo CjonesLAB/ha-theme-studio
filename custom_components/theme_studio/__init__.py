@@ -11,6 +11,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, FRONTEND_REVISION
+from .cover_motion import (
+    DATA_COVER_MOTION_MANAGER,
+    CoverMotionManager,
+    async_register_cover_motion_commands,
+)
 from .websocket import (
     async_refresh_theme_registry,
     async_register_websocket_commands,
@@ -73,6 +78,12 @@ async def async_setup_entry(
 
     hass.data.setdefault(DOMAIN, {})
 
+    if DATA_COVER_MOTION_MANAGER not in hass.data[DOMAIN]:
+        cover_motion_manager = CoverMotionManager(hass)
+        await cover_motion_manager.async_setup()
+        hass.data[DOMAIN][DATA_COVER_MOTION_MANAGER] = cover_motion_manager
+        cover_motion_manager.schedule_recovery()
+
     if not hass.data[DOMAIN].get(DATA_STATIC_PATH_REGISTERED):
         frontend_path = Path(__file__).parent / "frontend"
 
@@ -107,6 +118,7 @@ async def async_setup_entry(
 
     if not hass.data[DOMAIN].get(DATA_WEBSOCKET_REGISTERED):
         async_register_websocket_commands(hass)
+        async_register_cover_motion_commands(hass)
         hass.data[DOMAIN][DATA_WEBSOCKET_REGISTERED] = True
 
     try:
@@ -122,6 +134,13 @@ async def async_unload_entry(
     entry: ConfigEntry,
 ) -> bool:
     """Unload a Theme Studio config entry."""
+
+    cover_motion_manager = hass.data.get(DOMAIN, {}).pop(
+        DATA_COVER_MOTION_MANAGER,
+        None,
+    )
+    if cover_motion_manager is not None:
+        await cover_motion_manager.async_shutdown()
 
     frontend.async_remove_panel(hass, PANEL_URL)
     _remove_effects_modules(hass)

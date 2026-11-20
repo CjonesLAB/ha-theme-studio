@@ -23,9 +23,13 @@ async def test_unload_removes_owned_frontend_modules(monkeypatch) -> None:
             unrelated_url,
         }
     )
+    cover_motion_manager = SimpleNamespace(async_shutdown=AsyncMock())
     hass = SimpleNamespace(
         data={
-            DOMAIN: {theme_studio.DATA_EFFECTS_MODULE_REGISTERED: True},
+            DOMAIN: {
+                theme_studio.DATA_EFFECTS_MODULE_REGISTERED: True,
+                theme_studio.DATA_COVER_MOTION_MANAGER: cover_motion_manager,
+            },
             frontend.DATA_EXTRA_MODULE_URL: manager,
         }
     )
@@ -61,6 +65,8 @@ async def test_unload_removes_owned_frontend_modules(monkeypatch) -> None:
         theme_studio.DATA_EFFECTS_MODULE_REGISTERED
         not in hass.data[DOMAIN]
     )
+    cover_motion_manager.async_shutdown.assert_awaited_once()
+    assert theme_studio.DATA_COVER_MOTION_MANAGER not in hass.data[DOMAIN]
 
 
 async def test_setup_registers_frontend_resources_only_once(monkeypatch) -> None:
@@ -78,6 +84,12 @@ async def test_setup_registers_frontend_resources_only_once(monkeypatch) -> None
     add_module = Mock()
     register_panel = AsyncMock()
     register_websockets = Mock()
+    register_cover_motion = Mock()
+    cover_motion_manager = SimpleNamespace(
+        async_setup=AsyncMock(),
+        schedule_recovery=Mock(),
+    )
+    cover_motion_manager_factory = Mock(return_value=cover_motion_manager)
     refresh_registry = AsyncMock()
     monkeypatch.setattr(theme_studio.frontend, "add_extra_js_url", add_module)
     monkeypatch.setattr(
@@ -89,6 +101,16 @@ async def test_setup_registers_frontend_resources_only_once(monkeypatch) -> None
         theme_studio,
         "async_register_websocket_commands",
         register_websockets,
+    )
+    monkeypatch.setattr(
+        theme_studio,
+        "async_register_cover_motion_commands",
+        register_cover_motion,
+    )
+    monkeypatch.setattr(
+        theme_studio,
+        "CoverMotionManager",
+        cover_motion_manager_factory,
     )
     monkeypatch.setattr(
         theme_studio,
@@ -109,6 +131,10 @@ async def test_setup_registers_frontend_resources_only_once(monkeypatch) -> None
     register_static.assert_awaited_once()
     register_panel.assert_awaited_once()
     register_websockets.assert_called_once_with(hass)
+    register_cover_motion.assert_called_once_with(hass)
+    cover_motion_manager_factory.assert_called_once_with(hass)
+    cover_motion_manager.async_setup.assert_awaited_once()
+    cover_motion_manager.schedule_recovery.assert_called_once_with()
     assert add_module.call_args_list == [
         call(hass, theme_studio.EFFECTS_MODULE_URL),
         call(hass, theme_studio.CLOCK_CARD_MODULE_URL),
@@ -128,6 +154,7 @@ async def test_setup_survives_theme_registry_refresh_failure(
                 theme_studio.DATA_STATIC_PATH_REGISTERED: True,
                 theme_studio.DATA_EFFECTS_MODULE_REGISTERED: True,
                 theme_studio.DATA_WEBSOCKET_REGISTERED: True,
+                theme_studio.DATA_COVER_MOTION_MANAGER: SimpleNamespace(),
             },
             "frontend_panels": {theme_studio.PANEL_URL: object()},
         }

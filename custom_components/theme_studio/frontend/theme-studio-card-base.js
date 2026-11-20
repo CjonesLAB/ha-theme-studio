@@ -1,7 +1,7 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.11.0";
+} from "./theme-studio-locales.js?v=0.11.1";
 
 const ENTITY_ID_PATTERN = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 
@@ -80,6 +80,37 @@ export function normalizeCoverTravelTime(value) {
   const seconds = Number(value);
   if (!Number.isFinite(seconds) || seconds <= 0) return null;
   return Math.min(600, Math.round(seconds * 10) / 10);
+}
+
+export function observeCoverCompatibilityTest(observation = {}, previousState = "", nextState = "") {
+  const result = {
+    opening: Boolean(observation?.opening),
+    closing: Boolean(observation?.closing),
+    stopped: Boolean(observation?.stopped),
+  };
+  const previous = String(previousState || "").toLowerCase();
+  const next = String(nextState || "").toLowerCase();
+  if (next === "opening") result.opening = true;
+  if (next === "closing") result.closing = true;
+  if (["opening", "closing"].includes(previous) && next === "stopped") {
+    result.stopped = true;
+  }
+  return result;
+}
+
+export function isCoverCompatibilityConfirmed(config = {}, entityId = "") {
+  const results = config?.cover_test_results || {};
+  const confirmedAt = Date.parse(String(config?.cover_test_confirmed_at || ""));
+  return Boolean(
+    entityId
+    && config?.cover_test_entity === entityId
+    && config?.cover_test_confirmed === true
+    && Number(config?.cover_test_version) === 1
+    && Number.isFinite(confirmedAt)
+    && results.opening === true
+    && results.closing === true
+    && results.stopped === true
+  );
 }
 
 const COVER_MATERIALS = new Set(["theme", "aluminum", "plastic", "wood"]);

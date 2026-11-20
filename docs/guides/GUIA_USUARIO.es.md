@@ -1,14 +1,14 @@
-# Theme Studio 0.11.0 - Guía de usuario
+# Theme Studio 0.11.1 - Guía de usuario
 
 [English](USER_GUIDE.en.md) | [Deutsch](BENUTZERHANDBUCH.de.md) | [Français](GUIDE_UTILISATEUR.fr.md) | **Español**
 
 [Descargar PDF](../downloads/theme-studio-guia-usuario-es.pdf) | [Última versión](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Informar de un problema](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.11.0**.
+Esta guía explica Theme Studio, desde la instalación hasta el diseño visual móvil del panel y la gestión segura de las reglas heredadas. Se aplica a la versión **0.11.1**.
 
 > Crea siempre una copia de seguridad completa de Home Assistant antes de instalar, actualizar o realizar cambios importantes en un diseño.
 
-![Theme Studio con perfiles, ajustes y vista previa](../images/v011/theme-studio-overview-v0110.png)
+![Theme Studio con perfiles, ajustes y vista previa](../images/v011/theme-studio-overview-v0111.png)
 
 ## Contenido
 
@@ -27,6 +27,8 @@ Esta guía explica Theme Studio, desde la instalación hasta el diseño visual m
 13. Solución de problemas y método recomendado
 
 ### Novedades de la versión 0.11.0
+
+![Vista general de las tarjetas Theme Studio de energía, persiana, luz y reloj](../images/v011/device-cards-overview-v0110.png)
 
 La versión 0.11.0 añade tres tarjetas de dispositivo opcionales y compactas de Theme Studio. Siguen el diseño activo y ofrecen controles específicos sin ocupar de forma permanente una gran parte del panel.
 
@@ -50,15 +52,15 @@ La tarjeta de luz permite encender, apagar y regular directamente. Su diálogo s
 
 #### Tarjeta universal de persiana
 
-La tarjeta de persiana admite entidades Cover normales de Home Assistant. Incluye abrir, detener y cerrar, una ventana animada, un nombre opcional, selección de material y superficie, y una calibración guiada del tiempo de recorrido para dispositivos sin información de posición.
+La tarjeta de persiana admite entidades Cover normales de Home Assistant. Incluye abrir, detener y cerrar, una ventana animada, un nombre opcional, selección de material y superficie, tiempos de recorrido introducidos manualmente, una comprobación pasiva del actuador y un recorrido de aprendizaje protegido. Durante la comprobación pasiva, el usuario acciona únicamente el interruptor de pared; Theme Studio solo observa los estados comunicados y no envía órdenes de movimiento. Tras confirmarla se puede iniciar un recorrido de apertura o cierre. «Final alcanzado y detener» detiene inmediatamente el motor y guarda el tiempo medido. Una parada de emergencia siempre disponible y una parada de seguridad gestionada por Home Assistant después de un máximo de 60 segundos protegen el aprendizaje.
 
-![Tarjeta de persiana compacta con ventana animada](../images/v011/cover-card-v0110.png)
+![Tarjeta de persiana compacta con ventana animada](../images/v011/cover-card-v0111.png)
 
-![Editor de la tarjeta de persiana con apariencia y calibración del recorrido](../images/v011/cover-card-editor-v0110.png)
+![Editor de la tarjeta de persiana con apariencia, recorrido de aprendizaje y comprobación pasiva del actuador](../images/v011/cover-card-editor-v0111.png)
 
-![Detalles de la persiana con controles claros para abrir, detener y cerrar](../images/v011/cover-card-details-v0110.png)
+![Detalles de la persiana con controles claros para abrir, detener y cerrar](../images/v011/cover-card-details-v0111.png)
 
-> En entidades Cover sin información de posición, el porcentaje mostrado es una estimación basada en el tiempo de recorrido aprendido. Los finales de carrera físicos y el propio dispositivo siguen siendo la referencia. La orden de parada requiere que la integración Cover de Home Assistant admita la función de detener.
+> En entidades Cover sin información de posición, el porcentaje mostrado es una estimación basada en el tiempo de recorrido introducido manualmente y se marca con `~`. Los finales de carrera físicos y el propio dispositivo siguen siendo la referencia. Después de una orden directa desde la tarjeta, Home Assistant ejecuta el movimiento y envía exactamente una orden de parada al terminar el tiempo restante calculado, aunque el panel ya se haya cerrado. El control temporizado solo se habilita si la integración Cover admite la parada y se ha confirmado la prueba pasiva del actuador. Tras reiniciar Home Assistant, cualquier movimiento pendiente guardado se detiene como medida de precaución.
 
 ### Novedades de la versión 0.10.0
 

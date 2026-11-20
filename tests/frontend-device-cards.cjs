@@ -74,6 +74,257 @@ async function importSource(source) {
   );
   const helpers = await importSource(testableBaseSource);
   const lightModule = await import(`${pathToFileURL(path.join(frontend, "theme-studio-light-card.js")).href}?test=temperature-presets`);
+  const coverModule = await import(`${pathToFileURL(path.join(frontend, "theme-studio-cover-card.js")).href}?test=motion-policy`);
+  assert.equal(
+    coverModule.learningRideFinishFailureMessage({
+      code: "cover_learning_finish_failed",
+      message: "No learning ride is active for this cover",
+    }),
+    "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten.",
+    "an expired learning ride must explain the server-side safety timeout"
+  );
+  assert.equal(
+    coverModule.learningRideFinishFailureMessage(new Error("offline")),
+    "Stopp oder Speicherung fehlgeschlagen. Bitte Not-Stopp drücken.",
+    "other learning errors must retain the emergency-stop warning"
+  );
+  assert.equal(coverModule.readCoverPercent(null), null, "a missing backend position must stay unknown");
+  assert.equal(coverModule.readCoverPercent(undefined), null, "an undefined backend position must stay unknown");
+  assert.equal(coverModule.readCoverPercent(""), null, "an empty backend position must stay unknown");
+  assert.equal(coverModule.readCoverPercent("   "), null, "a blank backend position must stay unknown");
+  assert.equal(coverModule.readCoverPercent(false), null, "a boolean backend position must stay unknown");
+  assert.equal(coverModule.readCoverPercent("63"), 63, "numeric backend positions must be accepted");
+  assert.equal(coverModule.readCoverPercent(117), 100, "backend positions must be clamped safely");
+  assert.equal(coverModule.readCoverPercent("invalid"), null, "invalid backend positions must stay unknown");
+  const subscriptionConnection = {};
+  const failedSubscription = {
+    connection: subscriptionConnection,
+    entity: "cover.terrace",
+    at: 10_000,
+  };
+  assert.equal(
+    coverModule.shouldThrottlePositionSubscriptionFailure(
+      failedSubscription,
+      subscriptionConnection,
+      "cover.terrace",
+      39_999
+    ),
+    true,
+    "a failed position subscription must not be retried on every hass update"
+  );
+  assert.equal(
+    coverModule.shouldThrottlePositionSubscriptionFailure(
+      failedSubscription,
+      subscriptionConnection,
+      "cover.terrace",
+      40_000
+    ),
+    false,
+    "a failed position subscription may be retried after the cooldown"
+  );
+  assert.equal(
+    coverModule.shouldThrottlePositionSubscriptionFailure(
+      failedSubscription,
+      {},
+      "cover.terrace",
+      20_000
+    ),
+    false,
+    "a new Home Assistant connection must not inherit an old retry cooldown"
+  );
+  assert.equal(
+    coverModule.shouldSuppressCoverMotionRestart(
+      { motion_stopped: true },
+      "opening"
+    ),
+    true,
+    "a final backend position must suppress a delayed opening state"
+  );
+  assert.equal(
+    coverModule.shouldSuppressCoverMotionRestart(
+      { initial: true },
+      "opening"
+    ),
+    false,
+    "an initial subscription snapshot must not be mistaken for a motor stop"
+  );
+  assert.equal(
+    coverModule.shouldSuppressCoverMotionRestart(
+      { motion_stopped: true },
+      "stopped"
+    ),
+    false,
+    "a settled stopped state does not need restart suppression"
+  );
+  const fallbackStateA = { state: "stopped", attributes: {} };
+  const fallbackStateB = { state: "opening", attributes: {} };
+  assert.equal(
+    coverModule.shouldRefreshCoverPositionFallback(
+      fallbackStateA,
+      fallbackStateB,
+      false
+    ),
+    true,
+    "a state change without a live subscription must refresh the backend fallback"
+  );
+  assert.equal(
+    coverModule.shouldRefreshCoverPositionFallback(
+      fallbackStateA,
+      fallbackStateB,
+      true
+    ),
+    false,
+    "a live subscription must avoid redundant fallback polling"
+  );
+  assert.equal(
+    coverModule.shouldRefreshCoverPositionFallback(
+      fallbackStateA,
+      { state: "opening", attributes: { current_position: 42 } },
+      false
+    ),
+    false,
+    "covers with native position feedback never need the estimate fallback"
+  );
+  const failedPositionSyncCard = new coverModule.ThemeStudioCoverCard();
+  failedPositionSyncCard._config = { entity: "cover.terrace" };
+  let failedPositionSyncCalls = 0;
+  const failedPositionSyncConnection = {
+    sendMessagePromise: () => {
+      failedPositionSyncCalls += 1;
+      return Promise.reject(new Error("offline"));
+    },
+  };
+  failedPositionSyncCard._hass = {
+    connection: failedPositionSyncConnection,
+  };
+  failedPositionSyncCard._renderPreservingDialog = () => {};
+  await failedPositionSyncCard._syncBackendPosition();
+  assert.equal(
+    failedPositionSyncCard._positionSyncEntity,
+    "",
+    "a failed position_get must remain retryable"
+  );
+  assert.equal(
+    failedPositionSyncCard._positionSyncConnection,
+    null,
+    "a failed position_get must not mark its connection as synchronized"
+  );
+  await failedPositionSyncCard._syncBackendPosition();
+  assert.equal(
+    failedPositionSyncCalls,
+    1,
+    "a failed position_get must be throttled instead of retrying on every render"
+  );
+  assert.equal(
+    failedPositionSyncCard._positionSyncFailure?.connection,
+    failedPositionSyncConnection,
+    "a failed position_get must remember the failed connection"
+  );
+  failedPositionSyncCard._positionSyncFailure.at -= 30000;
+  await failedPositionSyncCard._syncBackendPosition();
+  assert.equal(
+    failedPositionSyncCalls,
+    2,
+    "a failed position_get must become retryable after the cooldown"
+  );
+
+  const disconnectedPositionSyncCard = new coverModule.ThemeStudioCoverCard();
+  disconnectedPositionSyncCard._config = { entity: "cover.terrace" };
+  disconnectedPositionSyncCard._hass = {
+    connection: { sendMessagePromise: () => Promise.resolve({ position: 42 }) },
+  };
+  let disconnectedPositionSyncRenders = 0;
+  disconnectedPositionSyncCard._renderPreservingDialog = () => {
+    disconnectedPositionSyncRenders += 1;
+  };
+  await disconnectedPositionSyncCard._syncBackendPosition();
+  assert.equal(
+    disconnectedPositionSyncRenders,
+    0,
+    "a completed position_get must not render a disconnected card"
+  );
+  const unknownStopCard = new coverModule.ThemeStudioCoverCard();
+  unknownStopCard._config = { entity: "cover.terrace" };
+  Object.defineProperty(unknownStopCard, "isConnected", { value: true });
+  let positionEventHandler;
+  unknownStopCard._hass = {
+    states: { "cover.terrace": { state: "closing", attributes: {} } },
+    connection: {
+      subscribeMessage: (handler) => {
+        positionEventHandler = handler;
+        return Promise.resolve(() => {});
+      },
+    },
+  };
+  unknownStopCard._coverMotion = {
+    direction: "closing",
+    startPosition: 100,
+    startedAt: performance.now(),
+    seenMovingState: true,
+  };
+  let unknownStopRenders = 0;
+  unknownStopCard._renderPreservingDialog = () => {
+    unknownStopRenders += 1;
+  };
+  await unknownStopCard._subscribePositionUpdates();
+  positionEventHandler({
+    entity_id: "cover.terrace",
+    position: null,
+    motion_stopped: true,
+    stop_failed: true,
+  });
+  assert.equal(
+    unknownStopCard._coverMotion,
+    null,
+    "a backend safety stop must end the animation even when the position is unknown"
+  );
+  assert.equal(
+    unknownStopCard._suppressStart,
+    true,
+    "an unknown safety stop must suppress a delayed moving state"
+  );
+  assert.equal(
+    unknownStopRenders,
+    1,
+    "an unknown safety stop must refresh the card"
+  );
+  assert.equal(
+    unknownStopCard._coverFeedback,
+    "Stopp fehlgeschlagen. Bitte sofort am Wandschalter stoppen.",
+    "a final safety-stop failure must visibly warn the user"
+  );
+  assert.equal(coverModule.coverMotionTransition({
+    state: "stopped",
+    hasMotion: true,
+    seenMovingState: false,
+    canEstimate: true,
+  }), "continue", "a receiver without moving states must not cancel a backend-timed animation");
+  assert.equal(coverModule.coverMotionTransition({
+    state: "stopped",
+    hasMotion: true,
+    seenMovingState: true,
+    canEstimate: true,
+  }), "stop", "a real stopped transition after movement must stop the animation");
+  assert.equal(coverModule.coverMotionTransition({
+    state: "opening",
+    hasMotion: false,
+    estimatedPosition: 100,
+    canEstimate: true,
+  }), "idle", "a delayed opening state must not restart animation at the open endpoint");
+  assert.equal(coverModule.coverMotionTransition({
+    state: "closing",
+    hasMotion: true,
+    seenMovingState: true,
+    motionDirection: "opening",
+    canEstimate: true,
+  }), "restart", "a physical direction reversal must restart the estimate in the reported direction");
+  assert.equal(coverModule.coverMotionTransition({
+    state: "opening",
+    hasMotion: false,
+    suppressStart: true,
+    estimatedPosition: 40,
+    canEstimate: true,
+  }), "idle", "a stale moving state must not restart animation after a stop click");
   assert.deepEqual(
     lightModule.lightTemperaturePresets(2000, 6500),
     { minKelvin: 2000, maxKelvin: 6500, warmKelvin: 2700, coolKelvin: 6500 },
@@ -214,26 +465,45 @@ async function importSource(source) {
     }),
     { material: "theme", texture: "smooth", color: "" }
   );
-  let confirmStop;
-  let stopConfirmed = false;
-  const confirmedTravelTime = helpers.stopCoverAndConfirmTravelTime(
-    () => new Promise((resolve) => { confirmStop = resolve; }),
-    24.64
-  ).then((seconds) => {
-    stopConfirmed = true;
-    return seconds;
-  });
-  await Promise.resolve();
-  assert.equal(stopConfirmed, false);
-  confirmStop();
-  assert.equal(await confirmedTravelTime, 24.6);
-  await assert.rejects(
-    () => helpers.stopCoverAndConfirmTravelTime(
-      () => Promise.reject(new Error("Stopp fehlgeschlagen")),
-      12
-    ),
-    /Stopp fehlgeschlagen/
+  let compatibility = helpers.observeCoverCompatibilityTest({}, "stopped", "stopped");
+  assert.deepEqual(compatibility, { opening: false, closing: false, stopped: false });
+  compatibility = helpers.observeCoverCompatibilityTest(compatibility, "stopped", "opening");
+  assert.deepEqual(compatibility, { opening: true, closing: false, stopped: false });
+  compatibility = helpers.observeCoverCompatibilityTest(compatibility, "opening", "stopped");
+  assert.deepEqual(compatibility, { opening: true, closing: false, stopped: true });
+  compatibility = helpers.observeCoverCompatibilityTest(compatibility, "stopped", "closing");
+  assert.deepEqual(compatibility, { opening: true, closing: true, stopped: true });
+  assert.deepEqual(
+    helpers.observeCoverCompatibilityTest({}, "opening", "unavailable"),
+    { opening: false, closing: false, stopped: false }
   );
+  assert.equal(helpers.isCoverCompatibilityConfirmed({
+    cover_test_entity: "cover.easywave",
+    cover_test_confirmed: true,
+    cover_test_confirmed_at: "2026-11-19T12:00:00.000Z",
+    cover_test_version: 1,
+    cover_test_results: { opening: true, closing: true, stopped: true },
+  }, "cover.easywave"), true);
+  assert.equal(helpers.isCoverCompatibilityConfirmed({
+    cover_test_entity: "cover.other",
+    cover_test_confirmed: true,
+    cover_test_confirmed_at: "2026-11-19T12:00:00.000Z",
+    cover_test_version: 1,
+    cover_test_results: { opening: true, closing: true, stopped: true },
+  }, "cover.easywave"), false);
+  assert.equal(helpers.isCoverCompatibilityConfirmed({
+    cover_test_entity: "cover.easywave",
+    cover_test_confirmed: true,
+    cover_test_confirmed_at: "2026-11-19T12:00:00.000Z",
+    cover_test_version: 1,
+    cover_test_results: { opening: true, closing: false, stopped: true },
+  }, "cover.easywave"), false);
+  assert.equal(helpers.isCoverCompatibilityConfirmed({
+    cover_test_entity: "cover.easywave",
+    cover_test_confirmed: true,
+    cover_test_version: 1,
+    cover_test_results: { opening: true, closing: true, stopped: true },
+  }, "cover.easywave"), false);
   assert.equal(helpers.calculateCoverPosition({ reportedPosition: 63 }), 63);
   assert.equal(helpers.calculateCoverPosition({ state: "closed", estimatedPosition: 70 }), 0);
   assert.equal(helpers.calculateCoverPosition({ state: "open", estimatedPosition: 20 }), 20);
@@ -320,9 +590,9 @@ async function importSource(source) {
   );
 
   assert.ok(
-    loaderSource.includes('import "./theme-studio-light-card.js?v=0.11.0"')
-      && loaderSource.includes('import "./theme-studio-power-card.js?v=0.11.0"')
-      && loaderSource.includes('import "./theme-studio-cover-card.js?v=0.11.0"'),
+    loaderSource.includes('import "./theme-studio-light-card.js?v=0.11.1"')
+      && loaderSource.includes('import "./theme-studio-power-card.js?v=0.11.1"')
+      && loaderSource.includes('import "./theme-studio-cover-card.js?v=0.11.1"'),
     "the registered loader must import all three versioned cards"
   );
 
@@ -492,18 +762,22 @@ async function importSource(source) {
     "covers without position feedback must show an animated estimate instead of pretending to be closed"
   );
   assert.ok(
-    coverSource.includes("Laufzeiten einlernen")
-      && coverSource.includes("Öffnungsfahrt starten")
-      && coverSource.includes("Oben erreicht")
-      && coverSource.includes("Schließfahrt starten")
-      && coverSource.includes("Unten erreicht")
-      && coverSource.includes('_callCoverService("stop_cover")')
-      && coverSource.includes("stopCoverAndConfirmTravelTime"),
-    "the cover editor must offer a user-controlled travel-time learning run"
+    coverSource.includes("Passive Aktor-Prüfung")
+      && coverSource.includes("Theme Studio sendet während dieses Tests keine Fahrbefehle")
+      && coverSource.includes("data-start-compatibility-test")
+      && coverSource.includes("data-confirm-compatibility-test")
+      && coverSource.includes("cover_test_confirmed_at"),
+    "the cover editor must provide a passive, explicitly confirmed compatibility test"
+  );
+  assert.ok(
+    !coverSource.includes("_callCoverService(")
+      && !coverSource.includes("stopCoverAndConfirmTravelTime")
+      && !coverSource.includes("Öffnungsfahrt starten"),
+    "the compatibility test must never start or stop a motor"
   );
   assert.ok(
     coverSource.includes("opening_time") && coverSource.includes("closing_time"),
-    "learned opening and closing times must be stored separately"
+    "manual opening and closing times must be stored separately"
   );
   assert.ok(
     coverSource.includes("background:transparent;")
@@ -532,10 +806,25 @@ async function importSource(source) {
     "the cover visualization must keep a recognizable window frame visible when the slats are open"
   );
   assert.ok(
-    coverSource.includes("_motionStopTimer")
-      && coverSource.includes("calculateCoverRemainingTravelTime")
-      && coverSource.includes('_callService("cover", "stop_cover")'),
-    "a card-initiated movement must send stop_cover when the learned travel time expires"
+    !coverSource.includes("_motionStopTimer")
+      && !coverSource.includes("window.setTimeout"),
+    "the card must not own a browser stop timer"
+  );
+  assert.ok(
+    coverSource.includes('type: "theme_studio/cover/timed_move"')
+      && coverSource.includes('type: "theme_studio/cover/stop"')
+      && coverSource.includes("sendMessagePromise"),
+    "positionless confirmed covers must use the Home Assistant-side stop timer"
+  );
+  assert.ok(
+    coverSource.includes("Laufzeiten automatisch einlernen")
+      && coverSource.includes("Öffnungsfahrt einlernen")
+      && coverSource.includes("Schließfahrt einlernen")
+      && coverSource.includes("Endpunkt erreicht & stoppen")
+      && coverSource.includes("Not-Stopp")
+      && coverSource.includes('type: "theme_studio/cover/learning_start"')
+      && coverSource.includes('type: "theme_studio/cover/learning_finish"'),
+    "the cover editor must expose a backend-monitored learning ride"
   );
   assert.ok(
     coverSource.includes("COVER_POSITION_STORAGE_PREFIX")
@@ -550,6 +839,100 @@ async function importSource(source) {
       && coverSource.includes("sameEntity")
       && coverSource.includes("this._rememberEstimatedPosition(position"),
     "a stale configured estimate must not replace the last known position for the same cover"
+  );
+  assert.ok(
+    coverSource.includes('type: "theme_studio/cover/position_get"')
+      && coverSource.includes('type: "theme_studio/cover/position_set"')
+      && coverSource.includes("_syncBackendPosition")
+      && coverSource.includes("_positionSyncGeneration"),
+    "positionless covers must share their estimate through Home Assistant instead of browser storage alone"
+  );
+  assert.ok(
+    coverSource.includes("full_duration: fullTravelTime")
+      && coverSource.includes("fallback_position: startPosition")
+      && !coverSource.includes("duration: Math.max(0.1, remaining)"),
+    "the backend must calculate remaining travel from its shared position"
+  );
+  assert.ok(
+    coverSource.includes("this._config.estimated_position = position")
+      && coverSource.includes("rememberCoverPosition(ride.entity, position, true)"),
+    "finishing a learning ride must synchronize the learned endpoint"
+  );
+  assert.ok(
+    coverSource.includes("Home Assistant ist nicht verbunden. Bitte die Jalousie sofort am Wandschalter stoppen.")
+      && coverSource.includes("_suppressStart")
+      && coverSource.includes("motionDirection")
+      && coverSource.includes("seenMovingState"),
+    "disconnects and delayed state updates must not silently stop or freeze the safety UI"
+  );
+  assert.ok(
+    coverSource.includes("Zum erneuten Bestätigen bitte die passive Prüfung neu starten.")
+      && coverSource.includes("event.target.checked = false"),
+    "the compatibility checkbox must immediately reflect a rejected confirmation"
+  );
+  assert.ok(
+    coverSource.includes("Position konnte nicht gespeichert werden.")
+      && coverSource.includes("Stopp fehlgeschlagen. Bitte sofort am Wandschalter stoppen."),
+    "position sync and emergency stop failures must be visible to the user"
+  );
+  assert.ok(
+    coverSource.includes("this._learningEpoch")
+      && coverSource.includes("epoch !== this._learningEpoch")
+      && !coverSource.includes("if (this._learningBusy) return;"),
+    "an emergency stop must invalidate pending learning responses instead of being blocked by them"
+  );
+  assert.ok(
+    coverSource.includes("this._learningCommandEntity")
+      && coverSource.includes('type: "theme_studio/cover/stop"')
+      && coverSource.includes("disconnectedCallback()"),
+    "closing the editor during a pending or active learning ride must request a stop"
+  );
+  assert.ok(
+    coverSource.includes("this._coverMotion = null")
+      && coverSource.includes('this._positionSyncEntity = ""')
+      && coverSource.includes("_lastHassConnection"),
+    "reconnects must reload the shared backend estimate without polling on every state update"
+  );
+  assert.ok(
+    coverSource.includes('type: "theme_studio/cover/subscribe_position"')
+      && coverSource.includes("subscribeMessage")
+      && coverSource.includes("_positionSubscriptionPendingConnection")
+      && coverSource.includes("_positionSubscriptionFailed")
+      && coverSource.includes("_lastHassConnection"),
+    "backend position changes must use one stable, non-admin-compatible subscription per connection"
+  );
+  assert.ok(
+    coverSource.includes("event?.elapsed")
+      && !coverSource.includes("event?.started_at")
+      && !coverSource.includes("Date.now() / 1000"),
+    "cover animation synchronization must not compare the browser clock with the Home Assistant server clock"
+  );
+  assert.ok(
+    coverSource.includes("get hass() { return this._hass; }")
+      && coverSource.includes("this._learningBusy = false")
+      && coverSource.includes("this._suppressStart = false"),
+    "reused editors and entity changes must not retain stale busy or motion state"
+  );
+  assert.ok(
+    coverSource.includes("const configuredEstimate = readCoverPercent(config.estimated_position)")
+      && coverSource.includes("const tilt = readCoverPercent(state.attributes?.current_tilt_position)"),
+    "empty configured estimates and tilt values must remain unknown"
+  );
+  assert.ok(
+    coverSource.includes("Befehl fehlgeschlagen.")
+      && coverSource.includes("_runCoverCommand"),
+    "position, preset and tilt command failures must be handled visibly"
+  );
+  assert.ok(
+    coverSource.includes("data-sync-position")
+      && coverSource.includes("Als geschlossen markieren")
+      && coverSource.includes("Als geöffnet markieren"),
+    "users must be able to safely resynchronize a position without moving the motor"
+  );
+  assert.ok(
+    coverSource.includes("delete this._config.cover_test_confirmed")
+      && coverSource.includes("if (!event.target.checked)"),
+    "a previously granted compatibility confirmation must be revocable"
   );
 
   console.log("Theme Studio device card checks passed.");

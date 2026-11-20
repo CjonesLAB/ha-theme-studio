@@ -6,6 +6,7 @@
   ],
   "config_flow": true,
   "dependencies": [
+    "cover",
     "frontend",
     "http",
     "panel_custom"
@@ -16,5 +17,5 @@
   "issue_tracker": "https://github.com/CjonesLAB/ha-theme-studio/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.11.0"
+  "version": "0.11.1"
 }

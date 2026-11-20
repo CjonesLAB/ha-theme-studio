@@ -4,9 +4,9 @@
 
 Theme Studio es una integración personalizada para Home Assistant que permite crear, previsualizar y aplicar directamente tus propios diseños de interfaz.
 
-![Vista general de Theme Studio 0.11.0](images/v011/theme-studio-overview-v0110.png)
+![Vista general de Theme Studio 0.11.1](images/v011/theme-studio-overview-v0111.png)
 
-> Versión actual: **0.11.0**
+> Versión actual: **0.11.1**
 >
 > **Acceso:** Theme Studio está disponible solo para administradores de Home Assistant porque al aplicar un diseño se escribe el archivo de tema generado y se recargan los temas de Home Assistant.
 >
@@ -27,21 +27,27 @@ Historial de versiones: [Notas de las versiones](https://github.com/CjonesLAB/ha
 
 ## Funciones
 
+### 0.11.1: movimientos fiables de persianas y recorrido de aprendizaje protegido
+
+En persianas sin información de posición, la posición estimada se sincroniza ahora mediante Home Assistant para que el teléfono, la tableta y el ordenador muestren el mismo valor. Los movimientos temporizados y las paradas de seguridad continúan en el backend aunque se cierre el panel. Los cambios de dirección, las reconexiones, los reinicios, las respuestas tardías del dispositivo y los fallos de parada se gestionan de forma defensiva. El editor de la tarjeta también incorpora recorridos protegidos de aprendizaje para apertura y cierre, con una parada de emergencia siempre disponible y una parada de seguridad después de un máximo de 60 segundos. Todos los controles y mensajes nuevos están disponibles en alemán, inglés, francés y español.
+
 ### 0.11.0: tarjetas compactas de Theme Studio
 
-Tres tarjetas opcionales ofrecen controles directos sin ocupar demasiado espacio: una tarjeta de luz con brillo, canal blanco dedicado, temperatura de color y rueda cromática completa; un enchufe con potencia en directo, energía y medidas eléctricas relacionadas; y una tarjeta universal de persiana con abrir, detener, cerrar, estimación visual de posición, materiales y calibración del tiempo de recorrido para dispositivos sin información de posición. Los ajustes avanzados se abren en un diálogo opaco y desplazable. Las tarjetas utilizan las variables y superficies de Home Assistant para conservar los diseños, las texturas y los efectos de Theme Studio.
+![Tarjetas Theme Studio de energía, persiana, luz y reloj](images/v011/device-cards-overview-v0110.png)
+
+Tres tarjetas opcionales ofrecen controles directos sin ocupar demasiado espacio: una tarjeta de luz con brillo, canal blanco dedicado, temperatura de color y rueda cromática completa; un enchufe con potencia en directo, energía y medidas eléctricas relacionadas; y una tarjeta universal de persiana con abrir, detener, cerrar, estimación visual de posición, materiales, tiempos de recorrido introducidos manualmente y comprobación pasiva del actuador. La comprobación solo observa los estados de Home Assistant y no envía órdenes de movimiento. Para actuadores confirmados sin información de posición, Home Assistant supervisa el tiempo restante y envía exactamente una orden de parada aunque el panel esté cerrado. Los ajustes avanzados se abren en un diálogo opaco y desplazable. Las tarjetas utilizan las variables y superficies de Home Assistant para conservar los diseños, las texturas y los efectos de Theme Studio.
 
 | Enchufes con control de energía | Control universal de persiana |
 | --- | --- |
-| ![Tarjetas compactas de enchufe con potencia en directo](images/v011/power-cards-v0110.png) | ![Tarjeta compacta de persiana con estimación visual de posición](images/v011/cover-card-v0110.png) |
+| ![Tarjetas compactas de enchufe con potencia en directo](images/v011/power-cards-v0110.png) | ![Tarjeta compacta de persiana con estimación visual de posición](images/v011/cover-card-v0111.png) |
 
 | Detalles del enchufe | Detalles de la persiana |
 | --- | --- |
-| ![Diálogo del enchufe con potencia en directo y medidas eléctricas](images/v011/power-card-details-v0110.png) | ![Diálogo de la persiana con controles para abrir, detener y cerrar](images/v011/cover-card-details-v0110.png) |
+| ![Diálogo del enchufe con potencia en directo y medidas eléctricas](images/v011/power-card-details-v0110.png) | ![Diálogo de la persiana con controles para abrir, detener y cerrar](images/v011/cover-card-details-v0111.png) |
 
-| Configuración, apariencia y calibración del recorrido de la persiana |
+| Configuración, apariencia y comprobación pasiva del actuador de la persiana |
 | --- |
-| ![Editor de la tarjeta de persiana con nombre personalizado, selección de material, vista previa y calibración guiada del recorrido](images/v011/cover-card-editor-v0110.png) |
+| ![Editor de la tarjeta de persiana con nombre personalizado, selección de material, vista previa, recorrido de aprendizaje y comprobación pasiva del actuador](images/v011/cover-card-editor-v0111.png) |
 
 | Control compacto de luz | Canal blanco dedicado | Control de color |
 | --- | --- | --- |

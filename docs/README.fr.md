@@ -4,9 +4,9 @@
 
 Theme Studio est une intégration personnalisée pour Home Assistant permettant de créer, prévisualiser et appliquer directement vos propres designs d’interface.
 
-![Vue d’ensemble de Theme Studio 0.11.0](images/v011/theme-studio-overview-v0110.png)
+![Vue d’ensemble de Theme Studio 0.11.1](images/v011/theme-studio-overview-v0111.png)
 
-> Version actuelle : **0.11.0**
+> Version actuelle : **0.11.1**
 >
 > **Accès :** Theme Studio est réservé aux administrateurs Home Assistant, car l’application d’un design écrit le fichier de thème généré et recharge les thèmes Home Assistant.
 >
@@ -27,21 +27,27 @@ Historique des versions : [Notes de version](https://github.com/CjonesLAB/ha-the
 
 ## Fonctionnalités
 
+### 0.11.1 : mouvements fiables des volets et course d’apprentissage protégée
+
+Pour les volets sans retour de position, la position estimée est désormais synchronisée par Home Assistant afin que le téléphone, la tablette et l’ordinateur affichent la même valeur. Les mouvements temporisés et les arrêts de sécurité continuent dans le backend même lorsque le tableau de bord est fermé. Les changements de direction, reconnexions, redémarrages, réponses tardives de l’appareil et échecs de l’arrêt sont gérés de manière défensive. L’éditeur de carte propose aussi des courses d’apprentissage protégées pour l’ouverture et la fermeture, avec un arrêt d’urgence toujours disponible et un arrêt de sécurité après 60 secondes au maximum. Toutes les nouvelles commandes et tous les messages sont disponibles en allemand, anglais, français et espagnol.
+
 ### 0.11.0 : cartes compactes Theme Studio
 
-Trois cartes facultatives offrent des commandes directes sans encombrer le tableau de bord : une carte d’éclairage avec luminosité, canal blanc dédié, température de couleur et roue chromatique, une prise avec puissance en direct, énergie et mesures électriques associées, ainsi qu’une carte universelle pour volet avec ouverture, arrêt, fermeture, estimation visuelle de la position, choix du matériau et étalonnage du temps de course lorsque la position n’est pas remontée. Les réglages avancés s’ouvrent dans une boîte de dialogue opaque et défilable. Les cartes utilisent les variables et les surfaces de Home Assistant afin de conserver les designs, textures et effets de Theme Studio.
+![Cartes Theme Studio pour l’énergie, les volets, l’éclairage et l’horloge](images/v011/device-cards-overview-v0110.png)
+
+Trois cartes facultatives offrent des commandes directes sans encombrer le tableau de bord : une carte d’éclairage avec luminosité, canal blanc dédié, température de couleur et roue chromatique, une prise avec puissance en direct, énergie et mesures électriques associées, ainsi qu’une carte universelle pour volet avec ouverture, arrêt, fermeture, estimation visuelle de la position, choix du matériau, temps de course saisis manuellement et contrôle passif de l’actionneur. Ce contrôle observe uniquement les états Home Assistant et n’envoie aucune commande de mouvement. Pour les actionneurs confirmés sans retour de position, Home Assistant surveille lui-même le temps restant et envoie exactement une commande d’arrêt, même si le tableau de bord est fermé. Les réglages avancés s’ouvrent dans une boîte de dialogue opaque et défilable. Les cartes utilisent les variables et les surfaces de Home Assistant afin de conserver les designs, textures et effets de Theme Studio.
 
 | Prises avec suivi d’énergie | Commande universelle de volet |
 | --- | --- |
-| ![Cartes de prise compactes avec puissance en direct](images/v011/power-cards-v0110.png) | ![Carte de volet compacte avec estimation visuelle de la position](images/v011/cover-card-v0110.png) |
+| ![Cartes de prise compactes avec puissance en direct](images/v011/power-cards-v0110.png) | ![Carte de volet compacte avec estimation visuelle de la position](images/v011/cover-card-v0111.png) |
 
 | Détails de la prise | Détails du volet |
 | --- | --- |
-| ![Fenêtre de détail de la prise avec puissance en direct et mesures électriques](images/v011/power-card-details-v0110.png) | ![Fenêtre de détail du volet avec commandes d’ouverture, d’arrêt et de fermeture](images/v011/cover-card-details-v0110.png) |
+| ![Fenêtre de détail de la prise avec puissance en direct et mesures électriques](images/v011/power-card-details-v0110.png) | ![Fenêtre de détail du volet avec commandes d’ouverture, d’arrêt et de fermeture](images/v011/cover-card-details-v0111.png) |
 
-| Configuration, apparence et apprentissage du temps de trajet du volet |
+| Configuration, apparence et contrôle passif de l’actionneur du volet |
 | --- |
-| ![Éditeur de la carte volet avec nom personnalisé, choix du matériau, aperçu et apprentissage guidé du temps de trajet](images/v011/cover-card-editor-v0110.png) |
+| ![Éditeur de la carte volet avec nom personnalisé, choix du matériau, aperçu, course d’apprentissage et contrôle passif de l’actionneur](images/v011/cover-card-editor-v0111.png) |
 
 | Commande d’éclairage compacte | Canal blanc dédié | Commande des couleurs |
 | --- | --- | --- |

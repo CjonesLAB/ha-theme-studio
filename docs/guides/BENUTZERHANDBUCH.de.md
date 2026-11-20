@@ -1,14 +1,14 @@
-# Theme Studio 0.11.0 - Benutzerhandbuch
+# Theme Studio 0.11.1 - Benutzerhandbuch
 
 [English](USER_GUIDE.en.md) | **Deutsch** | [Français](GUIDE_UTILISATEUR.fr.md) | [Español](GUIA_USUARIO.es.md)
 
 [PDF herunterladen](../downloads/theme-studio-benutzerhandbuch-de.pdf) | [Aktuelle Version](https://github.com/CjonesLAB/ha-theme-studio/releases/latest) | [Fehler melden](https://github.com/CjonesLAB/ha-theme-studio/issues)
 
-Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.11.0**.
+Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zur mobilen visuellen Dashboard-Gestaltung und sicheren Verwaltung vorhandener Altregeln. Es gilt für Version **0.11.1**.
 
 > Vor Installation, Update oder größeren Designänderungen immer ein vollständiges Home-Assistant-Backup erstellen.
 
-![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/v011/theme-studio-overview-v0110.png)
+![Theme Studio mit Profilen, Feineinstellungen und Dashboard-Vorschau](../images/v011/theme-studio-overview-v0111.png)
 
 ## Inhalt
 
@@ -27,6 +27,8 @@ Dieses Handbuch erklärt Theme Studio vollständig - von der Installation bis zu
 13. Fehlerbehebung und bewährte Vorgehensweise
 
 ### Neu in 0.11.0
+
+![Übersicht der Theme-Studio-Karten für Energie, Jalousie, Licht und Uhr](../images/v011/device-cards-overview-v0110.png)
 
 Version 0.11.0 ergänzt drei optionale, kompakte Theme-Studio-Gerätekarten. Sie übernehmen das aktive Theme-Studio-Design und bieten gezielte Bedienmöglichkeiten, ohne das Dashboard dauerhaft mit großen Ansichten zu füllen.
 
@@ -50,15 +52,15 @@ Die Lichtkarte bietet direktes Schalten und Dimmen. Der Detaildialog trennt Farb
 
 #### Universelle Jalousiekarte
 
-Die Jalousiekarte unterstützt normale Home-Assistant-Cover-Entitäten. Sie bietet Öffnen, Stopp und Schließen, eine animierte Fensterdarstellung, einen optionalen Kartennamen, Material- und Oberflächenauswahl sowie eine geführte Laufzeitmessung für Geräte ohne Positionsrückmeldung.
+Die Jalousiekarte unterstützt normale Home-Assistant-Cover-Entitäten. Sie bietet Öffnen, Stopp und Schließen, eine animierte Fensterdarstellung, einen optionalen Kartennamen, Material- und Oberflächenauswahl, manuell eingetragene Laufzeiten, eine passive Aktor-Prüfung und eine abgesicherte Lernfahrt. Bei der passiven Prüfung bedient der Benutzer ausschließlich den Wandschalter; Theme Studio beobachtet nur die gemeldeten Zustände und sendet keine Fahrbefehle. Nach erfolgreicher Bestätigung kann die Öffnungs- oder Schließfahrt gestartet werden. „Endpunkt erreicht & stoppen“ stoppt den Motor sofort und übernimmt die gemessene Zeit. Ein jederzeit erreichbarer Not-Stopp und ein Home-Assistant-seitiger Sicherheitsstopp nach spätestens 60 Sekunden sichern die Lernfahrt ab.
 
-![Kompakte Jalousiekarte mit animierter Fensterdarstellung](../images/v011/cover-card-v0110.png)
+![Kompakte Jalousiekarte mit animierter Fensterdarstellung](../images/v011/cover-card-v0111.png)
 
-![Editor der Jalousiekarte mit Darstellung und Laufzeitmessung](../images/v011/cover-card-editor-v0110.png)
+![Editor der Jalousiekarte mit Darstellung, Lernfahrt und passiver Aktor-Prüfung](../images/v011/cover-card-editor-v0111.png)
 
-![Jalousie-Details mit klaren Bedienelementen für Öffnen, Stopp und Schließen](../images/v011/cover-card-details-v0110.png)
+![Jalousie-Details mit klaren Bedienelementen für Öffnen, Stopp und Schließen](../images/v011/cover-card-details-v0111.png)
 
-> Bei Cover-Entitäten ohne Positionsrückmeldung ist der angezeigte Prozentwert eine Schätzung auf Grundlage der eingelernten Laufzeit. Maßgeblich bleiben die physischen Endlagen und das Gerät selbst. Die Stopp-Funktion setzt voraus, dass die verwendete Home-Assistant-Cover-Integration das Stoppen unterstützt.
+> Bei Cover-Entitäten ohne Positionsrückmeldung ist der angezeigte Prozentwert eine Schätzung auf Grundlage der manuell eingetragenen Laufzeit und wird mit `~` gekennzeichnet. Maßgeblich bleiben die physischen Endlagen und das Gerät selbst. Nach einer direkten Bedienung über die Karte führt Home Assistant den Fahrbefehl aus und sendet nach der berechneten Restfahrzeit genau einen Stopp-Befehl – auch wenn das Dashboard inzwischen geschlossen wurde. Die Zeitsteuerung wird nur freigegeben, wenn die Cover-Integration das Stoppen unterstützt und die passive Aktor-Prüfung bestätigt wurde. Nach einem Home-Assistant-Neustart wird eine noch gespeicherte Fahrt vorsorglich gestoppt.
 
 ### Neu in 0.10.0
 
