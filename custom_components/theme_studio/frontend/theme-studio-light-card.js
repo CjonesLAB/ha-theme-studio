@@ -8,7 +8,7 @@ import {
   normalizeCardConfig,
   readNumericAttribute,
   translateThemeStudioText,
-} from "./theme-studio-card-base.js?v=0.11.1";
+} from "./theme-studio-card-base.js?v=0.11.2";
 
 const LIGHT_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 21h6v-1H9v1m3-20a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3.26A7 7 0 0 0 12 1m2 12.58V16h-4v-2.42A5 5 0 1 1 14 13.58Z"/></svg>`;
 const WARM_WHITE_KELVIN = 2700;

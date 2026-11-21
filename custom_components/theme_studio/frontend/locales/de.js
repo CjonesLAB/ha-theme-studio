@@ -41,5 +41,7 @@ export const MESSAGES = Object.freeze({
   "Als geschlossen markieren": "Als geschlossen markieren",
   "Als geöffnet markieren": "Als geöffnet markieren",
   "Laufzeit und bestätigte Stopp-Prüfung erforderlich": "Laufzeit und bestätigte Stopp-Prüfung erforderlich",
-  "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten.": "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten."
+  "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten.": "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten.",
+  "Die Fahrt vom Wandschalter konnte nicht überwacht werden. Bitte sofort manuell stoppen.": "Die Fahrt vom Wandschalter konnte nicht überwacht werden. Bitte sofort manuell stoppen.",
+  "Die Stopp-Position konnte nicht gespeichert werden.": "Die Stopp-Position konnte nicht gespeichert werden."
 });

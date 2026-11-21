@@ -1,9 +1,9 @@
 import {
   ThemeStudioLocalizer,
   themeStudioLanguage,
-} from "./theme-studio-locales.js?v=0.11.1";
+} from "./theme-studio-locales.js?v=0.11.2";
 
-const THEME_STUDIO_CLOCK_CARD_VERSION = "0.11.1";
+const THEME_STUDIO_CLOCK_CARD_VERSION = "0.11.2";
 
 function translateClockText(value, hass = null) {
   return new ThemeStudioLocalizer(themeStudioLanguage(hass)).translate(value);

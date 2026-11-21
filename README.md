@@ -6,9 +6,9 @@
 
 Theme Studio is a visual design workspace for Home Assistant. Create complete interface designs, preview every change, and apply them without writing CSS.
 
-![Theme Studio 0.11.1 overview](docs/images/v011/theme-studio-overview-v0111.png)
+![Theme Studio 0.11.2 overview](docs/images/v011/theme-studio-overview-v0111.png)
 
-> Current version: **0.11.1**
+> Current version: **0.11.2**
 >
 > **Access:** Theme Studio is available only to Home Assistant administrators because applying a design writes the generated theme file and reloads Home Assistant themes.
 >

@@ -14,7 +14,7 @@ import voluptuous as vol
 from homeassistant.auth.permissions.const import POLICY_CONTROL, POLICY_READ
 from homeassistant.components import websocket_api
 from homeassistant.components.cover import CoverEntityFeature
-from homeassistant.core import Context, HomeAssistant, callback
+from homeassistant.core import EVENT_STATE_CHANGED, Context, HomeAssistant, callback
 from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_state_change_event
@@ -58,6 +58,7 @@ class CoverMotionManager:
         )
         self._active: dict[str, dict[str, Any]] = {}
         self._positions: dict[str, float] = {}
+        self._travel_times: dict[str, dict[str, float]] = {}
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._move_tasks: dict[str, asyncio.Task[None]] = {}
         self._stop_after_move: set[str] = set()
@@ -69,6 +70,7 @@ class CoverMotionManager:
         self._move_call_timeout = move_call_timeout
         self._cancel_recovery: Callable[[], None] | None = None
         self._cancel_recovery_listener: Callable[[], None] | None = None
+        self._cancel_state_listener: Callable[[], None] | None = None
 
     async def async_setup(self) -> None:
         """Load persisted motion state before startup recovery runs."""
@@ -76,6 +78,9 @@ class CoverMotionManager:
         raw = await self._store.async_load()
         stored_active = raw.get("active", {}) if isinstance(raw, dict) else {}
         stored_positions = raw.get("positions", {}) if isinstance(raw, dict) else {}
+        stored_travel_times = (
+            raw.get("travel_times", {}) if isinstance(raw, dict) else {}
+        )
         self._active = {
             entity_id: {**dict(details), "recovery_pending": True}
             for entity_id, details in stored_active.items()
@@ -90,7 +95,100 @@ class CoverMotionManager:
             and not isinstance(position, bool)
             and 0 <= float(position) <= 100
         }
+        self._travel_times = {}
+        for entity_id, durations in stored_travel_times.items():
+            if not _COVER_ENTITY_PATTERN.fullmatch(str(entity_id)):
+                continue
+            if not isinstance(durations, dict):
+                continue
+            opening = durations.get("opening")
+            closing = durations.get("closing")
+            if not all(
+                isinstance(value, int | float)
+                and not isinstance(value, bool)
+                and 0.1 <= float(value) <= MAX_TRAVEL_TIME
+                for value in (opening, closing)
+            ):
+                continue
+            self._travel_times[str(entity_id)] = {
+                "opening": float(opening),
+                "closing": float(closing),
+            }
+        if self._cancel_state_listener is None:
+            self._cancel_state_listener = self.hass.bus.async_listen(
+                EVENT_STATE_CHANGED,
+                self._handle_cover_state_change,
+            )
         await self._async_save()
+
+    async def async_configure_external_monitoring(
+        self,
+        entity_id: str,
+        *,
+        opening_time: float | None,
+        closing_time: float | None,
+        enabled: bool,
+    ) -> None:
+        """Persist travel times used to protect wall-button movements."""
+
+        entity_id = self._validate_entity_id(entity_id)
+        self._validate_entity_exists(entity_id)
+        async with self._lock_for(entity_id):
+            if not enabled:
+                self._travel_times.pop(entity_id, None)
+            else:
+                self._validate_stop_support(entity_id)
+                opening = float(opening_time) if opening_time is not None else 0.0
+                closing = float(closing_time) if closing_time is not None else 0.0
+                if not 0.1 <= opening <= MAX_TRAVEL_TIME:
+                    raise vol.Invalid("Opening time must be between 0.1 and 600 seconds")
+                if not 0.1 <= closing <= MAX_TRAVEL_TIME:
+                    raise vol.Invalid("Closing time must be between 0.1 and 600 seconds")
+                self._travel_times[entity_id] = {
+                    "opening": opening,
+                    "closing": closing,
+                }
+            await self._async_save()
+
+    @callback
+    def _handle_cover_state_change(self, event: Any) -> None:
+        """Turn configured physical state changes into monitored movements."""
+
+        entity_id = str(event.data.get("entity_id") or "")
+        durations = self._travel_times.get(entity_id)
+        if not durations:
+            return
+        old_state = str(getattr(event.data.get("old_state"), "state", "") or "")
+        new_state = str(getattr(event.data.get("new_state"), "state", "") or "")
+        old_moving = old_state in {"opening", "closing"}
+        new_moving = new_state in {"opening", "closing"}
+        if new_moving and new_state != old_state:
+            fallback = self._calculate_active_position(entity_id)
+            if fallback is None:
+                fallback = self._positions.get(
+                    entity_id,
+                    0.0 if new_state == "opening" else 100.0,
+                )
+            self.hass.async_create_task(
+                self.async_observe_external(
+                    entity_id,
+                    new_state,
+                    durations["opening" if new_state == "opening" else "closing"],
+                    fallback_position=fallback,
+                ),
+                f"Theme Studio observe wall movement: {entity_id}",
+            )
+        elif old_moving and not new_moving and new_state not in {"unknown", "unavailable"}:
+            fallback = self._calculate_active_position(entity_id)
+            if fallback is None:
+                fallback = self._positions.get(entity_id, 50.0)
+            self.hass.async_create_task(
+                self.async_observe_external_stop(
+                    entity_id,
+                    fallback_position=fallback,
+                ),
+                f"Theme Studio observe wall stop: {entity_id}",
+            )
 
     def schedule_recovery(self) -> None:
         """Recover unfinished movement after Home Assistant has started."""
@@ -110,6 +208,9 @@ class CoverMotionManager:
         if self._cancel_recovery_listener is not None:
             self._cancel_recovery_listener()
             self._cancel_recovery_listener = None
+        if self._cancel_state_listener is not None:
+            self._cancel_state_listener()
+            self._cancel_state_listener = None
         missing_entities: set[str] = set()
         for entity_id in tuple(self._active):
             if self.hass.states.get(entity_id) is None:
@@ -197,6 +298,105 @@ class CoverMotionManager:
             )
         return {"duration": remaining_duration, "position": position, "moved": True}
 
+    async def async_observe_external(
+        self,
+        entity_id: str,
+        direction: str,
+        full_duration: float,
+        *,
+        fallback_position: float,
+        context: Context | None = None,
+    ) -> dict[str, float | bool]:
+        """Attach a safety timer to a movement started outside Theme Studio."""
+
+        entity_id = self._validate_entity_id(entity_id)
+        self._validate_stop_support(entity_id)
+        if direction not in {"opening", "closing"}:
+            raise vol.Invalid("Unsupported cover direction")
+        seconds = float(full_duration)
+        if not 0.1 <= seconds <= MAX_TRAVEL_TIME:
+            raise vol.Invalid("Cover travel time must be between 0.1 and 600 seconds")
+        fallback = self._validate_position(fallback_position)
+        async with self._lock_for(entity_id):
+            details = self._active.get(entity_id)
+            if details and details.get("direction") == direction:
+                active_position = self._calculate_active_position(entity_id)
+                return {
+                    "duration": float(details.get("duration", seconds)),
+                    "position": (
+                        active_position
+                        if active_position is not None
+                        else fallback
+                    ),
+                    "moved": True,
+                }
+            if details:
+                position = self._calculate_active_position(entity_id)
+                await self._async_cancel_timer(entity_id)
+                self._active.pop(entity_id, None)
+                self._learning_started.pop(entity_id, None)
+            else:
+                position = self._positions.get(entity_id, fallback)
+            if position is None:
+                position = fallback
+            remaining_fraction = (
+                (100.0 - position) / 100.0
+                if direction == "opening"
+                else position / 100.0
+            )
+            remaining_duration = (
+                seconds
+                if remaining_fraction <= 0
+                else max(0.1, round(seconds * remaining_fraction, 3))
+            )
+            await self._async_begin_motion_locked(
+                entity_id,
+                direction,
+                remaining_duration,
+                kind="external",
+                start_position=position,
+                full_duration=seconds,
+                context=context,
+            )
+            self._tasks[entity_id] = self.hass.async_create_background_task(
+                self._async_wait_and_stop(entity_id, remaining_duration, context),
+                f"Theme Studio external cover safety stop: {entity_id}",
+            )
+        return {
+            "duration": remaining_duration,
+            "position": position,
+            "moved": True,
+        }
+
+    async def async_observe_external_stop(
+        self,
+        entity_id: str,
+        *,
+        fallback_position: float,
+    ) -> float | None:
+        """Finish bookkeeping after a wall button stopped the physical cover."""
+
+        entity_id = self._validate_entity_id(entity_id)
+        self._validate_entity_exists(entity_id)
+        fallback = self._validate_position(fallback_position)
+        async with self._lock_for(entity_id):
+            details = self._active.get(entity_id)
+            position = self._calculate_active_position(entity_id)
+            await self._async_cancel_timer(entity_id)
+            if details and details.get("kind") == "learning":
+                position = None
+                self._positions.pop(entity_id, None)
+            else:
+                if details is None:
+                    position = fallback
+                if position is not None:
+                    self._positions[entity_id] = position
+            self._active.pop(entity_id, None)
+            self._learning_started.pop(entity_id, None)
+            await self._async_save()
+            self._publish_position(entity_id, position, motion_stopped=True)
+            return position
+
     async def async_start_learning(
         self,
         entity_id: str,
@@ -257,10 +457,16 @@ class CoverMotionManager:
         entity_id: str,
         *,
         context: Context | None = None,
+        fallback_position: float | None = None,
     ) -> float | None:
         """Cancel a pending timer and stop the cover immediately."""
 
         entity_id = self._validate_entity_id(entity_id)
+        fallback = (
+            self._validate_position(fallback_position)
+            if fallback_position is not None
+            else None
+        )
         lock = self._lock_for(entity_id)
         move_task = self._move_tasks.get(entity_id)
         immediate_stop_sent = move_task is not None and not move_task.done()
@@ -274,6 +480,7 @@ class CoverMotionManager:
                 entity_id,
                 context=context,
                 issue_stop=issue_stop,
+                fallback_position=fallback,
             )
             if pending_move is None or pending_move.done():
                 self._stop_after_move.discard(entity_id)
@@ -401,7 +608,7 @@ class CoverMotionManager:
                         context=context,
                     )
                     self._stop_after_move.discard(entity_id)
-                if details.get("kind") == "timed":
+                if details.get("kind") in {"timed", "external"}:
                     self._positions[entity_id] = (
                         100.0 if details.get("direction") == "opening" else 0.0
                     )
@@ -617,9 +824,12 @@ class CoverMotionManager:
         *,
         context: Context | None,
         issue_stop: bool = True,
+        fallback_position: float | None = None,
     ) -> float | None:
         details = self._active.get(entity_id)
         position = self._calculate_active_position(entity_id)
+        if details is None and fallback_position is not None:
+            position = fallback_position
         if issue_stop:
             await self._async_issue_stop(entity_id, context=context)
         await self._async_cancel_timer(entity_id)
@@ -699,12 +909,13 @@ class CoverMotionManager:
         )
 
     async def _async_save(self) -> None:
-        await self._store.async_save(
-            {
-                "active": dict(self._active),
-                "positions": dict(self._positions),
-            }
-        )
+        data: dict[str, Any] = {
+            "active": dict(self._active),
+            "positions": dict(self._positions),
+        }
+        if self._travel_times:
+            data["travel_times"] = dict(self._travel_times)
+        await self._store.async_save(data)
 
     def _publish_position(
         self,
@@ -740,7 +951,7 @@ class CoverMotionManager:
 
     def _calculate_active_position(self, entity_id: str) -> float | None:
         details = self._active.get(entity_id)
-        if not details or details.get("kind") != "timed":
+        if not details or details.get("kind") not in {"timed", "external"}:
             return self._positions.get(entity_id)
         full_duration = details.get("full_duration")
         if not isinstance(full_duration, int | float) or full_duration <= 0:
@@ -826,8 +1037,123 @@ async def websocket_cover_timed_move(
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): "theme_studio/cover/external_move",
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Required("direction"): vol.In(("opening", "closing")),
+        vol.Required("full_duration"): vol.All(
+            vol.Coerce(float),
+            vol.Range(min=0.1, max=MAX_TRAVEL_TIME),
+        ),
+        vol.Required("fallback_position"): vol.All(
+            vol.Coerce(float),
+            vol.Range(min=0, max=100),
+        ),
+    }
+)
+@websocket_api.async_response
+async def websocket_cover_external_move(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Protect a cover movement reported by a wall button."""
+
+    entity_id = msg["entity_id"]
+    _check_control_permission(connection, entity_id)
+    manager: CoverMotionManager = hass.data[DOMAIN][DATA_COVER_MOTION_MANAGER]
+    try:
+        result = await manager.async_observe_external(
+            entity_id,
+            msg["direction"],
+            msg["full_duration"],
+            fallback_position=msg["fallback_position"],
+            context=connection.context(msg),
+        )
+    except Exception as error:  # noqa: BLE001 - return a useful card error
+        connection.send_error(msg["id"], "cover_external_move_failed", str(error))
+        return
+    connection.send_result(msg["id"], {"success": True, **result})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "theme_studio/cover/external_stop",
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Required("fallback_position"): vol.All(
+            vol.Coerce(float),
+            vol.Range(min=0, max=100),
+        ),
+    }
+)
+@websocket_api.async_response
+async def websocket_cover_external_stop(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Cancel a safety timer after a wall button stopped the cover."""
+
+    entity_id = msg["entity_id"]
+    _check_control_permission(connection, entity_id)
+    manager: CoverMotionManager = hass.data[DOMAIN][DATA_COVER_MOTION_MANAGER]
+    try:
+        position = await manager.async_observe_external_stop(
+            entity_id,
+            fallback_position=msg["fallback_position"],
+        )
+    except Exception as error:  # noqa: BLE001 - return a useful card error
+        connection.send_error(msg["id"], "cover_external_stop_failed", str(error))
+        return
+    connection.send_result(msg["id"], {"success": True, "position": position})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "theme_studio/cover/configure_monitoring",
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Required("enabled"): cv.boolean,
+        vol.Optional("opening_time"): vol.All(
+            vol.Coerce(float),
+            vol.Range(min=0.1, max=MAX_TRAVEL_TIME),
+        ),
+        vol.Optional("closing_time"): vol.All(
+            vol.Coerce(float),
+            vol.Range(min=0.1, max=MAX_TRAVEL_TIME),
+        ),
+    }
+)
+@websocket_api.async_response
+async def websocket_cover_configure_monitoring(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Store the travel times used for wall-button safety stops."""
+
+    entity_id = msg["entity_id"]
+    _check_control_permission(connection, entity_id)
+    manager: CoverMotionManager = hass.data[DOMAIN][DATA_COVER_MOTION_MANAGER]
+    try:
+        await manager.async_configure_external_monitoring(
+            entity_id,
+            opening_time=msg.get("opening_time"),
+            closing_time=msg.get("closing_time"),
+            enabled=msg["enabled"],
+        )
+    except Exception as error:  # noqa: BLE001 - return a useful card error
+        connection.send_error(msg["id"], "cover_monitoring_config_failed", str(error))
+        return
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): "theme_studio/cover/stop",
         vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("fallback_position"): vol.All(
+            vol.Coerce(float),
+            vol.Range(min=0, max=100),
+        ),
     }
 )
 @websocket_api.async_response
@@ -845,6 +1171,7 @@ async def websocket_cover_stop(
         position = await manager.async_stop(
             entity_id,
             context=connection.context(msg),
+            fallback_position=msg.get("fallback_position"),
         )
     except Exception as error:  # noqa: BLE001 - return a useful card error
         connection.send_error(msg["id"], "cover_stop_failed", str(error))
@@ -1011,6 +1338,9 @@ def async_register_cover_motion_commands(hass: HomeAssistant) -> None:
     """Register cover motion WebSocket commands."""
 
     websocket_api.async_register_command(hass, websocket_cover_timed_move)
+    websocket_api.async_register_command(hass, websocket_cover_external_move)
+    websocket_api.async_register_command(hass, websocket_cover_external_stop)
+    websocket_api.async_register_command(hass, websocket_cover_configure_monitoring)
     websocket_api.async_register_command(hass, websocket_cover_stop)
     websocket_api.async_register_command(hass, websocket_cover_learning_start)
     websocket_api.async_register_command(hass, websocket_cover_learning_finish)

@@ -651,5 +651,7 @@ export const MESSAGES = Object.freeze({
   "Als geschlossen markieren": "Marcar como cerrada",
   "Als geöffnet markieren": "Marcar como abierta",
   "Laufzeit und bestätigte Stopp-Prüfung erforderlich": "Se requiere tiempo de recorrido y prueba de parada confirmada",
-  "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten.": "El recorrido de aprendizaje ya fue detenido por la seguridad de 60 segundos. Inícialo de nuevo."
+  "Die Lernfahrt wurde bereits durch den 60-Sekunden-Sicherheitsstopp beendet. Bitte neu starten.": "El recorrido de aprendizaje ya fue detenido por la seguridad de 60 segundos. Inícialo de nuevo.",
+  "Die Fahrt vom Wandschalter konnte nicht überwacht werden. Bitte sofort manuell stoppen.": "No se pudo supervisar el movimiento iniciado desde el interruptor de pared. Deténlo manualmente de inmediato.",
+  "Die Stopp-Position konnte nicht gespeichert werden.": "No se pudo guardar la posición de parada."
 });

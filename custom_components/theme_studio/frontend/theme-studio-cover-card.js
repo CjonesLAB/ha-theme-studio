@@ -15,7 +15,7 @@ import {
   observeCoverCompatibilityTest,
   readCoverPosition,
   translateThemeStudioText,
-} from "./theme-studio-card-base.js?v=0.11.1";
+} from "./theme-studio-card-base.js?v=0.11.2";
 
 const COVER_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3h16a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v14h-2V8H6v13H4V7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1m3 6h10v2H7V9m0 4h10v2H7v-2m0 4h10v2H7v-2m0 4h10v2H7v-2Z"/></svg>`;
 const COVER_POSITION_STORAGE_PREFIX = "theme-studio:cover-position:";
@@ -107,6 +107,21 @@ export function shouldRefreshCoverPositionFallback(
     && previousState !== nextState
     && readCoverPosition(nextState) === null
   );
+}
+
+export function externalCoverMotionTransition(
+  previousState,
+  nextState,
+  canEstimate
+) {
+  if (!canEstimate) return "idle";
+  const previous = String(previousState || "");
+  const next = String(nextState || "");
+  const previousMoving = ["opening", "closing"].includes(previous);
+  const nextMoving = ["opening", "closing"].includes(next);
+  if (nextMoving && next !== previous) return "start";
+  if (previousMoving && !nextMoving) return "stop";
+  return "idle";
 }
 
 export function coverMotionTransition({
@@ -610,6 +625,10 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
     this._positionSubscriptionEntity = "";
     this._positionSubscriptionEpoch = 0;
     this._lastHassConnection = null;
+    this._externalMotionQueue = Promise.resolve();
+    this._monitoringSyncKey = "";
+    this._monitoringSyncConnection = null;
+    this._monitoringSyncFailure = null;
   }
 
   connectedCallback() {
@@ -635,6 +654,10 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
     const entityId = String(this._config?.entity || "");
     const previousState = this._hass?.states?.[entityId];
     const nextState = hass?.states?.[entityId];
+    const stoppedVisualPosition = this._currentVisualPosition(
+      previousState,
+      readCoverPosition(previousState)
+    );
     const nextConnection = hass?.connection ?? null;
     const connectionChanged = this._lastHassConnection !== nextConnection;
     const subscriptionActive = this._positionSubscriptionConnection === nextConnection
@@ -652,6 +675,17 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
     }
     super.hass = hass;
     this._subscribePositionUpdates();
+    this._syncExternalMonitoringConfig();
+    const externalTransition = externalCoverMotionTransition(
+      previousState?.state,
+      nextState?.state,
+      this._canEstimateMotion()
+    );
+    if (externalTransition === "start") {
+      this._observeExternalMotion(nextState.state, stoppedVisualPosition);
+    } else if (externalTransition === "stop") {
+      this._observeExternalStop(stoppedVisualPosition);
+    }
   }
 
   get hass() { return this._hass; }
@@ -686,6 +720,10 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
       this._coverMotion = null;
       this._suppressStart = false;
       this._motionCommandEpoch += 1;
+      this._externalMotionQueue = Promise.resolve();
+      this._monitoringSyncKey = "";
+      this._monitoringSyncConnection = null;
+      this._monitoringSyncFailure = null;
       this._clearMotionTimer();
       this._unsubscribePositionUpdates();
     }
@@ -719,6 +757,7 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
     }
     this._renderPreservingDialog();
     this._subscribePositionUpdates();
+    this._syncExternalMonitoringConfig();
   }
 
   render() {
@@ -845,10 +884,11 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
         const commandEpoch = ++this._motionCommandEpoch;
         this._suppressStart = true;
         this._showCoverFeedback("");
+        const stoppedVisualPosition = this._currentVisualPosition();
         this._stopVisualMotion();
         const stopRequest = Promise.resolve().then(() => (
           this._canEstimateMotion()
-            ? this._callTimedCoverStop()
+            ? this._callTimedCoverStop(stoppedVisualPosition)
             : this._callService("cover", "stop_cover")
         ));
         stopRequest
@@ -960,14 +1000,121 @@ export class ThemeStudioCoverCard extends ThemeStudioCardBase {
     });
   }
 
-  _callTimedCoverStop() {
+  _callTimedCoverStop(fallbackPosition = this._currentVisualPosition()) {
     const connection = this._hass?.connection;
     if (!connection?.sendMessagePromise) {
       return Promise.reject(new Error("Home Assistant ist nicht verbunden."));
     }
-    return connection.sendMessagePromise({
-      type: "theme_studio/cover/stop",
-      entity_id: this._config.entity,
+    return this._externalMotionQueue.catch(() => {}).then(() => (
+      connection.sendMessagePromise({
+        type: "theme_studio/cover/stop",
+        entity_id: this._config.entity,
+        fallback_position: clampPercentage(fallbackPosition),
+      })
+    ));
+  }
+
+  _observeExternalMotion(direction, fallbackPosition) {
+    const connection = this._hass?.connection;
+    const entityId = String(this._config?.entity || "");
+    const fullTravelTime = direction === "opening"
+      ? this._config?.opening_time
+      : this._config?.closing_time;
+    if (!connection?.sendMessagePromise || !entityId
+      || normalizeCoverTravelTime(fullTravelTime) === null) return;
+    this._externalMotionQueue = this._externalMotionQueue.catch(() => {}).then(() => (
+      connection.sendMessagePromise({
+        type: "theme_studio/cover/external_move",
+        entity_id: entityId,
+        direction,
+        full_duration: fullTravelTime,
+        fallback_position: clampPercentage(fallbackPosition),
+      })
+    ));
+    this._externalMotionQueue.catch(() => {
+      if (this._config?.entity === entityId) {
+        this._showCoverFeedback(
+          "Die Fahrt vom Wandschalter konnte nicht überwacht werden. Bitte sofort manuell stoppen."
+        );
+      }
+    });
+  }
+
+  _observeExternalStop(fallbackPosition) {
+    const connection = this._hass?.connection;
+    const entityId = String(this._config?.entity || "");
+    if (!connection?.sendMessagePromise || !entityId) return;
+    this._externalMotionQueue = this._externalMotionQueue.catch(() => {}).then(() => (
+      connection.sendMessagePromise({
+        type: "theme_studio/cover/external_stop",
+        entity_id: entityId,
+        fallback_position: clampPercentage(fallbackPosition),
+      })
+    ));
+    this._externalMotionQueue.then((result) => {
+      if (this._config?.entity !== entityId) return;
+      const stoppedPosition = readCoverPercent(result?.position);
+      if (stoppedPosition !== null) {
+        this._rememberEstimatedPosition(stoppedPosition, true);
+        this._updateMotionVisual();
+      }
+    }, () => {
+      if (this._config?.entity === entityId) {
+        this._showCoverFeedback("Die Stopp-Position konnte nicht gespeichert werden.");
+      }
+    });
+  }
+
+  _syncExternalMonitoringConfig() {
+    const connection = this._hass?.connection;
+    const entityId = String(this._config?.entity || "");
+    const state = this._hass?.states?.[entityId];
+    if (!connection?.sendMessagePromise || !entityId || !state) return;
+    const openingTime = normalizeCoverTravelTime(this._config?.opening_time);
+    const closingTime = normalizeCoverTravelTime(this._config?.closing_time);
+    const enabled = readCoverPosition(state) === null
+      && isCoverCompatibilityConfirmed(this._config, entityId)
+      && openingTime !== null
+      && closingTime !== null;
+    const syncKey = JSON.stringify([
+      entityId,
+      enabled,
+      enabled ? openingTime : null,
+      enabled ? closingTime : null,
+    ]);
+    if (shouldThrottlePositionSubscriptionFailure(
+      this._monitoringSyncFailure,
+      connection,
+      syncKey
+    )) return;
+    if (this._monitoringSyncConnection === connection
+      && this._monitoringSyncKey === syncKey) return;
+    this._monitoringSyncConnection = connection;
+    this._monitoringSyncKey = syncKey;
+    connection.sendMessagePromise({
+      type: "theme_studio/cover/configure_monitoring",
+      entity_id: entityId,
+      enabled,
+      ...(enabled ? {
+        opening_time: openingTime,
+        closing_time: closingTime,
+      } : {}),
+    }).then(() => {
+      if (this._monitoringSyncConnection === connection
+        && this._monitoringSyncKey === syncKey) {
+        this._monitoringSyncFailure = null;
+      }
+    }).catch(() => {
+      if (this._monitoringSyncConnection === connection
+        && this._monitoringSyncKey === syncKey) {
+        this._monitoringSyncFailure = {
+          connection,
+          entity: syncKey,
+          at: Date.now(),
+        };
+        this._monitoringSyncConnection = null;
+        this._monitoringSyncKey = "";
+      }
     });
   }
 

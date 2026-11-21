@@ -112,6 +112,14 @@ class FakeState:
         self.attributes = {"supported_features": supported_features}
 
 
+class FakeStateValue:
+    """Minimal state-change payload used by wall-button monitoring tests."""
+
+    def __init__(self, state: str) -> None:
+        self.state = state
+        self.attributes = {}
+
+
 class FakeBus:
     """Record events sent to other open dashboards."""
 
@@ -259,6 +267,173 @@ async def test_manual_stop_cancels_pending_timer_without_second_stop() -> None:
             },
         )
     ]
+
+
+async def test_external_wall_motion_gets_a_server_side_safety_stop() -> None:
+    """A wall-button movement is observed without sending a second move pulse."""
+
+    hass = FakeHass()
+    store = MemoryStore({"active": {}, "positions": {"cover.terrace": 40.0}})
+    sleep = AsyncMock()
+    manager = CoverMotionManager(hass, store=store, sleep=sleep)
+    await manager.async_setup()
+
+    result = await manager.async_observe_external(
+        "cover.terrace",
+        "opening",
+        10.0,
+        fallback_position=40.0,
+    )
+    for _ in range(10):
+        await asyncio.sleep(0)
+    await hass.background_tasks[-1]
+
+    assert result == {"duration": 6.0, "position": 40.0, "moved": True}
+    assert hass.services.calls == [
+        ("cover", "stop_cover", {"entity_id": "cover.terrace"})
+    ]
+    assert store.data == {"active": {}, "positions": {"cover.terrace": 100.0}}
+
+
+async def test_stop_without_registered_motion_uses_live_visual_fallback() -> None:
+    """Stopping an external ride never restores a stale stored endpoint."""
+
+    hass = FakeHass()
+    store = MemoryStore({"active": {}, "positions": {"cover.terrace": 100.0}})
+    manager = CoverMotionManager(hass, store=store)
+    await manager.async_setup()
+
+    position = await manager.async_stop(
+        "cover.terrace",
+        fallback_position=43.0,
+    )
+
+    assert position == 43.0
+    assert store.data == {"active": {}, "positions": {"cover.terrace": 43.0}}
+    assert hass.services.calls == [
+        ("cover", "stop_cover", {"entity_id": "cover.terrace"})
+    ]
+
+
+async def test_second_wall_press_finishes_external_motion_without_extra_stop() -> None:
+    """A wall-button stop cancels the timer and keeps the reached position."""
+
+    hass = FakeHass()
+    never = asyncio.Event()
+    now = [10.0]
+    store = MemoryStore({"active": {}, "positions": {"cover.terrace": 40.0}})
+    manager = CoverMotionManager(
+        hass,
+        store=store,
+        sleep=lambda _duration: never.wait(),
+        clock=lambda: now[0],
+    )
+    await manager.async_setup()
+    await manager.async_observe_external(
+        "cover.terrace",
+        "opening",
+        10.0,
+        fallback_position=40.0,
+    )
+
+    now[0] = 12.0
+    position = await manager.async_observe_external_stop(
+        "cover.terrace",
+        fallback_position=60.0,
+    )
+    await asyncio.gather(*hass.background_tasks, return_exceptions=True)
+
+    assert position == 60.0
+    assert hass.services.calls == []
+    assert store.data == {"active": {}, "positions": {"cover.terrace": 60.0}}
+
+
+async def test_configured_wall_motion_is_protected_without_an_open_dashboard() -> None:
+    """Stored travel times let Home Assistant stop a wall-started ride itself."""
+
+    hass = FakeHass()
+    sleep = AsyncMock()
+    store = MemoryStore({"active": {}, "positions": {"cover.terrace": 0.0}})
+    manager = CoverMotionManager(hass, store=store, sleep=sleep)
+    await manager.async_setup()
+    await manager.async_configure_external_monitoring(
+        "cover.terrace",
+        opening_time=10.0,
+        closing_time=12.0,
+        enabled=True,
+    )
+
+    hass.bus.async_fire(
+        "state_changed",
+        {
+            "entity_id": "cover.terrace",
+            "old_state": FakeStateValue("stopped"),
+            "new_state": FakeStateValue("opening"),
+        },
+    )
+    for _ in range(20):
+        await asyncio.sleep(0)
+        if hass.background_tasks and hass.background_tasks[-1].done():
+            break
+    await hass.background_tasks[-1]
+
+    assert hass.services.calls == [
+        ("cover", "stop_cover", {"entity_id": "cover.terrace"})
+    ]
+    assert store.data["positions"] == {"cover.terrace": 100.0}
+    assert store.data["travel_times"] == {
+        "cover.terrace": {"opening": 10.0, "closing": 12.0}
+    }
+
+
+async def test_repeated_same_wall_signal_does_not_fake_a_two_button_stop() -> None:
+    """A repeated direction update cannot safely impersonate the opposite button."""
+
+    hass = FakeHass()
+    never = asyncio.Event()
+    now = [10.0]
+    store = MemoryStore({"active": {}, "positions": {"cover.terrace": 20.0}})
+    manager = CoverMotionManager(
+        hass,
+        store=store,
+        sleep=lambda _duration: never.wait(),
+        clock=lambda: now[0],
+    )
+    await manager.async_setup()
+    await manager.async_configure_external_monitoring(
+        "cover.terrace",
+        opening_time=10.0,
+        closing_time=12.0,
+        enabled=True,
+    )
+    await manager.async_observe_external(
+        "cover.terrace",
+        "opening",
+        10.0,
+        fallback_position=20.0,
+    )
+
+    now[0] = 12.0
+    hass.bus.async_fire(
+        "state_changed",
+        {
+            "entity_id": "cover.terrace",
+            "old_state": FakeStateValue("opening"),
+            "new_state": FakeStateValue("opening"),
+        },
+    )
+    for _ in range(20):
+        await asyncio.sleep(0)
+        if hass.services.calls:
+            break
+    assert hass.services.calls == []
+    snapshot = manager.position_snapshot("cover.terrace")
+    assert snapshot["moving"] is True
+    assert snapshot["direction"] == "opening"
+    for task in hass.background_tasks:
+        if not task.done():
+            task.cancel()
+    await asyncio.gather(*hass.background_tasks, return_exceptions=True)
 
 
 async def test_setup_stops_motion_remembered_before_restart() -> None:
