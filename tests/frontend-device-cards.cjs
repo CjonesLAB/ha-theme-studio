@@ -177,6 +177,26 @@ async function importSource(source) {
     "a live subscription must avoid redundant fallback polling"
   );
   assert.equal(
+    coverModule.externalCoverMotionTransition("stopped", "opening", true),
+    "start",
+    "a wall-button opening state must register a backend safety timer"
+  );
+  assert.equal(
+    coverModule.externalCoverMotionTransition("opening", "stopped", true),
+    "stop",
+    "pressing the same wall button again must cancel the backend timer"
+  );
+  assert.equal(
+    coverModule.externalCoverMotionTransition("opening", "opening", true),
+    "idle",
+    "ordinary updates during a ride must not register duplicate timers"
+  );
+  assert.equal(
+    coverModule.externalCoverMotionTransition("stopped", "opening", false),
+    "idle",
+    "covers without a confirmed timed setup must not call the timer backend"
+  );
+  assert.equal(
     coverModule.shouldRefreshCoverPositionFallback(
       fallbackStateA,
       { state: "opening", attributes: { current_position: 42 } },
@@ -590,9 +610,9 @@ async function importSource(source) {
   );
 
   assert.ok(
-    loaderSource.includes('import "./theme-studio-light-card.js?v=0.11.1"')
-      && loaderSource.includes('import "./theme-studio-power-card.js?v=0.11.1"')
-      && loaderSource.includes('import "./theme-studio-cover-card.js?v=0.11.1"'),
+    loaderSource.includes('import "./theme-studio-light-card.js?v=0.11.2"')
+      && loaderSource.includes('import "./theme-studio-power-card.js?v=0.11.2"')
+      && loaderSource.includes('import "./theme-studio-cover-card.js?v=0.11.2"'),
     "the registered loader must import all three versioned cards"
   );
 

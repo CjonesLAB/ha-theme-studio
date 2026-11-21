@@ -1,7 +1,7 @@
-import { MESSAGES as DE_MESSAGES } from "./locales/de.js?v=0.11.1";
-import { MESSAGES as EN_MESSAGES } from "./locales/en.js?v=0.11.1";
-import { MESSAGES as FR_MESSAGES } from "./locales/fr.js?v=0.11.1";
-import { MESSAGES as ES_MESSAGES } from "./locales/es.js?v=0.11.1";
+import { MESSAGES as DE_MESSAGES } from "./locales/de.js?v=0.11.2";
+import { MESSAGES as EN_MESSAGES } from "./locales/en.js?v=0.11.2";
+import { MESSAGES as FR_MESSAGES } from "./locales/fr.js?v=0.11.2";
+import { MESSAGES as ES_MESSAGES } from "./locales/es.js?v=0.11.2";
 
 const TRANSLATIONS = Object.freeze({
   de: DE_MESSAGES,

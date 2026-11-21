@@ -11,7 +11,7 @@ import {
   normalizeOptionalEntityId,
   readNumericAttribute,
   translateThemeStudioText,
-} from "./theme-studio-card-base.js?v=0.11.1";
+} from "./theme-studio-card-base.js?v=0.11.2";
 
 const PLUG_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 7V3h-2v4h-4V3H8v4H6v5a6 6 0 0 0 5 5.91V22h2v-4.09A6 6 0 0 0 18 12V7h-2Z"/></svg>`;
 
